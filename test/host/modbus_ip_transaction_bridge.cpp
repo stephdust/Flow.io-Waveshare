@@ -14,7 +14,7 @@ struct FakeMaster {
   auto& self=*static_cast<FakeMaster*>(ctx);assert(id==19);
   if(self.pending)return MODBUS_RESULT_NOT_READY;
   response->state=MODBUS_TRANSACTION_COMPLETE;response->result=MODBUS_RESULT_OK;
-  response->registerCount=2;response->values[0]=0x1234;response->values[1]=0xabcd;
+  response->slaveAddress=4;response->function=3;response->registerCount=2;response->values[0]=0x1234;response->values[1]=0xabcd;
   return MODBUS_RESULT_OK;
  }
  static void cancel(void* ctx,uint8_t){static_cast<FakeMaster*>(ctx)->pending=false;}
