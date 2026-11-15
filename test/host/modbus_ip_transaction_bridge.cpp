@@ -49,6 +49,24 @@ int main(){
  assert(pduLength==6&&pdu[0]==3&&pdu[1]==4&&readBe16(pdu+2)==0x1234);
  assert(!bridge.busy());
 
+ // FC04 must retain its function code and register values in the reply.
+ fake.function=4;fake.result=MODBUS_RESULT_OK;fake.count=2;
+ const uint8_t inputRegisters[]={4,0,16,0,2};
+ const auto inputLength=encodeAdu(input,sizeof(input),0x4340,4,inputRegisters,sizeof(inputRegisters));
+ assert(bridge.start(input,inputLength,{19200,1,1},201,3000,service));
+ assert(fake.submitted.function==4&&fake.submitted.registerCount==2);
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(header.transactionId==0x4340&&pduLength==6&&pdu[0]==4);
+ assert(readBe16(pdu+2)==0x1234&&readBe16(pdu+4)==0xabcd);
+ fake.function=3;
+ // Cancellation releases the pending transaction without generating a stale reply.
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ assert(bridge.state()==TransactionBridge::State::Pending);
+ bridge.cancel();
+ assert(!bridge.busy());
+ assert(!bridge.takeResponse(output,sizeof(output),length));
  // A real RTU exception must preserve its exception code.
  fake.result=MODBUS_RESULT_EXCEPTION;fake.exception=2;
  assert(bridge.start(input,n,{19200,1,1},201,3000,service));
