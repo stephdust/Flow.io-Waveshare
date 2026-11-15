@@ -46,7 +46,11 @@ struct GatewayConfigVariables {
  ConfigVariable<char,0> deviceProfilesVar{NVS_KEY("mi_devices"),"device_profiles","modbus_ip",ConfigType::CharArray,deviceProfiles,ConfigPersistence::Persistent,DeviceProfilesCapacity};
  static bool validDeviceProfiles(const char* text) {
   ProfileTable table{};
-  return text&&std::strlen(text)<DeviceProfilesCapacity&&table.parse(text);
+  if(!text)return false;
+  // ConfigStore owns a fixed-size char buffer: never scan beyond its end.
+  std::size_t length=0;
+  while(length<DeviceProfilesCapacity&&text[length]!=0)++length;
+  return length<DeviceProfilesCapacity&&table.parse(text);
  }
  template<class Store> void registerWith(Store& store){
   store.registerVar(enabled);store.registerVar(tcp);store.registerVar(udp);
