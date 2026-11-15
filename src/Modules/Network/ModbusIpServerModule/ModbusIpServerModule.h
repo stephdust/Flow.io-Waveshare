@@ -10,7 +10,7 @@
 // ModbusMaster service provided by IOModule.
 class ModbusIpServerModule final : public Module {
 public:
- ModuleId moduleId() const override { return ModuleId::Reserved28; }
+ ModuleId moduleId() const override { return ModuleId::ModbusIpServer; }
  const char* taskName() const override { return "modbusip"; }
  uint8_t dependencyCount() const override { return 2; }
  ModuleId dependency(uint8_t index) const override {
@@ -21,11 +21,18 @@ public:
  uint16_t taskStackSize() const override { return 6144; }
  void init(ConfigStore& cfg,ServiceRegistry& services) override {
   config_.registerWith(cfg);
+  services_=&services;
+ }
+ void onStart(ConfigStore&,ServiceRegistry& services) override {
   master_=services.get<ModbusMasterService>(ServiceId::ModbusMaster);
   network_=services.get<NetworkAccessService>(ServiceId::NetworkAccess);
+  started_=true;
  }
- void onStart(ConfigStore&,ServiceRegistry&) override { started_=true; }
  void loop() override {
+  if(started_&&services_){
+   if(!master_)master_=services_->get<ModbusMasterService>(ServiceId::ModbusMaster);
+   if(!network_)network_=services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
+  }
   if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
    if(active_){tcp_.stop();udp_.stop();active_=false;}return;
@@ -65,6 +72,7 @@ private:
  flowio::modbus_ip::ProfileTable profiles_{};
  flowio::modbus_ip::TcpEndpoint tcp_{};
  flowio::modbus_ip::UdpEndpoint udp_{};
+ ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
  const NetworkAccessService* network_=nullptr;
  bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
