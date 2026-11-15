@@ -1,0 +1,31 @@
+name: Modbus IP native tests
+
+on:
+  push:
+    branches:
+      - feature/modbus-ip-server
+    paths:
+      - 'src/Modules/Network/ModbusIpServerModule/**'
+      - 'src/Core/**'
+      - 'include/Core/**'
+      - 'test/host/modbus_ip_*.cpp'
+      - 'scripts/test-modbus-ip-host.sh'
+      - '.github/workflows/modbus-ip-host-tests.yml'
+  pull_request:
+    paths:
+      - 'src/Modules/Network/ModbusIpServerModule/**'
+      - 'src/Core/**'
+      - 'include/Core/**'
+      - 'test/host/modbus_ip_*.cpp'
+      - 'scripts/test-modbus-ip-host.sh'
+      - '.github/workflows/modbus-ip-host-tests.yml'
+
+jobs:
+  native-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run Modbus IP C++ tests
+        run: bash scripts/test-modbus-ip-host.sh
