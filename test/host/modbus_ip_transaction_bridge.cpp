@@ -7,12 +7,15 @@ struct FakeMaster {
  ModbusRequest submitted{};
  bool pending=false;
  ModbusResultCode result=MODBUS_RESULT_OK;
+ ModbusResultCode submitResult=MODBUS_RESULT_OK;
  uint8_t slave=4;
  uint8_t function=3;
  uint8_t exception=0;
  uint16_t count=2;
  static ModbusResultCode submit(void* ctx,const ModbusRequest* req,uint16_t* id){
-  auto& self=*static_cast<FakeMaster*>(ctx);self.submitted=*req;self.pending=true;*id=19;
+  auto& self=*static_cast<FakeMaster*>(ctx);self.submitted=*req;self.pending=true;
+  if(self.submitResult!=MODBUS_RESULT_OK)return self.submitResult;
+  *id=19;
   return MODBUS_RESULT_OK;
  }
  static ModbusResultCode poll(void* ctx,uint16_t id,ModbusResponse* response){
@@ -74,6 +77,21 @@ int main(){
  assert(bridge.takeResponse(output,sizeof(output),length));
  assert(decodeAdu(output,length,header,pdu,pduLength));
  assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==4);
+ // A mismatched exception must not be forwarded as if it came from this device.
+ fake.result=MODBUS_RESULT_EXCEPTION;fake.exception=2;fake.slave=5;fake.count=2;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==4);
+ // Scheduler queue saturation must yield an immediate Modbus gateway exception.
+ fake.slave=4;fake.submitResult=MODBUS_RESULT_QUEUE_FULL;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ assert(bridge.state()==TransactionBridge::State::ResponseReady);
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83);
+ fake.submitResult=MODBUS_RESULT_OK;
  const uint8_t unsupported[]={1,0,0,0,1};
  const auto m=encodeAdu(input,sizeof(input),7,4,unsupported,sizeof(unsupported));
  assert(bridge.start(input,m,{9600,0,1},201,3000,service));
