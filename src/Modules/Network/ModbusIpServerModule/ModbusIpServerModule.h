@@ -64,12 +64,23 @@ private:
  bool resolveKnownDevice_(uint8_t id,flowio::modbus_ip::SerialProfile& profile) const {
   if(!poolDevices_||!poolDevices_->count||!poolDevices_->getSerialConfig)return false;
   const uint8_t count=poolDevices_->count(poolDevices_->ctx);
+  bool found=false;
+  flowio::modbus_ip::SerialProfile selected{};
   for(uint8_t slot=0;slot<count;++slot){
    PoolDriverConfig device{};
    if(!poolDevices_->getSerialConfig(poolDevices_->ctx,slot,&device))continue;
-   if(flowio::modbus_ip::profileFromPoolSerialConfig(device,id,profile))return true;
+   flowio::modbus_ip::SerialProfile candidate{};
+   if(!flowio::modbus_ip::profileFromPoolSerialConfig(device,id,candidate))continue;
+   // Conflicting configurations for the same RTU address are ambiguous.
+   // Refuse to guess a serial line configuration for the shared bus.
+   if(found&&(candidate.baud!=selected.baud||
+              candidate.parity!=selected.parity||
+              candidate.stopBits!=selected.stopBits))return false;
+   selected=candidate;
+   found=true;
   }
-  return false;
+  if(found)profile=selected;
+  return found;
  }
  static bool resolve_(void* ctx,uint8_t id,flowio::modbus_ip::SerialProfile& profile) {
   auto& self=*static_cast<ModbusIpServerModule*>(ctx);
