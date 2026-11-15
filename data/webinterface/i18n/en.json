@@ -714,6 +714,21 @@
     "data.introLess": "Hide details",
     "data.introScope": "Home Assistant publishes the value, history records it and the interface makes it selectable in TFT/Web fields and formulas. The three settings are independent.",
     "data.introRestart": "Exposure changes take effect after a restart.",
-    "data.introMigration": "To replace an old IOSlot → calculated value setup, select the source value in your fields, then disable the now-useless intermediate publications here."
+    "data.introMigration": "To replace an old IOSlot → calculated value setup, select the source value in your fields, then disable the now-useless intermediate publications here.",
+    "modbusIp.title": "Modbus TCP / UDP server",
+    "modbusIp.enabled": "Enable Modbus IP gateway",
+    "modbusIp.tcpEnabled": "Enable TCP server",
+    "modbusIp.udpEnabled": "Enable UDP server",
+    "modbusIp.port": "Listening port",
+    "modbusIp.timeout": "RTU response timeout (ms)",
+    "modbusIp.profileMode": "RS485 profile mode",
+    "modbusIp.profileMode.automatic": "Automatic — known devices",
+    "modbusIp.profileMode.manual": "Manual — shared serial settings",
+    "modbusIp.profileMode.perDevice": "Per device — overrides and known devices",
+    "modbusIp.baud": "Baud rate",
+    "modbusIp.parity": "Parity",
+    "modbusIp.stopBits": "Stop bits",
+    "modbusIp.disabledHint": "The gateway is disabled by default.",
+    "modbusIp.unknownHint": "Unknown RS485 devices are rejected; no serial speed is guessed."
   }
 }
