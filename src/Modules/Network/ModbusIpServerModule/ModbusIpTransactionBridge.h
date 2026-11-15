@@ -43,14 +43,14 @@ public:
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
-  if(response.slaveAddress!=request_.unitId||response.function!=request_.function){
-   prepareException_(request_.function,4);return;
-  }
   if(response.result==MODBUS_RESULT_EXCEPTION){
    prepareException_(request_.function,response.exceptionCode?response.exceptionCode:4);return;
   }
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
    prepareException_(request_.function,gatewayExceptionCode(static_cast<ModbusResultCode>(response.result)));return;
+  }
+  if(response.slaveAddress!=request_.unitId||response.function!=request_.function){
+   prepareException_(request_.function,4);return;
   }
   if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
    prepareException_(request_.function,4);return;
