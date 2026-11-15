@@ -42,6 +42,7 @@ public:
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
    if(active_){tcp_.stop();udp_.stop();active_=false;}return;
   }
+  refreshDeviceProfiles_();
   const auto& cfg=config_.data;
   if(active_&&boundPort_!=cfg.port){tcp_.stop();udp_.stop();active_=false;}
   boundPort_=cfg.port;active_=true;
@@ -62,6 +63,14 @@ public:
   knownResolver_=resolver;knownCtx_=ctx;
  }
 private:
+ void refreshDeviceProfiles_() {
+  if(std::strcmp(loadedDeviceProfiles_,config_.deviceProfiles)==0)return;
+  flowio::modbus_ip::ProfileTable candidate{};
+  if(!candidate.parse(config_.deviceProfiles))return;
+  profiles_=candidate;
+  std::memcpy(loadedDeviceProfiles_,config_.deviceProfiles,
+              std::strlen(config_.deviceProfiles)+1);
+ }
  bool resolveKnownDevice_(uint8_t id,flowio::modbus_ip::SerialProfile& profile) const {
   if(!poolDevices_||!poolDevices_->getSerialConfig)return false;
   bool found=false;
@@ -95,6 +104,7 @@ private:
  }
  flowio::modbus_ip::GatewayConfigVariables config_{};
  flowio::modbus_ip::ProfileTable profiles_{};
+ char loadedDeviceProfiles_[flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
  flowio::modbus_ip::TcpEndpoint tcp_{};
  flowio::modbus_ip::UdpEndpoint udp_{};
  ServiceRegistry* services_=nullptr;
