@@ -6,6 +6,11 @@ using namespace flowio::modbus_ip;
 struct FakeMaster {
  ModbusRequest submitted{};
  bool pending=false;
+ ModbusResultCode result=MODBUS_RESULT_OK;
+ uint8_t slave=4;
+ uint8_t function=3;
+ uint8_t exception=0;
+ uint16_t count=2;
  static ModbusResultCode submit(void* ctx,const ModbusRequest* req,uint16_t* id){
   auto& self=*static_cast<FakeMaster*>(ctx);self.submitted=*req;self.pending=true;*id=19;
   return MODBUS_RESULT_OK;
@@ -13,8 +18,8 @@ struct FakeMaster {
  static ModbusResultCode poll(void* ctx,uint16_t id,ModbusResponse* response){
   auto& self=*static_cast<FakeMaster*>(ctx);assert(id==19);
   if(self.pending)return MODBUS_RESULT_NOT_READY;
-  response->state=MODBUS_TRANSACTION_COMPLETE;response->result=MODBUS_RESULT_OK;
-  response->slaveAddress=4;response->function=3;response->registerCount=2;response->values[0]=0x1234;response->values[1]=0xabcd;
+  response->state=self.result==MODBUS_RESULT_OK?MODBUS_TRANSACTION_COMPLETE:MODBUS_TRANSACTION_FAILED;response->result=self.result;
+  response->slaveAddress=self.slave;response->function=self.function;response->exceptionCode=self.exception;response->registerCount=self.count;response->values[0]=0x1234;response->values[1]=0xabcd;
   return MODBUS_RESULT_OK;
  }
  static void cancel(void* ctx,uint8_t){static_cast<FakeMaster*>(ctx)->pending=false;}
@@ -40,6 +45,35 @@ int main(){
  assert(header.transactionId==0x4321&&header.unitId==4);
  assert(pduLength==6&&pdu[0]==3&&pdu[1]==4&&readBe16(pdu+2)==0x1234);
  assert(!bridge.busy());
+
+ // A real RTU exception must preserve its exception code.
+ fake.result=MODBUS_RESULT_EXCEPTION;fake.exception=2;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==2);
+ // RTU timeout maps to gateway target failed to respond (0x0B).
+ fake.result=MODBUS_RESULT_TIMEOUT;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==0x0b);
+ // Reject a successful RTU response from a different slave.
+ fake.result=MODBUS_RESULT_OK;fake.slave=5;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==4);
+ // Reject truncated read results.
+ fake.slave=4;fake.count=1;
+ assert(bridge.start(input,n,{19200,1,1},201,3000,service));
+ fake.pending=false;bridge.tick();
+ assert(bridge.takeResponse(output,sizeof(output),length));
+ assert(decodeAdu(output,length,header,pdu,pduLength));
+ assert(pduLength==2&&pdu[0]==0x83&&pdu[1]==4);
  const uint8_t unsupported[]={1,0,0,0,1};
  const auto m=encodeAdu(input,sizeof(input),7,4,unsupported,sizeof(unsupported));
  assert(bridge.start(input,m,{9600,0,1},201,3000,service));
