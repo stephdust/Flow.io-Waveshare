@@ -13961,6 +13961,53 @@
       return enrichResolvedDoc(merged, sources);
     }
 
+    // Native Modbus IP settings are registered in ConfigStore and use the
+    // standard configuration tree. Supply localized field metadata even when
+    // the optional generated cfgdoc bundle does not include this module.
+    function modbusIpConfigMeta(pathValue) {
+      const path = nettoyerNomFlowCfg(pathValue).toLowerCase();
+      if (path === 'modbus_ip') {
+        return { label: tr('modbusIp.title', 'Modbus TCP / UDP server') };
+      }
+      if (!path.startsWith('modbus_ip/')) return null;
+      const field = path.slice('modbus_ip/'.length);
+      const specs = {
+        enabled: ['enabled', 'bool'],
+        tcp_enabled: ['tcpEnabled', 'bool'],
+        udp_enabled: ['udpEnabled', 'bool'],
+        port: ['port', 'uint16'],
+        timeout_ms: ['timeout', 'int32'],
+        profile_mode: ['profileMode', 'uint8'],
+        baud: ['baud', 'int32'],
+        parity: ['parity', 'uint8'],
+        stop_bits: ['stopBits', 'uint8']
+      };
+      const spec = specs[field];
+      if (!spec) return null;
+      const doc = { label: tr('modbusIp.' + spec[0], field), type: spec[1] };
+      if (field === 'port') { doc.min = 1; doc.max = 65535; }
+      if (field === 'timeout_ms') { doc.min = 10; doc.max = 5000; doc.unit = 'ms'; }
+      if (field === 'baud') { doc.min = 1200; doc.max = 115200; }
+      if (field === 'profile_mode') {
+        doc._enumOptions = [
+          { value: 0, label: tr('modbusIp.profileMode.automatic', 'Automatic') },
+          { value: 1, label: tr('modbusIp.profileMode.manual', 'Manual') },
+          { value: 2, label: tr('modbusIp.profileMode.perDevice', 'Per device') }
+        ];
+      }
+      if (field === 'parity') {
+        doc._enumOptions = [
+          { value: 0, label: tr('modbusIp.parity.none', 'None') },
+          { value: 1, label: tr('modbusIp.parity.even', 'Even') },
+          { value: 2, label: tr('modbusIp.parity.odd', 'Odd') }
+        ];
+      }
+      if (field === 'stop_bits') {
+        doc._enumOptions = [{ value: 1, label: '1' }, { value: 2, label: '2' }];
+      }
+      return doc;
+    }
+
     function configPathMeta(pathValue) {
       const candidates = cfgDocPathCandidates(pathValue);
       if (candidates.length === 0) return null;
@@ -13979,7 +14026,7 @@
           }
         });
       }
-      return enrichResolvedDoc(merged, sources);
+      return Object.assign({}, modbusIpConfigMeta(pathValue) || {}, enrichResolvedDoc(merged, sources) || {});
     }
 
     function isConfigPathHidden(pathValue) {
