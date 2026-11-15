@@ -66,6 +66,9 @@ int main(){
  assert(header.transactionId==0x4340&&pduLength==6&&pdu[0]==4);
  assert(readBe16(pdu+2)==0x1234&&readBe16(pdu+4)==0xabcd);
  fake.function=3;
+ // The FC04 test reused the input buffer: restore the original FC03 ADU
+ // before testing cancellation, RTU exceptions, and gateway errors.
+ assert(encodeAdu(input,sizeof(input),0x4321,4,requestPdu,sizeof(requestPdu))==n);
  // Cancellation releases the pending transaction without generating a stale reply.
  assert(bridge.start(input,n,{19200,1,1},201,3000,service));
  assert(bridge.state()==TransactionBridge::State::Pending);
