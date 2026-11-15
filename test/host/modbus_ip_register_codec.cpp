@@ -21,6 +21,11 @@ int main(){
  assert(parseRegisterRequest(0,read,sizeof(read),r)==ParseResult::InvalidUnit);
  const uint8_t unsupported[]={1,0,0,0,1};
  assert(parseRegisterRequest(4,unsupported,sizeof(unsupported),r)==ParseResult::UnsupportedFunction);
+ assert(requestExceptionCode(ParseResult::Ok)==0);
+ assert(requestExceptionCode(ParseResult::UnsupportedFunction)==1);
+ assert(requestExceptionCode(ParseResult::Malformed)==3);
+ assert(requestExceptionCode(ParseResult::InvalidQuantity)==3);
+ assert(requestExceptionCode(ParseResult::InvalidUnit)==3);
  assert(encodeException(3,11,pdu,sizeof(pdu))==2&&pdu[0]==0x83&&pdu[1]==11);
  return 0;
 }
