@@ -39,19 +39,18 @@ public:
   }
   // Do not consume a second ADU while the scheduler transaction is pending.
   if(bridge_.busy())return;
-  uint8_t chunk[64]{};
-  const int available=client_.available();
-  if(available<=0)return;
-  const int readCount=client_.read(chunk,available<64?available:64);
-  if(readCount<=0)return;
-  std::size_t offset=0;
-  while(offset<static_cast<std::size_t>(readCount)) {
+  // Read only up to the end of the current ADU. Any pipelined bytes stay
+  // in the socket until the current RTU transaction has completed.
+  std::size_t budget=64;
+  while(budget--&&client_.available()>0) {
+   const int next=client_.read();
+   if(next<0)break;
+   const uint8_t byte=static_cast<uint8_t>(next);
    std::size_t consumed=0;
-   const auto status=framer_.push(chunk+offset,readCount-offset,consumed);
-   offset+=consumed;
+   const auto status=framer_.push(&byte,1,consumed);
    if(status==TcpFramer::FeedResult::Invalid||
       status==TcpFramer::FeedResult::Overflow){client_.stop();framer_.reset();return;}
-   if(status!=TcpFramer::FeedResult::Complete)break;
+   if(status!=TcpFramer::FeedResult::Complete)continue;
    MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
    if(decodeAdu(framer_.data(),framer_.size(),header,pdu,pduSize)){
     SerialProfile profile{};
