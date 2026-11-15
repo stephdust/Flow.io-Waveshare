@@ -1,5 +1,6 @@
 #pragma once
 #include <WiFi.h>
+#include <new>
 #include "ModbusIpTransactionBridge.h"
 #include "ModbusTcpFramer.h"
 namespace flowio::modbus_ip {
