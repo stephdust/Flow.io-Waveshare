@@ -62,11 +62,12 @@ public:
  }
 private:
  bool resolveKnownDevice_(uint8_t id,flowio::modbus_ip::SerialProfile& profile) const {
-  if(!poolDevices_||!poolDevices_->count||!poolDevices_->getSerialConfig)return false;
-  const uint8_t count=poolDevices_->count(poolDevices_->ctx);
+  if(!poolDevices_||!poolDevices_->getSerialConfig)return false;
   bool found=false;
   flowio::modbus_ip::SerialProfile selected{};
-  for(uint8_t slot=0;slot<count;++slot){
+  // PoolDeviceService::count counts used slots, not the highest slot index.
+  // Iterate the full configured slot range to include sparse allocations.
+  for(uint8_t slot=0;slot<POOL_DEVICE_MAX;++slot){
    PoolDriverConfig device{};
    if(!poolDevices_->getSerialConfig(poolDevices_->ctx,slot,&device))continue;
    flowio::modbus_ip::SerialProfile candidate{};
