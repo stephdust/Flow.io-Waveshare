@@ -729,6 +729,9 @@
     "modbusIp.parity": "Parity",
     "modbusIp.stopBits": "Stop bits",
     "modbusIp.disabledHint": "The gateway is disabled by default.",
-    "modbusIp.unknownHint": "Unknown RS485 devices are rejected; no serial speed is guessed."
+    "modbusIp.unknownHint": "Unknown RS485 devices are rejected; no serial speed is guessed.",
+    "modbusIp.parity.none": "None",
+    "modbusIp.parity.even": "Even",
+    "modbusIp.parity.odd": "Odd"
   }
 }
