@@ -20,6 +20,14 @@ int main() {
  assert(!restored.parse("17:9600:3:1;"));
  assert(!restored.parse("17:9600:0:0;"));
  assert(!restored.parse("17:9600:0:1;invalid"));
+ assert(!restored.parse("17:-9600:0:1;"));
+ assert(!restored.parse("17:+9600:0:1;"));
+ assert(!restored.parse("17: 9600:0:1;"));
+ assert(!restored.parse("17:42949672960:0:1;"));
+ assert(!restored.parse("17:9600:0:1xyz;"));
+ assert(!restored.parse("17:9600:0:1;;"));
+ assert(!restored.parse("17:9600:0:1;18:9600:0:1junk"));
+ assert(restored.get(42,p)&&p.baud==19200);
  assert(restored.parse(""));
  assert(!restored.get(42,p));
  assert(restored.format(buffer,sizeof(buffer))&&std::strcmp(buffer,"")==0);
