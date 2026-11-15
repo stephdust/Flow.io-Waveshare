@@ -58,12 +58,17 @@ public:
    if(status!=TcpFramer::FeedResult::Complete)continue;
    MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
    if(decodeAdu(framer_.data(),framer_.size(),header,pdu,pduSize)){
+    RegisterRequest request{};
+    const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
     SerialProfile profile{};
-    if(resolve&&resolve(ctx,header.unitId,profile)) {
+    const bool profileFound=validation==ParseResult::Ok&&resolve&&
+                            resolve(ctx,header.unitId,profile);
+    if(profileFound) {
      bridge_.start(framer_.data(),framer_.size(),profile,ownerId,timeoutMs,service);
     }else{
      uint8_t exception[2]{};
-     const auto pduLen=encodeException(pdu[0],0x0a,exception,sizeof(exception));
+     const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
+     const auto pduLen=encodeException(pdu[0],code,exception,sizeof(exception));
      const auto length=pduLen?encodeAdu(tx_,sizeof(tx_),header.transactionId,
                                          header.unitId,exception,pduLen):0;
      if(length)client_.write(tx_,length);
