@@ -28,17 +28,19 @@ public:
  void loop() override {
   if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
      !network_||!network_->mode||network_->mode(network_->ctx)!=NetworkAccessMode::Station) {
-   tcp_.stop();udp_.stop();return;
+   if(active_){tcp_.stop();udp_.stop();active_=false;}return;
   }
   const auto& cfg=config_.data;
+  if(active_&&boundPort_!=cfg.port){tcp_.stop();udp_.stop();active_=false;}
+  boundPort_=cfg.port;active_=true;
   if(cfg.tcpEnabled){
    if(tcp_.begin(cfg.port))tcp_.tick(*master_,&resolve_,this,201,
                                         static_cast<uint32_t>(cfg.timeoutMs));
-  }else tcp_.stop();
+  }else if(tcp_.listening())tcp_.stop();
   if(cfg.udpEnabled){
    if(udp_.begin(cfg.port))udp_.tick(*master_,&resolve_,this,202,
                                         static_cast<uint32_t>(cfg.timeoutMs));
-  }else udp_.stop();
+  }else if(udp_.listening())udp_.stop();
  }
  bool setDeviceProfile(uint8_t id,const flowio::modbus_ip::SerialProfile& profile) {
   return profiles_.set(id,profile);
@@ -68,4 +70,6 @@ private:
  bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
  void* knownCtx_=nullptr;
  bool started_=false;
+ bool active_=false;
+ uint16_t boundPort_=0;
 };
