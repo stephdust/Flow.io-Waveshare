@@ -28,4 +28,17 @@ int main(){
  invalid[2]=1;
  assert(f.push(invalid,n,consumed)==TcpFramer::FeedResult::Invalid);
  assert(!f.ready());
+ // A malformed header must not poison the next request.
+ assert(f.push(adu,n,consumed)==TcpFramer::FeedResult::Complete);
+ f.reset();
+ uint8_t invalidLength[12]{};
+ for(std::size_t i=0;i<n;++i)invalidLength[i]=adu[i];
+ invalidLength[4]=0;invalidLength[5]=1;
+ assert(f.push(invalidLength,n,consumed)==TcpFramer::FeedResult::Invalid);
+ assert(!f.ready());
+ invalidLength[4]=1;invalidLength[5]=0;
+ assert(f.push(invalidLength,n,consumed)==TcpFramer::FeedResult::Invalid);
+ assert(!f.ready());
+ assert(f.push(adu,n,consumed)==TcpFramer::FeedResult::Complete);
 }
+
