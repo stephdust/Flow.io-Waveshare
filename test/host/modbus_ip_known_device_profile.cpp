@@ -26,4 +26,12 @@ int main() {
  device.serial.line.baud=9600;
  device.capabilities.kind=PoolControlKind::Relay;
  assert(!profileFromPoolSerialConfig(device,17,selected));
+ bool found=false;
+ SerialProfile merged{};
+ assert(mergeKnownDeviceProfile({9600,0,1},found,merged));
+ assert(found&&merged.baud==9600);
+ assert(mergeKnownDeviceProfile({9600,0,1},found,merged));
+ assert(!mergeKnownDeviceProfile({19200,0,1},found,merged));
+ assert(merged.baud==9600);
+ assert(!mergeKnownDeviceProfile({9600,3,1},found,merged));
 }
