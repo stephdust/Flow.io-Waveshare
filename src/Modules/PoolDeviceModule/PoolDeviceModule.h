@@ -200,6 +200,7 @@ private:
     // Control
     uint8_t activeCount_() const;
     PoolDeviceSvcStatus svcMetaImpl_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const;
+    bool svcGetSerialConfigImpl_(uint8_t slot, PoolDriverConfig* out) const;
     PoolDeviceSvcStatus svcReadActualOnImpl_(uint8_t slot, uint8_t* outOn, uint32_t* outTsMs) const;
     PoolDeviceSvcStatus svcSetOverridePoliciesImpl_(const ActuatorOverridePolicy* policies, uint8_t count);
     PoolDeviceSvcStatus svcReleaseOverrideImpl_(uint8_t slot, ActuatorOverrideReason reason);
@@ -337,7 +338,8 @@ private:
         ServiceBinding::bind<&PoolDeviceModule::svcOverrideCommandImpl_>,
         ServiceBinding::bind<&PoolDeviceModule::svcOverrideDurationImpl_>,
         ServiceBinding::bind<&PoolDeviceModule::svcSetManualRunningImpl_>,
-        ServiceBinding::bind<&PoolDeviceModule::svcSetRunningAtSetpointImpl_>
+        ServiceBinding::bind<&PoolDeviceModule::svcSetRunningAtSetpointImpl_>,
+        ServiceBinding::bind<&PoolDeviceModule::svcGetSerialConfigImpl_>
     };
     DomainStatusServiceProvider domainStatusProvider_{};
     EventBus* eventBus_ = nullptr;
