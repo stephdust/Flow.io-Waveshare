@@ -27,7 +27,7 @@ public:
  void onStart(ConfigStore&,ServiceRegistry&) override { started_=true; }
  void loop() override {
   if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
-     !network_||!network_->mode||network_->mode(network_->ctx)!=NetworkAccessMode::Station) {
+     !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
    if(active_){tcp_.stop();udp_.stop();active_=false;}return;
   }
   const auto& cfg=config_.data;
