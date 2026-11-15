@@ -73,11 +73,8 @@ private:
    if(!flowio::modbus_ip::profileFromPoolSerialConfig(device,id,candidate))continue;
    // Conflicting configurations for the same RTU address are ambiguous.
    // Refuse to guess a serial line configuration for the shared bus.
-   if(found&&(candidate.baud!=selected.baud||
-              candidate.parity!=selected.parity||
-              candidate.stopBits!=selected.stopBits))return false;
-   selected=candidate;
-   found=true;
+   if(!flowio::modbus_ip::mergeKnownDeviceProfile(candidate,found,selected))
+    return false;
   }
   if(found)profile=selected;
   return found;
