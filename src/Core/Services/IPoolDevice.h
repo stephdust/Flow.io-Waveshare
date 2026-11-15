@@ -81,4 +81,6 @@ struct PoolDeviceService {
     PoolDeviceSvcStatus (*setManualRunning)(void* ctx, uint8_t slot, uint8_t on) = nullptr;
     /** Atomically change running/setpoint while preserving the currently selected operating mode. */
     PoolDeviceSvcStatus (*setRunningAtSetpoint)(void* ctx, uint8_t slot, uint8_t on, float setpoint) = nullptr;
+    /** Snapshot of a configured standard RTU device, for gateway profile lookup. */
+    bool (*getSerialConfig)(void* ctx, uint8_t slot, PoolDriverConfig* out) = nullptr;
 };
