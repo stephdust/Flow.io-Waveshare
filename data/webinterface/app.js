@@ -13980,11 +13980,13 @@
         profile_mode: ['profileMode', 'uint8'],
         baud: ['baud', 'int32'],
         parity: ['parity', 'uint8'],
-        stop_bits: ['stopBits', 'uint8']
+        stop_bits: ['stopBits', 'uint8'],
+        device_profiles: ['deviceProfiles', 'string']
       };
       const spec = specs[field];
       if (!spec) return null;
       const doc = { label: tr('modbusIp.' + spec[0], field), type: spec[1] };
+      if (field === 'device_profiles') doc.help = tr('modbusIp.deviceProfilesHelp', 'Format: id:baud:parity:stopBits; e.g. 17:9600:0:1;');
       if (field === 'port') { doc.min = 1; doc.max = 65535; }
       if (field === 'timeout_ms') { doc.min = 10; doc.max = 5000; doc.unit = 'ms'; }
       if (field === 'baud') { doc.min = 1200; doc.max = 115200; }
