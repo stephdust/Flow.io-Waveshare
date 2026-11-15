@@ -49,6 +49,9 @@ public:
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
    prepareException_(request_.function,gatewayExceptionCode(static_cast<ModbusResultCode>(response.result)));return;
   }
+  if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
+   prepareException_(request_.function,4);return;
+  }
   uint8_t pdu[2U+2U*MODBUS_MAX_REGISTERS_PER_REQUEST]{};
   const std::size_t pduLength=encodeRegisterResponse(request_,response.values,pdu,sizeof(pdu));
   if(!pduLength||!setResponse_(pdu,pduLength))prepareException_(request_.function,4);
