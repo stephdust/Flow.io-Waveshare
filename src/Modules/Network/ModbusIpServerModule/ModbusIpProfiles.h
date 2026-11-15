@@ -30,17 +30,30 @@ public:
   ProfileTable candidate{};
   const char* cursor=text;
   while(*cursor) {
-   unsigned id=0,baud=0,parity=0,stops=0;
-   int consumed=0;
-   if(std::sscanf(cursor,"%u:%u:%u:%u%n",&id,&baud,&parity,&stops,&consumed)!=4||
-      consumed<=0||id>247||id==0||parity>2||stops<1||stops>2)return false;
-   cursor+=consumed;
-   if(*cursor!=';'&&*cursor!='\0')return false;
+   uint32_t parts[4]{};
+   for(unsigned index=0;index<4;++index) {
+    if(*cursor<'0'||*cursor>'9')return false;
+    uint32_t value=0;
+    while(*cursor>='0'&&*cursor<='9') {
+     const uint32_t digit=static_cast<uint32_t>(*cursor-'0');
+     if(value>(UINT32_MAX-digit)/10U)return false;
+     value=value*10U+digit;
+     ++cursor;
+    }
+    parts[index]=value;
+    if(index!=3) {
+     if(*cursor!=':')return false;
+     ++cursor;
+    }
+   }
+   if(*cursor!=';'&&*cursor!=0)return false;
+   if(parts[0]<1||parts[0]>247||parts[1]<1200||parts[1]>115200||
+      parts[2]>2||parts[3]<1||parts[3]>2)return false;
+   const auto id=static_cast<uint8_t>(parts[0]);
    SerialProfile previous{};
-   if(candidate.get(static_cast<uint8_t>(id),previous)||
-      !candidate.set(static_cast<uint8_t>(id),
-                     {static_cast<uint32_t>(baud),static_cast<uint8_t>(parity),
-                      static_cast<uint8_t>(stops)}))return false;
+   if(candidate.get(id,previous)||
+      !candidate.set(id,{parts[1],static_cast<uint8_t>(parts[2]),
+                         static_cast<uint8_t>(parts[3])}))return false;
    if(*cursor==';')++cursor;
   }
   *this=candidate;
