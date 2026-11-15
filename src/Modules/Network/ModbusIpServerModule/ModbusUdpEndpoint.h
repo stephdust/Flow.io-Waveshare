@@ -29,7 +29,7 @@ public:
   const int available=udp_.parsePacket();
   if(available<=0)return;
   // Always drain rejected datagrams to avoid retaining stale packets.
-  if(available>static_cast<int>(sizeof(rx_))||bridge_.busy()) {
+  if(available>static_cast<int>(sizeof(rx_))) {
    while(udp_.available()>0)udp_.read();
    return;
   }
@@ -39,6 +39,19 @@ public:
   if(received!=available)return;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(rx_,received,header,pdu,pduSize))return;
+  if(bridge_.busy()) {
+   // UDP callers cannot observe a silent queue drop. Report Modbus
+   // exception 0x06 (server device busy) without disturbing the current
+   // RS485 transaction or its original response destination.
+   uint8_t exception[2]{};
+   const std::size_t pduLen=encodeException(pdu[0],0x06,exception,sizeof(exception));
+   const std::size_t length=pduLen?encodeAdu(tx_,sizeof(tx_),header.transactionId,
+                                               header.unitId,exception,pduLen):0;
+   if(length&&udp_.beginPacket(sender,senderPort)){
+    udp_.write(tx_,length);udp_.endPacket();
+   }
+   return;
+  }
   RegisterRequest request{};
   const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
   SerialProfile profile{};
