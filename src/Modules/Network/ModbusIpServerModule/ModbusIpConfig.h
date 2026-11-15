@@ -34,16 +34,16 @@ struct GatewayConfigVariables {
  GatewayConfig data{};
  static constexpr std::size_t DeviceProfilesCapacity=768;
  char deviceProfiles[DeviceProfilesCapacity]{};
- ConfigVariable<bool,0> enabled{NVS_KEY(NvsKeys::ModbusIp::Enabled),"enabled","modbus_ip",ConfigType::Bool,&data.enabled,ConfigPersistence::Persistent,0};
- ConfigVariable<bool,0> tcp{NVS_KEY(NvsKeys::ModbusIp::TcpEnabled),"tcp_enabled","modbus_ip",ConfigType::Bool,&data.tcpEnabled,ConfigPersistence::Persistent,0};
- ConfigVariable<bool,0> udp{NVS_KEY(NvsKeys::ModbusIp::UdpEnabled),"udp_enabled","modbus_ip",ConfigType::Bool,&data.udpEnabled,ConfigPersistence::Persistent,0};
- ConfigVariable<uint16_t,0> port{NVS_KEY(NvsKeys::ModbusIp::Port),"port","modbus_ip",ConfigType::UInt16,&data.port,ConfigPersistence::Persistent,0};
- ConfigVariable<int32_t,0> timeout{NVS_KEY(NvsKeys::ModbusIp::TimeoutMs),"timeout_ms","modbus_ip",ConfigType::Int32,&data.timeoutMs,ConfigPersistence::Persistent,0};
- ConfigVariable<uint8_t,0> mode{NVS_KEY(NvsKeys::ModbusIp::ProfileMode),"profile_mode","modbus_ip",ConfigType::UInt8,&data.profileMode,ConfigPersistence::Persistent,0};
- ConfigVariable<int32_t,0> baud{NVS_KEY(NvsKeys::ModbusIp::Baud),"baud","modbus_ip",ConfigType::Int32,&data.baud,ConfigPersistence::Persistent,0};
- ConfigVariable<uint8_t,0> parity{NVS_KEY(NvsKeys::ModbusIp::Parity),"parity","modbus_ip",ConfigType::UInt8,&data.parity,ConfigPersistence::Persistent,0};
- ConfigVariable<uint8_t,0> stopBits{NVS_KEY(NvsKeys::ModbusIp::StopBits),"stop_bits","modbus_ip",ConfigType::UInt8,&data.stopBits,ConfigPersistence::Persistent,0};
- ConfigVariable<char,0> deviceProfilesVar{NVS_KEY("mi_devices"),"device_profiles","modbus_ip",ConfigType::CharArray,deviceProfiles,ConfigPersistence::Persistent,DeviceProfilesCapacity};
+ ConfigVariable<bool,1> enabled{NVS_KEY(NvsKeys::ModbusIp::Enabled),"enabled","modbus_ip",ConfigType::Bool,&data.enabled,ConfigPersistence::Persistent,0};
+ ConfigVariable<bool,1> tcp{NVS_KEY(NvsKeys::ModbusIp::TcpEnabled),"tcp_enabled","modbus_ip",ConfigType::Bool,&data.tcpEnabled,ConfigPersistence::Persistent,0};
+ ConfigVariable<bool,1> udp{NVS_KEY(NvsKeys::ModbusIp::UdpEnabled),"udp_enabled","modbus_ip",ConfigType::Bool,&data.udpEnabled,ConfigPersistence::Persistent,0};
+ ConfigVariable<uint16_t,1> port{NVS_KEY(NvsKeys::ModbusIp::Port),"port","modbus_ip",ConfigType::UInt16,&data.port,ConfigPersistence::Persistent,0};
+ ConfigVariable<int32_t,1> timeout{NVS_KEY(NvsKeys::ModbusIp::TimeoutMs),"timeout_ms","modbus_ip",ConfigType::Int32,&data.timeoutMs,ConfigPersistence::Persistent,0};
+ ConfigVariable<uint8_t,1> mode{NVS_KEY(NvsKeys::ModbusIp::ProfileMode),"profile_mode","modbus_ip",ConfigType::UInt8,&data.profileMode,ConfigPersistence::Persistent,0};
+ ConfigVariable<int32_t,1> baud{NVS_KEY(NvsKeys::ModbusIp::Baud),"baud","modbus_ip",ConfigType::Int32,&data.baud,ConfigPersistence::Persistent,0};
+ ConfigVariable<uint8_t,1> parity{NVS_KEY(NvsKeys::ModbusIp::Parity),"parity","modbus_ip",ConfigType::UInt8,&data.parity,ConfigPersistence::Persistent,0};
+ ConfigVariable<uint8_t,1> stopBits{NVS_KEY(NvsKeys::ModbusIp::StopBits),"stop_bits","modbus_ip",ConfigType::UInt8,&data.stopBits,ConfigPersistence::Persistent,0};
+ ConfigVariable<char,1> deviceProfilesVar{NVS_KEY("mi_devices"),"device_profiles","modbus_ip",ConfigType::CharArray,deviceProfiles,ConfigPersistence::Persistent,DeviceProfilesCapacity};
  static bool validDeviceProfiles(const char* text) {
   ProfileTable table{};
   if(!text)return false;
