@@ -44,6 +44,10 @@ public:
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
   if(response.result==MODBUS_RESULT_EXCEPTION){
+   if(response.slaveAddress!=request_.unitId||
+      (response.function!=request_.function&&response.function!=(request_.function|0x80U))){
+    prepareException_(request_.function,4);return;
+   }
    prepareException_(request_.function,response.exceptionCode?response.exceptionCode:4);return;
   }
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
