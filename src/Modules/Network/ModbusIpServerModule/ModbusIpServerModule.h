@@ -1,0 +1,71 @@
+#pragma once
+#include "Core/Module.h"
+#include "Core/Services/Services.h"
+#include "ModbusIpConfig.h"
+#include "ModbusIpProfileResolver.h"
+#include "ModbusTcpEndpoint.h"
+#include "ModbusUdpEndpoint.h"
+
+// Native Flow.io module. No UART is created here: all requests use the
+// ModbusMaster service provided by IOModule.
+class ModbusIpServerModule final : public Module {
+public:
+ ModuleId moduleId() const override { return ModuleId::Reserved28; }
+ const char* taskName() const override { return "modbusip"; }
+ uint8_t dependencyCount() const override { return 2; }
+ ModuleId dependency(uint8_t index) const override {
+  return index==0?ModuleId::Io:index==1?ModuleId::LogHub:ModuleId::Unknown;
+ }
+ uint8_t taskCount() const override { return 1; }
+ const ModuleTaskSpec* taskSpecs() const override { return singleLoopTaskSpec(); }
+ uint16_t taskStackSize() const override { return 6144; }
+ void init(ConfigStore& cfg,ServiceRegistry& services) override {
+  config_.registerWith(cfg);
+  master_=services.get<ModbusMasterService>(ServiceId::ModbusMaster);
+  network_=services.get<NetworkAccessService>(ServiceId::NetworkAccess);
+ }
+ void onStart(ConfigStore&,ServiceRegistry&) override { started_=true; }
+ void loop() override {
+  if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
+     !network_||!network_->mode||network_->mode(network_->ctx)!=NetworkAccessMode::Station) {
+   tcp_.stop();udp_.stop();return;
+  }
+  const auto& cfg=config_.data;
+  if(cfg.tcpEnabled){
+   if(tcp_.begin(cfg.port))tcp_.tick(*master_,&resolve_,this,201,
+                                        static_cast<uint32_t>(cfg.timeoutMs));
+  }else tcp_.stop();
+  if(cfg.udpEnabled){
+   if(udp_.begin(cfg.port))udp_.tick(*master_,&resolve_,this,202,
+                                        static_cast<uint32_t>(cfg.timeoutMs));
+  }else udp_.stop();
+ }
+ bool setDeviceProfile(uint8_t id,const flowio::modbus_ip::SerialProfile& profile) {
+  return profiles_.set(id,profile);
+ }
+ void setKnownDeviceResolver(bool (*resolver)(void*,uint8_t,flowio::modbus_ip::SerialProfile&),
+                             void* ctx) {
+  knownResolver_=resolver;knownCtx_=ctx;
+ }
+private:
+ static bool resolve_(void* ctx,uint8_t id,flowio::modbus_ip::SerialProfile& profile) {
+  auto& self=*static_cast<ModbusIpServerModule*>(ctx);
+  flowio::modbus_ip::KnownDeviceProfile known{};
+  if(self.knownResolver_)known.found=self.knownResolver_(self.knownCtx_,id,known.profile);
+  const auto& cfg=self.config_.data;
+  const auto selection=flowio::modbus_ip::resolveProfile(
+   static_cast<flowio::modbus_ip::ProfileMode>(cfg.profileMode),id,
+   cfg.commonProfile(),self.profiles_,known);
+  if(selection.status!=flowio::modbus_ip::ResolveStatus::Ok)return false;
+  profile=selection.profile;return true;
+ }
+ flowio::modbus_ip::GatewayConfigVariables config_{};
+ flowio::modbus_ip::ProfileTable profiles_{};
+ flowio::modbus_ip::TcpEndpoint tcp_{};
+ flowio::modbus_ip::UdpEndpoint udp_{};
+ const ModbusMasterService* master_=nullptr;
+ const NetworkAccessService* network_=nullptr;
+ bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
+ void* knownCtx_=nullptr;
+ bool started_=false;
+};
