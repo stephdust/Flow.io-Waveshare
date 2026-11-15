@@ -729,6 +729,9 @@
     "modbusIp.parity": "Parité",
     "modbusIp.stopBits": "Bits d'arrêt",
     "modbusIp.disabledHint": "La passerelle est désactivée par défaut.",
-    "modbusIp.unknownHint": "Les équipements RS485 inconnus sont rejetés ; aucun débit série n'est deviné."
+    "modbusIp.unknownHint": "Les équipements RS485 inconnus sont rejetés ; aucun débit série n'est deviné.",
+    "modbusIp.parity.none": "Aucune",
+    "modbusIp.parity.even": "Paire",
+    "modbusIp.parity.odd": "Impaire"
   }
 }
