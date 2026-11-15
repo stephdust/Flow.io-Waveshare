@@ -25,7 +25,12 @@ public:
            uint8_t ownerId,uint32_t timeoutMs) {
   if(!server_)return;
   if(!client_||!client_.connected()) {
-   if(client_){bridge_.cancel();client_.stop();framer_.reset();}
+   // A disconnected socket may evaluate false even while its RTU request
+   // is still pending. Always release the previous client's transaction
+   // before accepting a new client to prevent cross-client replies.
+   bridge_.cancel();
+   client_.stop();
+   framer_.reset();
    WiFiClient incoming=server_->accept();
    if(incoming)client_=incoming;
   }
