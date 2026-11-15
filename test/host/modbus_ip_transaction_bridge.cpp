@@ -6,6 +6,8 @@ using namespace flowio::modbus_ip;
 struct FakeMaster {
  ModbusRequest submitted{};
  bool pending=false;
+ unsigned cancellations=0;
+ uint8_t cancelledOwner=0;
  ModbusResultCode result=MODBUS_RESULT_OK;
  ModbusResultCode submitResult=MODBUS_RESULT_OK;
  uint8_t slave=4;
@@ -25,7 +27,10 @@ struct FakeMaster {
   response->slaveAddress=self.slave;response->function=self.function;response->exceptionCode=self.exception;response->registerCount=self.count;response->values[0]=0x1234;response->values[1]=0xabcd;
   return MODBUS_RESULT_OK;
  }
- static void cancel(void* ctx,uint8_t){static_cast<FakeMaster*>(ctx)->pending=false;}
+ static void cancel(void* ctx,uint8_t owner){
+  auto& self=*static_cast<FakeMaster*>(ctx);
+  self.pending=false;++self.cancellations;self.cancelledOwner=owner;
+ }
 };
 int main(){
  FakeMaster fake{};
@@ -65,6 +70,7 @@ int main(){
  assert(bridge.start(input,n,{19200,1,1},201,3000,service));
  assert(bridge.state()==TransactionBridge::State::Pending);
  bridge.cancel();
+ assert(fake.cancellations==1&&fake.cancelledOwner==201);
  assert(!bridge.busy());
  assert(!bridge.takeResponse(output,sizeof(output),length));
  // A real RTU exception must preserve its exception code.
