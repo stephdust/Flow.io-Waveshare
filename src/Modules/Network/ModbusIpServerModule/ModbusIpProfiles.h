@@ -35,7 +35,7 @@ public:
    if(std::sscanf(cursor,"%u:%u:%u:%u%n",&id,&baud,&parity,&stops,&consumed)!=4||
       consumed<=0||id>247||id==0||parity>2||stops<1||stops>2)return false;
    cursor+=consumed;
-   if(*cursor!=';'&&*cursor!='\\0')return false;
+   if(*cursor!=';'&&*cursor!='\0')return false;
    SerialProfile previous{};
    if(candidate.get(static_cast<uint8_t>(id),previous)||
       !candidate.set(static_cast<uint8_t>(id),
@@ -49,13 +49,13 @@ public:
  bool format(char* out,std::size_t capacity)const {
   if(!out||!capacity)return false;
   std::size_t offset=0;
-  out[0]='\\0';
+  out[0]='\0';
   for(const auto& item:entries_) {
    if(!item.id)continue;
    const int n=std::snprintf(out+offset,capacity-offset,"%u:%lu:%u:%u;",
      static_cast<unsigned>(item.id),static_cast<unsigned long>(item.profile.baud),
      static_cast<unsigned>(item.profile.parity),static_cast<unsigned>(item.profile.stopBits));
-   if(n<0||static_cast<std::size_t>(n)>=capacity-offset){out[0]='\\0';return false;}
+   if(n<0||static_cast<std::size_t>(n)>=capacity-offset){out[0]='\0';return false;}
    offset+=static_cast<std::size_t>(n);
   }
   return true;
