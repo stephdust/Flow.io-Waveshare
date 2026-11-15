@@ -714,6 +714,21 @@
     "data.introLess": "Masquer les détails",
     "data.introScope": "Home Assistant publie la donnée, l’historique l’enregistre et l’interface la rend sélectionnable dans les champs TFT/Web et les formules. Les trois réglages sont indépendants.",
     "data.introRestart": "Les changements d’exposition prennent effet après redémarrage.",
-    "data.introMigration": "Pour remplacer un ancien montage IOSlot → valeur calculée, sélectionnez la donnée d’origine dans vos champs puis désactivez ici les publications intermédiaires inutiles."
+    "data.introMigration": "Pour remplacer un ancien montage IOSlot → valeur calculée, sélectionnez la donnée d’origine dans vos champs puis désactivez ici les publications intermédiaires inutiles.",
+    "modbusIp.title": "Serveur Modbus TCP / UDP",
+    "modbusIp.enabled": "Activer la passerelle Modbus IP",
+    "modbusIp.tcpEnabled": "Activer le serveur TCP",
+    "modbusIp.udpEnabled": "Activer le serveur UDP",
+    "modbusIp.port": "Port d'écoute",
+    "modbusIp.timeout": "Délai de réponse RTU (ms)",
+    "modbusIp.profileMode": "Mode des profils RS485",
+    "modbusIp.profileMode.automatic": "Automatique — équipements connus",
+    "modbusIp.profileMode.manual": "Manuel — paramètres série communs",
+    "modbusIp.profileMode.perDevice": "Par équipement — surcharges et équipements connus",
+    "modbusIp.baud": "Débit en bauds",
+    "modbusIp.parity": "Parité",
+    "modbusIp.stopBits": "Bits d'arrêt",
+    "modbusIp.disabledHint": "La passerelle est désactivée par défaut.",
+    "modbusIp.unknownHint": "Les équipements RS485 inconnus sont rejetés ; aucun débit série n'est deviné."
   }
 }
