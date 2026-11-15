@@ -6,6 +6,19 @@
 
 namespace NvsKeys {
 
+namespace ModbusIp {
+constexpr char Enabled[] = "mip_en";
+constexpr char TcpEnabled[] = "mip_tcp";
+constexpr char UdpEnabled[] = "mip_udp";
+constexpr char Port[] = "mip_port";
+constexpr char TimeoutMs[] = "mip_tmo";
+constexpr char ProfileMode[] = "mip_mode";
+constexpr char Baud[] = "mip_baud";
+constexpr char Parity[] = "mip_par";
+constexpr char StopBits[] = "mip_stop";
+} // namespace ModbusIp
+
+
 /** @brief Preferences namespace opened at boot (`main.cpp`). */
 constexpr char StorageNamespace[] = "flowio"; // Preferences namespace name used at boot to open the firmware NVS partition.
 namespace Wifi {
