@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include "Core/ConfigTypes.h"
 #include "Core/NvsKeys.h"
 #include "ModbusIpProfiles.h"
@@ -31,6 +32,8 @@ struct GatewayConfig {
 };
 struct GatewayConfigVariables {
  GatewayConfig data{};
+ static constexpr std::size_t DeviceProfilesCapacity=768;
+ char deviceProfiles[DeviceProfilesCapacity]{};
  ConfigVariable<bool,0> enabled{NVS_KEY(NvsKeys::ModbusIp::Enabled),"enabled","modbus_ip",ConfigType::Bool,&data.enabled,ConfigPersistence::Persistent,0};
  ConfigVariable<bool,0> tcp{NVS_KEY(NvsKeys::ModbusIp::TcpEnabled),"tcp_enabled","modbus_ip",ConfigType::Bool,&data.tcpEnabled,ConfigPersistence::Persistent,0};
  ConfigVariable<bool,0> udp{NVS_KEY(NvsKeys::ModbusIp::UdpEnabled),"udp_enabled","modbus_ip",ConfigType::Bool,&data.udpEnabled,ConfigPersistence::Persistent,0};
@@ -40,10 +43,17 @@ struct GatewayConfigVariables {
  ConfigVariable<int32_t,0> baud{NVS_KEY(NvsKeys::ModbusIp::Baud),"baud","modbus_ip",ConfigType::Int32,&data.baud,ConfigPersistence::Persistent,0};
  ConfigVariable<uint8_t,0> parity{NVS_KEY(NvsKeys::ModbusIp::Parity),"parity","modbus_ip",ConfigType::UInt8,&data.parity,ConfigPersistence::Persistent,0};
  ConfigVariable<uint8_t,0> stopBits{NVS_KEY(NvsKeys::ModbusIp::StopBits),"stop_bits","modbus_ip",ConfigType::UInt8,&data.stopBits,ConfigPersistence::Persistent,0};
+ ConfigVariable<char,0> deviceProfilesVar{NVS_KEY("mi_devices"),"device_profiles","modbus_ip",ConfigType::CharArray,deviceProfiles,ConfigPersistence::Persistent,DeviceProfilesCapacity};
+ static bool validDeviceProfiles(const char* text) {
+  ProfileTable table{};
+  return text&&std::strlen(text)<DeviceProfilesCapacity&&table.parse(text);
+ }
  template<class Store> void registerWith(Store& store){
   store.registerVar(enabled);store.registerVar(tcp);store.registerVar(udp);
   store.registerVar(port);store.registerVar(timeout);store.registerVar(mode);
   store.registerVar(baud);store.registerVar(parity);store.registerVar(stopBits);
+  deviceProfilesVar.validateText=&validDeviceProfiles;
+  store.registerVar(deviceProfilesVar);
  }
 };
 }
