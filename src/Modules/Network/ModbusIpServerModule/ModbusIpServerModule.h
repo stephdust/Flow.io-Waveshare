@@ -4,6 +4,7 @@
 #include "ModbusIpConfig.h"
 #include "ModbusIpKnownDeviceProfile.h"
 #include "Core/Services/IPoolDevice.h"
+#include "Core/SystemLimits.h"
 #include "ModbusIpProfileResolver.h"
 #include "ModbusTcpEndpoint.h"
 #include "ModbusUdpEndpoint.h"
@@ -67,7 +68,7 @@ private:
   flowio::modbus_ip::SerialProfile selected{};
   // PoolDeviceService::count counts used slots, not the highest slot index.
   // Iterate the full configured slot range to include sparse allocations.
-  for(uint8_t slot=0;slot<POOL_DEVICE_MAX;++slot){
+  for(uint8_t slot=0;slot<Limits::Io::MaxPoolDevices;++slot){
    PoolDriverConfig device{};
    if(!poolDevices_->getSerialConfig(poolDevices_->ctx,slot,&device))continue;
    flowio::modbus_ip::SerialProfile candidate{};
