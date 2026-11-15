@@ -26,7 +26,7 @@ public:
   if(!server_)return;
   if(!client_||!client_.connected()) {
    if(client_){bridge_.cancel();client_.stop();framer_.reset();}
-   WiFiClient incoming=server_->available();
+   WiFiClient incoming=server_->accept();
    if(incoming)client_=incoming;
   }
   if(!client_||!client_.connected())return;
