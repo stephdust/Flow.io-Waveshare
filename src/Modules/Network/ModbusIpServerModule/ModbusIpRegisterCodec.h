@@ -41,6 +41,19 @@ inline ParseResult parseRegisterRequest(uint8_t unitId,const uint8_t* pdu,std::s
  }
  out=parsed;return ParseResult::Ok;
 }
+// Validate the Modbus function before looking up the RTU serial profile.
+// A request with an unsupported function is invalid regardless of whether
+// the target device has been registered in Flow.io.
+inline uint8_t requestExceptionCode(ParseResult result) {
+ switch(result) {
+  case ParseResult::Ok:return 0;
+  case ParseResult::UnsupportedFunction:return 1; // Illegal function
+  case ParseResult::Malformed:
+  case ParseResult::InvalidUnit:
+  case ParseResult::InvalidQuantity:return 3; // Illegal data value
+ }
+ return 3;
+}
 inline std::size_t encodeRegisterResponse(const RegisterRequest& req,const uint16_t* values,
  uint8_t* pdu,std::size_t capacity) {
  if(!pdu||req.count==0||req.count>32)return 0;
