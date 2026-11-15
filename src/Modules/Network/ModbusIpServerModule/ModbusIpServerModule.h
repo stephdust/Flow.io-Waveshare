@@ -2,6 +2,8 @@
 #include "Core/Module.h"
 #include "Core/Services/Services.h"
 #include "ModbusIpConfig.h"
+#include "ModbusIpKnownDeviceProfile.h"
+#include "Core/Services/IPoolDevice.h"
 #include "ModbusIpProfileResolver.h"
 #include "ModbusTcpEndpoint.h"
 #include "ModbusUdpEndpoint.h"
@@ -26,12 +28,14 @@ public:
  void onStart(ConfigStore&,ServiceRegistry& services) override {
   master_=services.get<ModbusMasterService>(ServiceId::ModbusMaster);
   network_=services.get<NetworkAccessService>(ServiceId::NetworkAccess);
+  poolDevices_=services.get<PoolDeviceService>(ServiceId::PoolDevice);
   started_=true;
  }
  void loop() override {
   if(started_&&services_){
    if(!master_)master_=services_->get<ModbusMasterService>(ServiceId::ModbusMaster);
    if(!network_)network_=services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
+   if(!poolDevices_)poolDevices_=services_->get<PoolDeviceService>(ServiceId::PoolDevice);
   }
   if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
@@ -57,10 +61,21 @@ public:
   knownResolver_=resolver;knownCtx_=ctx;
  }
 private:
+ bool resolveKnownDevice_(uint8_t id,flowio::modbus_ip::SerialProfile& profile) const {
+  if(!poolDevices_||!poolDevices_->count||!poolDevices_->getSerialConfig)return false;
+  const uint8_t count=poolDevices_->count(poolDevices_->ctx);
+  for(uint8_t slot=0;slot<count;++slot){
+   PoolDriverConfig device{};
+   if(!poolDevices_->getSerialConfig(poolDevices_->ctx,slot,&device))continue;
+   if(flowio::modbus_ip::profileFromPoolSerialConfig(device,id,profile))return true;
+  }
+  return false;
+ }
  static bool resolve_(void* ctx,uint8_t id,flowio::modbus_ip::SerialProfile& profile) {
   auto& self=*static_cast<ModbusIpServerModule*>(ctx);
   flowio::modbus_ip::KnownDeviceProfile known{};
   if(self.knownResolver_)known.found=self.knownResolver_(self.knownCtx_,id,known.profile);
+  if(!known.found)known.found=self.resolveKnownDevice_(id,known.profile);
   const auto& cfg=self.config_.data;
   const auto selection=flowio::modbus_ip::resolveProfile(
    static_cast<flowio::modbus_ip::ProfileMode>(cfg.profileMode),id,
@@ -75,6 +90,7 @@ private:
  ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
  const NetworkAccessService* network_=nullptr;
+ const PoolDeviceService* poolDevices_=nullptr;
  bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
  void* knownCtx_=nullptr;
  bool started_=false;
