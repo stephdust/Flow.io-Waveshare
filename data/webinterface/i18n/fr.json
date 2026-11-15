@@ -732,6 +732,8 @@
     "modbusIp.unknownHint": "Les équipements RS485 inconnus sont rejetés ; aucun débit série n'est deviné.",
     "modbusIp.parity.none": "Aucune",
     "modbusIp.parity.even": "Paire",
-    "modbusIp.parity.odd": "Impaire"
+    "modbusIp.parity.odd": "Impaire",
+    "modbusIp.deviceProfiles": "Profils série par équipement",
+    "modbusIp.deviceProfilesHelp": "Format : id:baud:parité:bits_arrêt; Exemple : 17:9600:0:1; (parité 0=aucune, 1=paire, 2=impaire). Plusieurs équipements peuvent être séparés par des points-virgules."
   }
 }
