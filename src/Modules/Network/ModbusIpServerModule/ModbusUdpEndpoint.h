@@ -39,11 +39,17 @@ public:
   if(received!=available)return;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(rx_,received,header,pdu,pduSize))return;
+  RegisterRequest request{};
+  const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
   SerialProfile profile{};
-  if(!resolve||!resolve(ctx,header.unitId,profile)) {
-   // An unknown serial profile must never trigger an arbitrary bus speed.
+  const bool profileFound=validation==ParseResult::Ok&&resolve&&
+                          resolve(ctx,header.unitId,profile);
+  if(!profileFound) {
+   // Invalid Modbus requests get protocol errors; unknown profiles get 0x0A.
+   // Neither condition is allowed to touch the shared RS485 bus.
    uint8_t exception[2]{};
-   const std::size_t pduLen=encodeException(pdu[0],0x0a,exception,sizeof(exception));
+   const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
+   const std::size_t pduLen=encodeException(pdu[0],code,exception,sizeof(exception));
    const std::size_t length=pduLen?encodeAdu(tx_,sizeof(tx_),header.transactionId,
                                                header.unitId,exception,pduLen):0;
    if(length&&udp_.beginPacket(sender,senderPort)){
