@@ -23,4 +23,18 @@ inline bool profileFromPoolSerialConfig(const PoolDriverConfig& device,
  return true;
 }
 
+// Preserve a single unambiguous line configuration when multiple Flow.io
+// device slots refer to the same Modbus address.
+inline bool mergeKnownDeviceProfile(const SerialProfile& candidate,
+                                   bool& found,
+                                   SerialProfile& selected) {
+ if(!validProfile(candidate))return false;
+ if(found&&(selected.baud!=candidate.baud||
+            selected.parity!=candidate.parity||
+            selected.stopBits!=candidate.stopBits))return false;
+ selected=candidate;
+ found=true;
+ return true;
+}
+
 } // namespace flowio::modbus_ip
