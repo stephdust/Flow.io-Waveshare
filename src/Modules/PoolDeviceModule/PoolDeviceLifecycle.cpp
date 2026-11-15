@@ -55,6 +55,18 @@ static constexpr uint8_t poolDeviceCfgBranchFromSlot_(uint8_t slot)
 
 } // namespace
 
+bool PoolDeviceModule::svcGetSerialConfigImpl_(uint8_t slot, PoolDriverConfig* out) const
+{
+    if (!out || !slots_ || slot >= POOL_DEVICE_MAX) return false;
+    if (!lockState_()) return false;
+    const PoolDeviceSlot& device = slots_[slot];
+    const bool valid = device.used && device.def.enabled &&
+                       device.driverConfig.capabilities.kind == PoolControlKind::Rs485;
+    if (valid) *out = device.driverConfig;
+    unlockState_();
+    return valid;
+}
+
 bool PoolDeviceModule::ensureStorage_()
 {
     if (!stateMutex_) {
