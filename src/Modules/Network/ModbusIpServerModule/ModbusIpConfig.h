@@ -18,8 +18,12 @@ struct GatewayConfig {
  uint8_t stopBits=1;
  bool valid()const {
   if(port==0||timeoutMs<10||timeoutMs>5000||profileMode>2)return false;
-  const SerialProfile p{static_cast<uint32_t>(baud),parity,stopBits};
-  return validProfile(p);
+  // The common serial settings are used only in manual mode. In automatic
+  // and per-device modes, profiles are resolved from the device registry
+  // or the explicit per-device table.
+  if(profileMode!=static_cast<uint8_t>(ProfileMode::CommonManual))return true;
+  if(baud<0)return false;
+  return validProfile(commonProfile());
  }
  SerialProfile commonProfile()const {
   return {static_cast<uint32_t>(baud),parity,stopBits};
