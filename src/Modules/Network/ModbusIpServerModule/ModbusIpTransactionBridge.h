@@ -21,7 +21,7 @@ public:
   const auto parsed=parseRegisterRequest(header.unitId,pdu,pduSize,request);
   header_=header;request_=request;
   if(parsed!=ParseResult::Ok) {
-   const uint8_t code=parsed==ParseResult::UnsupportedFunction?1U:3U;
+   const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
   }
   ModbusRequest outgoing{};
