@@ -40,5 +40,15 @@ int main(){
  assert(f.push(invalidLength,n,consumed)==TcpFramer::FeedResult::Invalid);
  assert(!f.ready());
  assert(f.push(adu,n,consumed)==TcpFramer::FeedResult::Complete);
+ // MBAP decoder must reject inconsistent lengths and unsupported protocols.
+ MbapHeader badHeader{};const uint8_t* badPdu=nullptr;std::size_t badSize=0;
+ uint8_t wrongLength[32]{};
+ for(std::size_t i=0;i<n;++i)wrongLength[i]=adu[i];
+ wrongLength[5]=5;
+ assert(!decodeAdu(wrongLength,n,badHeader,badPdu,badSize));
+ wrongLength[5]=6;wrongLength[3]=1;
+ assert(!decodeAdu(wrongLength,n,badHeader,badPdu,badSize));
+ assert(!decodeAdu(adu,7,badHeader,badPdu,badSize));
+ assert(!decodeAdu(adu,n-1,badHeader,badPdu,badSize));
 }
 
