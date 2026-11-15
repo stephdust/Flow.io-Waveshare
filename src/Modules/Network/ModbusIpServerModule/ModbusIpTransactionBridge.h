@@ -43,6 +43,9 @@ public:
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
+  if(response.slaveAddress!=request_.unitId||response.function!=request_.function){
+   prepareException_(request_.function,4);return;
+  }
   if(response.result==MODBUS_RESULT_EXCEPTION){
    prepareException_(request_.function,response.exceptionCode?response.exceptionCode:4);return;
   }
