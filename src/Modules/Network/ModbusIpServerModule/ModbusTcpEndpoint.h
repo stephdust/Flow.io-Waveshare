@@ -10,7 +10,7 @@ namespace flowio::modbus_ip {
 class TcpEndpoint {
 public:
  using ResolveProfile=bool (*)(void*,uint8_t,SerialProfile&);
- static constexpr uint8_t MaxClients=4;
+ static constexpr uint8_t MaxClients=2;
  bool begin(uint16_t port) {
   if(server_)return port==port_;
   if(!port)return false;
