@@ -734,6 +734,17 @@
     "modbusIp.parity.even": "Even",
     "modbusIp.parity.odd": "Odd",
     "modbusIp.deviceProfiles": "Per-device serial profiles",
-    "modbusIp.deviceProfilesHelp": "Format: id:baud:parity:stop_bits; Example: 17:9600:0:1; (parity 0=none, 1=even, 2=odd). Separate multiple devices with semicolons."
+    "modbusIp.deviceProfilesHelp": "Format: id:baud:parity:stop_bits; Example: 17:9600:0:1; (parity 0=none, 1=even, 2=odd). Separate multiple devices with semicolons.",
+    "modbusIp.port502": "Network port 502",
+    "modbusIp.port503": "Network port 503",
+    "modbusIp.port504": "Network port 504",
+    "modbusIp.port505": "Network port 505",
+    "modbusIp.port506": "Network port 506",
+    "modbusIp.portTargetMode": "RS485 target",
+    "modbusIp.portExistingDevice": "Existing Flow.io device",
+    "modbusIp.portManualDevice": "Manual serial configuration",
+    "modbusIp.portDevice": "Flow.io RS485 device",
+    "modbusIp.portUnitId": "Modbus RTU address (1–247)",
+    "modbusIp.invalidUnitId": "Invalid RTU address (1–247)"
   }
 }
