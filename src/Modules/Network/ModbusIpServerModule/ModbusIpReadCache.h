@@ -8,7 +8,7 @@ namespace flowio::modbus_ip {
 // Only successful FC03/FC04 reads are cached; exception frames are never cached.
 class ReadCache {
 public:
- static constexpr unsigned Capacity=8;
+ static constexpr unsigned Capacity=2;
  static constexpr uint16_t MaxRegisters=32;
  void clear(){for(auto& e:entries_)e.valid=false;}
  bool lookup(const RegisterRequest& req,const SerialProfile& profile,uint32_t now,
