@@ -14787,7 +14787,7 @@
         if (isModbusPort) {
           // Generic configuration rows reserve half their width for a label.
           // This editor is already a complete form: give it the full row.
-          row.style.cssText = 'display:block;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box;gap:12px';
+          row.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box;gap:12px';
         }
 
         const doc = configDocFor(moduleName, key, []);
@@ -14812,7 +14812,7 @@
         const valueWrap = document.createElement('div');
         valueWrap.className = 'control-value-wrap';
         if (isModbusPort) {
-          valueWrap.style.cssText = 'display:block;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box';
+          valueWrap.style.cssText = 'display:block;flex:1 1 100%;align-self:stretch;grid-column:1/-1;width:100%;max-width:none;min-width:0;margin-left:0;box-sizing:border-box';
           labelWrap.style.cssText = 'display:block;width:100%;margin-bottom:12px';
         }
 
