@@ -22,7 +22,8 @@ public:
   port_=0;framer_.reset();
  }
  void tick(const ModbusMasterService& service,ResolveProfile resolve,void* ctx,
-           uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0) {
+           uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0,
+           ReadCache* cache=nullptr,uint32_t cacheTtlMs=800,bool silentTimeout=false) {
   if(!server_)return;
   if(!client_||!client_.connected()) {
    // A disconnected socket may evaluate false even while its RTU request
@@ -35,7 +36,7 @@ public:
    if(incoming)client_=incoming;
   }
   if(!client_||!client_.connected())return;
-  bridge_.tick();
+  bridge_.tick(millis());
   if(bridge_.state()==TransactionBridge::State::ResponseReady){
    std::size_t length=0;
    if(bridge_.takeResponse(tx_,sizeof(tx_),length)){
@@ -64,7 +65,8 @@ public:
     const bool profileFound=validation==ParseResult::Ok&&resolve&&
                             resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
     if(profileFound) {
-     bridge_.start(framer_.data(),framer_.size(),profile,ownerId,timeoutMs,service,fixedUnitId);
+     bridge_.start(framer_.data(),framer_.size(),profile,ownerId,timeoutMs,service,fixedUnitId,
+                   cache,millis(),cacheTtlMs,silentTimeout);
     }else{
      uint8_t exception[2]{};
      const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
