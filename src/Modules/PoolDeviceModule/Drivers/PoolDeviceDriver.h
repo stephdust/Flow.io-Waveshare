@@ -54,7 +54,7 @@ public:
     void applyTarget(const PoolDeviceTarget&, uint32_t revision) override;
     void tick(uint32_t now, bool writesEnabled) override;
 private:
-    enum class Operation : uint8_t { None, Setpoint, Run, Status, Feedback, Telemetry, Limits };
+    enum class Operation : uint8_t { None, Setpoint, Run, Status, Feedback, Telemetry, Limits, StatusFeedback };
     bool submit_(Operation, uint32_t now);
     void consume_(const ModbusResponse&, uint32_t now);
     void commandAcknowledged_(uint32_t now);
