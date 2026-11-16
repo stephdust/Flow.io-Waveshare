@@ -7557,6 +7557,47 @@ void WebInterfaceModule::startServer_()
         request->send(response);
     });
 
+    // Compact selector for Modbus IP: do not serialize runtime telemetry,
+    // feedback, history or metrics just to populate an RS485 device dropdown.
+    server_.on("/api/runtime/modbus_device_options", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        HttpLatencyScope latency(request, "/api/runtime/modbus_device_options");
+        const PoolDeviceService* poolSvc = services_ ? services_->get<PoolDeviceService>(ServiceId::PoolDevice) : nullptr;
+        if (!poolSvc || !poolSvc->meta) {
+            request->send(503, "application/json",
+                          "{\"ok\":false,\"err\":{\"code\":\"NotReady\"}}");
+            return;
+        }
+        AsyncResponseStream* response = request->beginResponseStream("application/json");
+        addNoCacheHeaders_(response);
+        response->print("{\"ok\":true,\"options\":[");
+        bool first = true;
+        for (uint8_t slot = 0; slot < POOL_DEVICE_MAX; ++slot) {
+            PoolDeviceSvcMeta meta{};
+            const PoolDeviceSvcStatus status = poolSvc->meta(poolSvc->ctx, slot, &meta);
+            if (status == POOLDEV_SVC_ERR_UNKNOWN_SLOT) continue;
+            if (status != POOLDEV_SVC_OK) {
+                // Do not emit a partial list on a transient metadata error.
+                request->send(503, "application/json",
+                              "{\"ok\":false,\"err\":{\"code\":\"NotReady\"}}");
+                return;
+            }
+            if (!meta.used) continue;
+            if (!first) response->print(',');
+            first = false;
+            SpiRamJsonDocument doc(256);
+            doc["value"] = meta.slot;
+            doc["kind"] = uint8_t(meta.capabilities.kind);
+            char label[48] = {0};
+            snprintf(label, sizeof(label), "%s (pd%u)",
+                     meta.label[0] ? meta.label : meta.runtimeId,
+                     (unsigned)meta.slot);
+            doc["label"] = label;
+            serializeJson(doc, *response);
+        }
+        response->print("]}");
+        request->send(response);
+    });
+
     server_.on("/api/runtime/pooldevice_options", HTTP_GET, [this](AsyncWebServerRequest* request) {
         HttpLatencyScope latency(request, "/api/runtime/pooldevice_options");
         const PoolDeviceService* poolSvc = services_ ? services_->get<PoolDeviceService>(ServiceId::PoolDevice) : nullptr;
