@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-constexpr uint8_t MODBUS_MAX_REGISTERS_PER_REQUEST = 32U;
+constexpr uint8_t MODBUS_MAX_REGISTERS_PER_REQUEST = 125U;
 constexpr uint16_t MODBUS_TRANSACTION_INVALID = 0U;
 
 enum ModbusFunction : uint8_t {
