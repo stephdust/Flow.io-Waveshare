@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <WiFi.h>
 #include <new>
 #include "ModbusIpTransactionBridge.h"
@@ -66,7 +67,7 @@ public:
                             resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
     if(profileFound) {
      bridge_.start(framer_.data(),framer_.size(),profile,ownerId,timeoutMs,service,fixedUnitId,
-                   cache,millis(),cacheTtlMs,silentTimeout);
+                   cache,millis(),cacheTtlMs,silentTimeout,&logEvent_,this);
     }else{
      uint8_t exception[2]{};
      const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
@@ -82,6 +83,19 @@ public:
  }
  bool listening()const{return server_!=nullptr;}
 private:
+ static void logEvent_(void* ctx,TransactionBridge::Event event,uint8_t unit,uint8_t fc) {
+  const auto* self=static_cast<TcpEndpoint*>(ctx);
+  const char* label="";
+  switch(event){
+   case TransactionBridge::Event::CacheHit:label="CACHE HIT";break;
+   case TransactionBridge::Event::CacheMiss:label="CACHE MISS";break;
+   case TransactionBridge::Event::RtuTimeout:label="RTU TIMEOUT";break;
+   case TransactionBridge::Event::ModbusException:label="MODBUS EXCEPTION";break;
+  }
+  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\\n",
+   "TCP",static_cast<unsigned>(self->port_),
+   label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
+ }
  WiFiServer* server_=nullptr;
  WiFiClient client_{};
  TcpFramer framer_{};
