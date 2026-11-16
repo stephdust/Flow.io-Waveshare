@@ -30,7 +30,7 @@ public:
   master_=services.get<ModbusMasterService>(ServiceId::ModbusMaster);
   network_=services.get<NetworkAccessService>(ServiceId::NetworkAccess);
   poolDevices_=services.get<PoolDeviceService>(ServiceId::PoolDevice);
-  for(uint8_t i=0;i<5;++i)contexts_[i]={this,i};
+  for(uint8_t i=0;i<3;++i)contexts_[i]={this,i};
   started_=true;
  }
  void loop() override {
@@ -43,7 +43,7 @@ public:
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
    stopAll_();return;
   }
-  for(uint8_t i=0;i<5;++i) {
+  for(uint8_t i=0;i<3;++i) {
    ::flowio::modbus_ip::PortConfig port{};
    const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
    if(!configured||(!port.tcp&&!port.udp)) {
@@ -91,12 +91,12 @@ public:
 private:
  struct PortContext { ModbusIpServerModule* module=nullptr;uint8_t index=0; };
  void stopAll_() {
-  for(uint8_t i=0;i<5;++i){tcp_[i].stop();udp_[i].stop();caches_[i].clear();}
+  for(uint8_t i=0;i<3;++i){tcp_[i].stop();udp_[i].stop();caches_[i].clear();}
  }
  bool resolvePort_(uint8_t index,uint8_t& target,
                    ::flowio::modbus_ip::SerialProfile& profile) const {
   ::flowio::modbus_ip::PortConfig port{};
-  if(index>=5||!::flowio::modbus_ip::parsePortConfig(config_.portText(index),port)||
+  if(index>=3||!::flowio::modbus_ip::parsePortConfig(config_.portText(index),port)||
      !port.enabled)return false;
   if(port.mode==1) {
    target=port.target;profile=port.serial;
@@ -162,11 +162,11 @@ private:
  ::flowio::modbus_ip::GatewayConfigVariables config_{};
  ::flowio::modbus_ip::ProfileTable profiles_{};
  char loadedDeviceProfiles_[::flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
- ::flowio::modbus_ip::TcpEndpoint tcp_[5]{};
- ::flowio::modbus_ip::UdpEndpoint udp_[5]{};
- ::flowio::modbus_ip::ReadCache caches_[5]{};
- char loadedPorts_[5][64]{};
- PortContext contexts_[5]{};
+ ::flowio::modbus_ip::TcpEndpoint tcp_[3]{};
+ ::flowio::modbus_ip::UdpEndpoint udp_[3]{};
+ ::flowio::modbus_ip::ReadCache caches_[3]{};
+ char loadedPorts_[3][64]{};
+ PortContext contexts_[3]{};
  ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
  const NetworkAccessService* network_=nullptr;
