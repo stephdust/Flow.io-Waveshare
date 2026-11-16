@@ -39,14 +39,14 @@ public:
    if(!network_)network_=services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
    if(!poolDevices_)poolDevices_=services_->get<PoolDeviceService>(ServiceId::PoolDevice);
   }
-  if(!started_||!master_||!config_.data.enabled||
+  if(!started_||!master_||
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
    stopAll_();return;
   }
   for(uint8_t i=0;i<5;++i) {
    ::flowio::modbus_ip::PortConfig port{};
    const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
-   if(!configured||!port.enabled) {
+   if(!configured||(!port.tcp&&!port.udp)) {
     tcp_[i].stop();udp_[i].stop();caches_[i].clear();
     loadedPorts_[i][0]=0;continue;
    }
