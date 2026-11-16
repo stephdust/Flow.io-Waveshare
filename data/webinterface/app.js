@@ -14522,7 +14522,7 @@
       const portEntries = entries.filter(entry => /^port_50[2-6]$/.test(entry.key));
       if (!portEntries.length) return;
       const nav = document.createElement('div');
-      nav.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px';
+      nav.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;margin:12px 0 18px;width:100%';
       nav.setAttribute('role', 'tablist');
       nav.setAttribute('aria-label', tr('modbusIp.ports', 'Modbus network ports'));
       const buttons = [];
@@ -14536,7 +14536,8 @@
           buttons[i].className = 'control-input';
           buttons[i].style.fontWeight = i === index ? '700' : '400';
           buttons[i].style.borderWidth = i === index ? '2px' : '1px';
-          buttons[i].style.cssText = 'min-width:68px;min-height:38px;cursor:pointer';
+          buttons[i].style.cssText = 'flex:0 0 auto;width:auto;min-width:76px;min-height:38px;padding:7px 14px;cursor:pointer';
+          buttons[i].style.background = i === index ? 'var(--surface-2, #eaf2ff)' : 'transparent';
         });
       };
       portEntries.forEach((entry, i) => {
@@ -14559,13 +14560,13 @@
       const parts = String(rawValue || '').split(':');
       const initial = ([8,9,12].includes(parts.length)) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
       const root = document.createElement('div');
-      root.style.cssText = 'display:grid;gap:10px;width:100%';
+      root.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;max-width:680px;min-width:0';
       const hidden = document.createElement('input');
       hidden.type = 'hidden';
       hidden.value = String(rawValue || '');
       const addSelect = (label, options, current) => {
         const wrap = document.createElement('label');
-        wrap.style.cssText = 'display:grid;gap:4px;flex:1 1 140px;min-width:125px';
+        wrap.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;width:100%';
         const caption = document.createElement('span');
         caption.textContent = label;
         wrap.appendChild(caption);
@@ -14588,20 +14589,20 @@
       };
       const addCheck = (label, value) => {
         const wrap = document.createElement('label');
-        wrap.style.cssText = 'display:inline-flex;align-items:center;gap:7px';
+        wrap.style.cssText = 'display:inline-flex;align-items:center;justify-content:flex-start;gap:9px;min-width:0;white-space:normal';
         const check = document.createElement('input');
         check.type = 'checkbox'; check.checked = value === '1';
         wrap.appendChild(check); wrap.appendChild(document.createTextNode(label));
         return { wrap, input: check };
       };
       const toggles = document.createElement('div');
-      toggles.style.cssText = 'display:flex;flex-wrap:wrap;gap:16px';
+      toggles.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;column-gap:24px;row-gap:12px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
       const enabled = addCheck(tr('modbusIp.enabled', 'Enabled'), initial[0]);
       const tcp = addCheck('TCP', initial[1]);
       const udp = addCheck('UDP', initial[2]);
       [enabled,tcp,udp].forEach((item) => toggles.appendChild(item.wrap));
       const timeoutWrap = document.createElement('label');
-      timeoutWrap.style.cssText = 'display:grid;gap:4px;max-width:240px';
+      timeoutWrap.style.cssText = 'display:grid;gap:5px;max-width:320px;width:100%';
       const timeoutLabel = document.createElement('span');
       timeoutLabel.textContent = tr('modbusIp.portTimeout', 'Response timeout (ms)');
       const timeoutInput = document.createElement('input');
@@ -14615,7 +14616,7 @@
       timeoutWrap.appendChild(timeoutInput);
       const cacheEnabled = addCheck(tr('modbusIp.portCacheEnabled','Enable Modbus read cache'),initial[9] || '0');
       const cacheTtlWrap = document.createElement('label');
-      cacheTtlWrap.style.cssText = 'display:grid;gap:4px;max-width:240px';
+      cacheTtlWrap.style.cssText = 'display:grid;gap:5px;max-width:320px;width:100%';
       const cacheTtlLabel = document.createElement('span');
       cacheTtlLabel.textContent=tr('modbusIp.portCacheTtl','Cache validity (ms)');
       const cacheTtlInput=document.createElement('input');
@@ -14640,10 +14641,10 @@
       const deviceChoices = knownOptions.map(item => {
         const slot = Number(item.slot ?? item.id ?? item.value);
         const name = String(item.label || item.name || item.title || '').trim();
-        return [String(slot), name ? (name + ' (slot ' + slot + ')') : ('Slot ' + slot)];
+        return [String(slot), name ? (name + ' · ' + tr('modbusIp.slotNumber', 'Emplacement') + ' ' + (slot + 1)) : (tr('modbusIp.unnamedDevice', 'Équipement sans nom') + ' · ' + tr('modbusIp.slotNumber', 'Emplacement') + ' ' + (slot + 1))];
       });
       if (!deviceChoices.some(option => option[0] === initial[4])) {
-        deviceChoices.push([initial[4], tr('modbusIp.currentSlot', 'Configured slot') + ' ' + initial[4]]);
+        deviceChoices.push([initial[4], tr('modbusIp.unavailableDevice', 'Équipement introuvable ou non chargé') + ' (' + tr('modbusIp.slotNumber', 'emplacement') + ' ' + (Number(initial[4]) + 1) + ')']);
       }
       const target = addSelect(tr('modbusIp.portDevice', 'Flow.io RS485 device'),
         deviceChoices, initial[4]);
@@ -14661,10 +14662,10 @@
         ['2',tr('modbusIp.parity.odd','Odd')]],initial[6]);
       const stop = addSelect(tr('modbusIp.stopBits', 'Stop bits'), [['1','1'],['2','2']],initial[7]);
       const serial = document.createElement('div');
-      serial.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+      serial.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px';
       [baud,parity,stop].forEach(item=>serial.appendChild(item.wrap));
       const manual = document.createElement('div');
-      manual.style.cssText='display:grid;gap:8px';
+      manual.style.cssText='display:grid;gap:12px';
       manual.appendChild(idWrap);manual.appendChild(serial);
       const refresh = () => {
         target.wrap.hidden = mode.input.value !== '0';
@@ -14693,11 +14694,18 @@
         hidden.dispatchEvent(new Event('input',{bubbles:true}));
         hidden.dispatchEvent(new Event('change',{bubbles:true}));
       };
-      root.appendChild(toggles);root.appendChild(timeoutWrap);
-      root.appendChild(cacheEnabled.wrap);root.appendChild(cacheTtlWrap);
-      root.appendChild(timeoutBehavior.wrap);
-      root.appendChild(mode.wrap);root.appendChild(target.wrap);
-      root.appendChild(manual);root.appendChild(hidden);
+      const networkSettings=document.createElement('div');
+      networkSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end';
+      networkSettings.appendChild(timeoutWrap);networkSettings.appendChild(timeoutBehavior.wrap);
+      const cacheSettings=document.createElement('div');
+      cacheSettings.style.cssText='display:grid;gap:10px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
+      cacheSettings.appendChild(cacheEnabled.wrap);cacheSettings.appendChild(cacheTtlWrap);
+      const targetSettings=document.createElement('div');
+      targetSettings.style.cssText='display:grid;gap:12px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
+      targetSettings.appendChild(mode.wrap);targetSettings.appendChild(target.wrap);
+      root.appendChild(toggles);root.appendChild(networkSettings);
+      root.appendChild(cacheSettings);root.appendChild(targetSettings);
+      targetSettings.appendChild(manual);root.appendChild(hidden);
       [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
        baud.input,parity.input,stop.input,timeoutInput,cacheEnabled.input,
        cacheTtlInput,timeoutBehavior.input].forEach(el=>el.addEventListener('change',refresh));
