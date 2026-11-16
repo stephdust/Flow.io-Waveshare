@@ -68,14 +68,14 @@ public:
    if(port.tcp) {
     if(tcp_[i].begin(networkPort))
      tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
-                  static_cast<uint8_t>(201+i*2),timeout,target,
+                  static_cast<uint8_t>(201+i*5),timeout,target,
                   port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
                   port.timeoutBehavior==0);
    }else if(tcp_[i].listening())tcp_[i].stop();
    if(port.udp) {
     if(udp_[i].begin(networkPort))
      udp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
-                  static_cast<uint8_t>(202+i*2),timeout,target,
+                  static_cast<uint8_t>(205+i*5),timeout,target,
                   port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
                   port.timeoutBehavior==0);
    }else if(udp_[i].listening())udp_[i].stop();
