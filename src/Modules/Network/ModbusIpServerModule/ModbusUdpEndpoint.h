@@ -42,6 +42,7 @@ public:
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(rx_,received,header,pdu,pduSize))return;
   if(bridge_.busy()) {
+   if(silentTimeout)return;
    // UDP callers cannot observe a silent queue drop. Report Modbus
    // exception 0x06 (server device busy) without disturbing the current
    // RS485 transaction or its original response destination.
@@ -60,6 +61,7 @@ public:
   const bool profileFound=validation==ParseResult::Ok&&resolve&&
                           resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
   if(!profileFound) {
+   if(silentTimeout)return;
    // Invalid Modbus requests get protocol errors; unknown profiles get 0x0A.
    // Neither condition is allowed to touch the shared RS485 bus.
    uint8_t exception[2]{};
