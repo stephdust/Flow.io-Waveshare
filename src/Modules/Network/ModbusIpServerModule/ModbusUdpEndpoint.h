@@ -25,6 +25,10 @@ public:
    std::size_t length=0;
    if(bridge_.takeResponse(tx_,sizeof(tx_),length)&&
       udp_.beginPacket(remote_,remotePort_)) {
+    Serial.printf("[Modbus UDP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
+      static_cast<unsigned>(port_),static_cast<unsigned>(length),
+      static_cast<unsigned>(readBe16(tx_)),static_cast<unsigned>(tx_[6]),
+      static_cast<unsigned>(tx_[7]));
     udp_.write(tx_,length);udp_.endPacket();
    }
   }
@@ -41,6 +45,10 @@ public:
   if(received!=available)return;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(rx_,received,header,pdu,pduSize))return;
+  Serial.printf("[Modbus UDP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
+    static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
+    static_cast<unsigned>(header.unitId),static_cast<unsigned>(pdu[0]),
+    static_cast<unsigned>(received));
   if(bridge_.busy()) {
    if(silentTimeout)return;
    // UDP callers cannot observe a silent queue drop. Report Modbus
