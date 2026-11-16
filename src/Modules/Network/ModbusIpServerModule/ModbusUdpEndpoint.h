@@ -1,3 +1,11 @@
+#ifndef FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_VERBOSE_TRACE 0
+#endif
+#if FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_TRACE(...) Serial.printf(__VA_ARGS__)
+#else
+#define FLOW_MODBUS_IP_TRACE(...) do {} while (0)
+#endif
 #pragma once
 #include <Arduino.h>
 #include <WiFiUdp.h>
@@ -25,7 +33,7 @@ public:
    std::size_t length=0;
    if(bridge_.takeResponse(tx_,sizeof(tx_),length)&&
       udp_.beginPacket(remote_,remotePort_)) {
-    Serial.printf("[Modbus UDP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
+    FLOW_MODBUS_IP_TRACE("[Modbus UDP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
       static_cast<unsigned>(port_),static_cast<unsigned>(length),
       static_cast<unsigned>(readBe16(tx_)),static_cast<unsigned>(tx_[6]),
       static_cast<unsigned>(tx_[7]));
@@ -45,7 +53,7 @@ public:
   if(received!=available)return;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(rx_,received,header,pdu,pduSize))return;
-  Serial.printf("[Modbus UDP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus UDP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
     static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
     static_cast<unsigned>(header.unitId),static_cast<unsigned>(pdu[0]),
     static_cast<unsigned>(received));
@@ -98,7 +106,7 @@ private:
    case TransactionBridge::Event::RtuTimeout:label="RTU TIMEOUT";break;
    case TransactionBridge::Event::ModbusException:label="MODBUS EXCEPTION";break;
   }
-  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus %s:%u] %s unit=%u fc=%u\n",
    "UDP",static_cast<unsigned>(self->port_),
    label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
  }
