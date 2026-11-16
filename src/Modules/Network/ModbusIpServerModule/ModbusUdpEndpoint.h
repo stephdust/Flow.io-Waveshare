@@ -7,6 +7,10 @@
 #define FLOW_MODBUS_IP_TRACE(...) do {} while (0)
 #endif
 #pragma once
+// Set to 1 for UDP transaction timing diagnostics; disabled by default.
+#ifndef FLOW_MODBUS_IP_UDP_TIMING
+#define FLOW_MODBUS_IP_UDP_TIMING 0
+#endif
 #include <Arduino.h>
 #include <WiFiUdp.h>
 #include "ModbusIpTransactionBridge.h"
@@ -29,6 +33,14 @@ public:
            ReadCache* cache=nullptr,uint32_t cacheTtlMs=800,bool silentTimeout=false) {
   if(!listening_)return;
   bridge_.tick(millis());
+#if FLOW_MODBUS_IP_UDP_TIMING
+  if(timingPending_ && bridge_.state()==TransactionBridge::State::Idle){
+   Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=silent elapsed_ms=%lu\n",
+     static_cast<unsigned>(port_),static_cast<unsigned>(timingTid_),
+     static_cast<unsigned long>(millis()-timingStartedMs_));
+   timingPending_=false;
+  }
+#endif
   if(bridge_.state()==TransactionBridge::State::ResponseReady) {
    std::size_t length=0;
    if(bridge_.takeResponse(tx_,sizeof(tx_),length)&&
@@ -38,6 +50,14 @@ public:
       static_cast<unsigned>(readBe16(tx_)),static_cast<unsigned>(tx_[6]),
       static_cast<unsigned>(tx_[7]));
     udp_.write(tx_,length);udp_.endPacket();
+#if FLOW_MODBUS_IP_UDP_TIMING
+    if(timingPending_){
+     Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=reply elapsed_ms=%lu bytes=%u\n",
+       static_cast<unsigned>(port_),static_cast<unsigned>(timingTid_),
+       static_cast<unsigned long>(millis()-timingStartedMs_),static_cast<unsigned>(length));
+     timingPending_=false;
+    }
+#endif
    }
   }
   const int available=udp_.parsePacket();
@@ -93,6 +113,16 @@ public:
   if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service,fixedUnitId,
                    cache,millis(),cacheTtlMs,silentTimeout,&logEvent_,this)){
    remote_=sender;remotePort_=senderPort;
+#if FLOW_MODBUS_IP_UDP_TIMING
+   timingTid_=header.transactionId;
+   timingStartedMs_=millis();
+   timingPending_=bridge_.state()!=TransactionBridge::State::Idle;
+   Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=accepted unit=%u fc=%u addr=%u count=%u\n",
+     static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
+     static_cast<unsigned>(fixedUnitId?fixedUnitId:header.unitId),
+     static_cast<unsigned>(request.function),static_cast<unsigned>(request.address),
+     static_cast<unsigned>(request.count));
+#endif
   }
  }
  bool listening()const{return listening_;}
@@ -115,6 +145,11 @@ private:
  IPAddress remote_{};
  uint16_t remotePort_=0,port_=0;
  bool listening_=false;
+#if FLOW_MODBUS_IP_UDP_TIMING
+ uint32_t timingStartedMs_=0;
+ uint16_t timingTid_=0;
+ bool timingPending_=false;
+#endif
  uint8_t rx_[kMaxAduBytes]{};
  uint8_t tx_[kMaxAduBytes]{};
 };
