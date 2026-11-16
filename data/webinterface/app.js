@@ -14396,6 +14396,120 @@
       return wrap;
     }
 
+    function buildModbusDeviceProfilesEditor(rawValue) {
+      const root = document.createElement('div');
+      root.style.cssText = 'display:grid;gap:8px;width:100%';
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.value = String(rawValue || '');
+      const list = document.createElement('div');
+      list.style.cssText = 'display:grid;gap:8px';
+      const status = document.createElement('small');
+      const entries = [];
+      const parityOptions = [
+        ['0', tr('modbusIp.parity.none', 'None')],
+        ['1', tr('modbusIp.parity.even', 'Even')],
+        ['2', tr('modbusIp.parity.odd', 'Odd')]
+      ];
+      const baudOptions = ['1200', '2400', '4800', '9600', '19200', '38400', '57600', '115200'];
+      const selectField = (options, selected, label) => {
+        const select = document.createElement('select');
+        select.className = 'control-input';
+        select.setAttribute('aria-label', label);
+        options.forEach(([value, text]) => {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = text;
+          select.appendChild(option);
+        });
+        if (!options.some(([value]) => value === String(selected))) {
+          const option = document.createElement('option');
+          option.value = String(selected);
+          option.textContent = String(selected);
+          select.appendChild(option);
+        }
+        select.value = String(selected);
+        return select;
+      };
+      const refresh = () => {
+        const ids = new Set();
+        let valid = entries.length <= 32;
+        const encoded = [];
+        entries.forEach((entry) => {
+          const id = Number(entry.id.value);
+          const baud = Number(entry.baud.value);
+          if (!Number.isInteger(id) || id < 1 || id > 247 || ids.has(id) ||
+              !Number.isInteger(baud) || baud < 1200 || baud > 115200) valid = false;
+          ids.add(id);
+          encoded.push([entry.id.value, entry.baud.value, entry.parity.value, entry.stop.value].join(':') + ';');
+        });
+        const next = encoded.join('');
+        if (next.length >= 768) valid = false;
+        status.textContent = valid ? '' : tr('modbusIp.deviceProfilesInvalid', 'Invalid or duplicate device ID (1–247), or too many profiles (max 32).');
+        hidden.setCustomValidity(valid ? '' : status.textContent);
+        if (valid) {
+          hidden.value = next;
+          hidden.dispatchEvent(new Event('input', { bubbles: true }));
+          hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      };
+      const add = (idValue, baudValue, parityValue, stopValue) => {
+        if (entries.length >= 32) return;
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;align-items:center';
+        const id = document.createElement('input');
+        id.className = 'control-input';
+        id.type = 'number'; id.min = '1'; id.max = '247'; id.step = '1';
+        id.style.cssText = 'width:74px;flex:1 1 74px';
+        id.placeholder = 'ID'; id.setAttribute('aria-label', 'Modbus ID');
+        id.value = idValue;
+        const baud = selectField(baudOptions.map((value) => [value, value]), baudValue, 'Baud');
+        const parity = selectField(parityOptions, parityValue, 'Parity');
+        const stop = selectField([['1', '1 stop'], ['2', '2 stops']], stopValue, 'Stop bits');
+        for (const control of [baud, parity, stop]) control.style.cssText = 'flex:1 1 100px;min-width:90px';
+        const remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'control-field-apply';
+        remove.textContent = '×'; remove.setAttribute('aria-label', 'Remove device profile');
+        const entry = { id, baud, parity, stop };
+        entries.push(entry);
+        [id, baud, parity, stop].forEach((control) => {
+          control.addEventListener('input', refresh);
+          row.appendChild(control);
+        });
+        remove.addEventListener('click', () => {
+          entries.splice(entries.indexOf(entry), 1);
+          row.remove();
+          refresh();
+        });
+        row.appendChild(remove);
+        list.appendChild(row);
+        refresh();
+      };
+      const source = String(rawValue || '');
+      const parts = source.split(';').filter(Boolean);
+      const validParts = parts.every((part) => /^\\d+:\\d+:[012]:[12]$/.test(part));
+      if (validParts && parts.length <= 32) {
+        parts.forEach((part) => {
+          const fields = part.split(':');
+          add(fields[0], fields[1], fields[2], fields[3]);
+        });
+      } else {
+        status.textContent = tr('modbusIp.deviceProfilesInvalid', 'Invalid device profiles; correct the stored value before editing.');
+      }
+      const addButton = document.createElement('button');
+      addButton.type = 'button'; addButton.className = 'control-field-apply';
+      addButton.textContent = tr('modbusIp.addDeviceProfile', 'Add device');
+      addButton.addEventListener('click', () => {
+        const ids = new Set(entries.map((entry) => Number(entry.id.value)));
+        let id = 1;
+        while (ids.has(id) && id <= 247) id += 1;
+        if (id <= 247) add(String(id), '9600', '0', '1');
+      });
+      root.appendChild(list); root.appendChild(addButton); root.appendChild(status);
+      root.appendChild(hidden);
+      return { element: root, input: hidden };
+    }
+
     function renderConfigFields(containerEl, moduleName, dataObj, options) {
       const opts = options || {};
       const appendMode = !!opts.append;
@@ -14468,6 +14582,12 @@
 
         if (doc && doc.widget === 'action' && doc.action) {
           valueWrap.appendChild(buildConfigAction(doc));
+        } else if (key === 'device_profiles' && (moduleName === 'modbus_ip' || moduleName === 'network/modbus_server')) {
+          const editor = buildModbusDeviceProfilesEditor(value);
+          inputEl = editor.input;
+          inputEl.dataset.key = key; inputEl.dataset.kind = 'string'; inputEl.dataset.module = moduleName;
+          storeConfigFieldInitialValue(inputEl, value);
+          valueWrap.appendChild(editor.element);
         } else if (doc && doc.widget === 'pool-driver') {
           const editor = buildPoolDriverEditor(value);
           inputEl = editor.input;
