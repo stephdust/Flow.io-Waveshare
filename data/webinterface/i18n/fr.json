@@ -748,6 +748,8 @@
     "modbusIp.invalidUnitId": "Adresse RTU invalide (1–247)",
     "modbusIp.ports": "Ports réseau Modbus",
     "modbusIp.portTitle": "Port réseau",
-    "modbusIp.currentSlot": "Emplacement configuré"
+    "modbusIp.currentSlot": "Emplacement configuré",
+    "modbusIp.portTimeout": "Délai de réponse (ms)",
+    "modbusIp.invalidTimeout": "Le délai doit être compris entre 10 et 5000 ms"
   }
 }
