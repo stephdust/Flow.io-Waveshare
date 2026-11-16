@@ -82,7 +82,6 @@ struct GatewayConfigVariables {
   port504.validateText=&validPortConfigText;port505.validateText=&validPortConfigText;
   port506.validateText=&validPortConfigText;
   store.registerVar(port502);store.registerVar(port503);store.registerVar(port504);
-  store.registerVar(port505);store.registerVar(port506);
  }
 };
 }
