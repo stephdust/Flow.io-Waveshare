@@ -14704,7 +14704,9 @@
       cacheSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:center;gap:14px;padding:16px;border:1px solid var(--border, #d8e1ee);border-radius:10px;width:100%;box-sizing:border-box';
       cacheSettings.appendChild(cacheEnabled.wrap);cacheSettings.appendChild(cacheTtlWrap);
       const targetSettings=document.createElement('div');
-      targetSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:16px;border:1px solid var(--border, #d8e1ee);border-radius:10px;width:100%;box-sizing:border-box';
+      targetSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;align-items:start;padding:16px;border:1px solid var(--border, #d8e1ee);border-radius:10px;width:100%;box-sizing:border-box';
+      mode.wrap.style.alignSelf='start';
+      mode.input.style.height='40px';
       targetSettings.appendChild(mode.wrap);targetSettings.appendChild(target.wrap);
       const section = (title, content) => {
         const wrapper = document.createElement('section');
