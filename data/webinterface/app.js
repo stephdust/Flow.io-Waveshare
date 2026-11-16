@@ -14679,6 +14679,7 @@
       root.appendChild(manual);root.appendChild(hidden);
       [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
        baud.input,parity.input,stop.input,timeoutInput].forEach(el=>el.addEventListener('change',refresh));
+      timeoutInput.addEventListener('input',refresh);
       refresh();
       return {element:root,input:hidden};
     }
@@ -14728,7 +14729,7 @@
 
       for (const key of keys) {
         if ((moduleName === 'modbus_ip' || moduleName === 'network/modbus_server') &&
-            ['tcp_enabled','udp_enabled','port','profile_mode','baud','parity','stop_bits','device_profiles'].includes(key)) continue;
+            ['tcp_enabled','udp_enabled','port','timeout_ms','profile_mode','baud','parity','stop_bits','device_profiles'].includes(key)) continue;
         const value = data[key];
         const row = document.createElement('div');
         row.className = 'control-row';
