@@ -13,13 +13,16 @@ public:
  bool busy() const { return state_!=State::Idle; }
  State state() const { return state_; }
  bool start(const uint8_t* adu,std::size_t size,const SerialProfile& profile,
-            uint8_t ownerId,uint32_t timeoutMs,const ModbusMasterService& service) {
+            uint8_t ownerId,uint32_t timeoutMs,const ModbusMasterService& service,
+            uint8_t fixedUnitId=0) {
   if(state_!=State::Idle||!service.submit||!service.poll)return false;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(adu,size,header,pdu,pduSize))return false;
   RegisterRequest request{};
   const auto parsed=parseRegisterRequest(header.unitId,pdu,pduSize,request);
-  header_=header;request_=request;
+  header_=header;
+  if(fixedUnitId>=1&&fixedUnitId<=247)request.unitId=fixedUnitId;
+  request_=request;
   if(parsed!=ParseResult::Ok) {
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
