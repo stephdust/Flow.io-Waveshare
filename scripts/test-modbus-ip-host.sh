@@ -14,6 +14,7 @@ tests=(
   modbus_ip_config
   modbus_ip_known_device_profile
   modbus_ip_transaction_bridge
+  modbus_ip_ports
 )
 for test in "${tests[@]}"; do
   echo "[modbus-ip] compiling ${test}"
