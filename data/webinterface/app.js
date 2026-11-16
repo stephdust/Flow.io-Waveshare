@@ -14560,7 +14560,7 @@
       const parts = String(rawValue || '').split(':');
       const initial = ([8,9,12].includes(parts.length)) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
       const root = document.createElement('div');
-      root.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;max-width:680px;min-width:0';
+      root.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;max-width:none;min-width:0';
       const hidden = document.createElement('input');
       hidden.type = 'hidden';
       hidden.value = String(rawValue || '');
@@ -14589,9 +14589,10 @@
       };
       const addCheck = (label, value) => {
         const wrap = document.createElement('label');
-        wrap.style.cssText = 'display:inline-flex;align-items:center;justify-content:flex-start;gap:9px;min-width:0;white-space:normal';
+        wrap.style.cssText = 'display:inline-flex;align-items:center;justify-content:flex-start;gap:9px;min-width:0;white-space:normal;cursor:pointer';
         const check = document.createElement('input');
         check.type = 'checkbox'; check.checked = value === '1';
+        check.style.cssText = 'appearance:auto;-webkit-appearance:checkbox;width:17px;height:17px;min-width:17px;min-height:17px;max-width:17px;max-height:17px;margin:0;flex:0 0 17px;accent-color:#1677ee';
         wrap.appendChild(check); wrap.appendChild(document.createTextNode(label));
         return { wrap, input: check };
       };
@@ -14765,6 +14766,13 @@
         const value = data[key];
         const row = document.createElement('div');
         row.className = 'control-row';
+        const isModbusPort = (moduleName === 'modbus_ip' || moduleName === 'network/modbus_server') &&
+          /^port_50[2-6]$/.test(key);
+        if (isModbusPort) {
+          // Generic configuration rows reserve half their width for a label.
+          // This editor is already a complete form: give it the full row.
+          row.style.cssText = 'display:block;width:100%;min-width:0;box-sizing:border-box';
+        }
 
         const doc = configDocFor(moduleName, key, []);
         const labelWrap = document.createElement('div');
@@ -14787,6 +14795,10 @@
         let inputEl = null;
         const valueWrap = document.createElement('div');
         valueWrap.className = 'control-value-wrap';
+        if (isModbusPort) {
+          valueWrap.style.cssText = 'display:block;width:100%;max-width:none;min-width:0;box-sizing:border-box';
+          labelWrap.style.cssText = 'display:block;width:100%;margin-bottom:12px';
+        }
 
         if (doc && doc.widget === 'action' && doc.action) {
           valueWrap.appendChild(buildConfigAction(doc));
