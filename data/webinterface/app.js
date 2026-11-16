@@ -14524,7 +14524,7 @@
       const portEntries = entries.filter(entry => /^port_50[2-6]$/.test(entry.key));
       if (!portEntries.length) return;
       const nav = document.createElement('div');
-      nav.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;margin:12px 0 18px;width:100%';
+      nav.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0 18px;width:100%;box-sizing:border-box';
       nav.setAttribute('role', 'tablist');
       nav.setAttribute('aria-label', tr('modbusIp.ports', 'Modbus network ports'));
       const buttons = [];
@@ -14538,14 +14538,14 @@
           buttons[i].className = 'control-input';
           buttons[i].style.fontWeight = i === index ? '700' : '400';
           buttons[i].style.borderWidth = i === index ? '2px' : '1px';
-          buttons[i].style.cssText = 'flex:0 0 auto;width:auto;min-width:76px;min-height:38px;padding:7px 14px;cursor:pointer';
+          buttons[i].style.cssText = 'width:100%;min-width:0;min-height:58px;padding:10px 14px;cursor:pointer;border-radius:10px;text-align:left;box-sizing:border-box';
           buttons[i].style.background = i === index ? 'var(--surface-2, #eaf2ff)' : 'transparent';
         });
       };
       portEntries.forEach((entry, i) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.textContent = entry.key.slice(5);
+        button.textContent = tr('modbusIp.portTitle', 'Port réseau') + ' ' + entry.key.slice(5);
         button.setAttribute('role', 'tab');
         button.addEventListener('click', () => selectPort(i));
         nav.appendChild(button);
@@ -14562,7 +14562,7 @@
       const parts = String(rawValue || '').split(':');
       const initial = ([8,9,12].includes(parts.length)) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
       const root = document.createElement('div');
-      root.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;max-width:none;min-width:0';
+      root.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;max-width:none;min-width:0;box-sizing:border-box';
       const hidden = document.createElement('input');
       hidden.type = 'hidden';
       hidden.value = String(rawValue || '');
@@ -14698,16 +14698,31 @@
         hidden.dispatchEvent(new Event('change',{bubbles:true}));
       };
       const networkSettings=document.createElement('div');
-      networkSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end';
+      networkSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;align-items:end;width:100%';
       networkSettings.appendChild(timeoutWrap);networkSettings.appendChild(timeoutBehavior.wrap);
       const cacheSettings=document.createElement('div');
-      cacheSettings.style.cssText='display:grid;gap:10px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
+      cacheSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:center;gap:14px;padding:16px;border:1px solid var(--border, #d8e1ee);border-radius:10px;width:100%;box-sizing:border-box';
       cacheSettings.appendChild(cacheEnabled.wrap);cacheSettings.appendChild(cacheTtlWrap);
       const targetSettings=document.createElement('div');
-      targetSettings.style.cssText='display:grid;gap:12px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
+      targetSettings.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:16px;border:1px solid var(--border, #d8e1ee);border-radius:10px;width:100%;box-sizing:border-box';
       targetSettings.appendChild(mode.wrap);targetSettings.appendChild(target.wrap);
-      root.appendChild(toggles);root.appendChild(networkSettings);
-      root.appendChild(cacheSettings);root.appendChild(targetSettings);
+      const section = (title, content) => {
+        const wrapper = document.createElement('section');
+        wrapper.style.cssText = 'display:grid;gap:12px;min-width:0;width:100%;box-sizing:border-box';
+        const heading = document.createElement('strong');
+        heading.textContent = title;
+        heading.style.cssText = 'font-size:14px';
+        wrapper.appendChild(heading);
+        wrapper.appendChild(content);
+        return wrapper;
+      };
+      const transportSettings = document.createElement('div');
+      transportSettings.style.cssText = 'display:grid;gap:14px;min-width:0';
+      transportSettings.appendChild(toggles);
+      transportSettings.appendChild(networkSettings);
+      root.appendChild(section(tr('modbusIp.networkSettings','Paramètres réseau'),transportSettings));
+      root.appendChild(section(tr('modbusIp.rs485Target','Cible RS485'),targetSettings));
+      root.appendChild(section(tr('modbusIp.cacheSettings','Cache Modbus'),cacheSettings));
       targetSettings.appendChild(manual);root.appendChild(hidden);
       [tcp.input,udp.input,mode.input,target.input,manualId,
        baud.input,parity.input,stop.input,timeoutInput,cacheEnabled.input,
@@ -14772,7 +14787,7 @@
         if (isModbusPort) {
           // Generic configuration rows reserve half their width for a label.
           // This editor is already a complete form: give it the full row.
-          row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);grid-column:1/-1;width:100%;min-width:0;box-sizing:border-box;gap:12px';
+          row.style.cssText = 'display:block;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box;gap:12px';
         }
 
         const doc = configDocFor(moduleName, key, []);
@@ -14798,7 +14813,7 @@
         valueWrap.className = 'control-value-wrap';
         if (isModbusPort) {
           valueWrap.style.cssText = 'display:block;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box';
-          labelWrap.style.cssText = 'display:block;grid-column:1/-1;width:100%;margin-bottom:0';
+          labelWrap.style.cssText = 'display:block;width:100%;margin-bottom:12px';
         }
 
         if (doc && doc.widget === 'action' && doc.action) {
