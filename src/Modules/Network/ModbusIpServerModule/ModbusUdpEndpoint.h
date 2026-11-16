@@ -16,9 +16,10 @@ public:
   bridge_.cancel();udp_.stop();listening_=false;port_=0;
  }
  void tick(const ModbusMasterService& service,ResolveProfile resolve,void* ctx,
-           uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0) {
+           uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0,
+           ReadCache* cache=nullptr,uint32_t cacheTtlMs=800,bool silentTimeout=false) {
   if(!listening_)return;
-  bridge_.tick();
+  bridge_.tick(millis());
   if(bridge_.state()==TransactionBridge::State::ResponseReady) {
    std::size_t length=0;
    if(bridge_.takeResponse(tx_,sizeof(tx_),length)&&
@@ -70,7 +71,8 @@ public:
    }
    return;
   }
-  if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service,fixedUnitId)){
+  if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service,fixedUnitId,
+                   cache,millis(),cacheTtlMs,silentTimeout)){
    remote_=sender;remotePort_=senderPort;
   }
  }
