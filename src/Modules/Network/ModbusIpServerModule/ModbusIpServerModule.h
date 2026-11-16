@@ -47,7 +47,14 @@ public:
    flowio::modbus_ip::PortConfig port{};
    const bool configured=flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
    if(!configured||!port.enabled) {
-    tcp_[i].stop();udp_[i].stop();continue;
+    tcp_[i].stop();udp_[i].stop();caches_[i].clear();
+    loadedPorts_[i][0]=0;continue;
+   }
+   const char* settings=config_.portText(i);
+   if(std::strcmp(loadedPorts_[i],settings)!=0){
+    caches_[i].clear();
+    std::strncpy(loadedPorts_[i],settings,sizeof(loadedPorts_[i])-1);
+    loadedPorts_[i][sizeof(loadedPorts_[i])-1]=0;
    }
    uint8_t target=port.target;
    if(port.mode==0) {
@@ -61,12 +68,16 @@ public:
    if(port.tcp) {
     if(tcp_[i].begin(networkPort))
      tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
-                  static_cast<uint8_t>(201+i*2),timeout,target);
+                  static_cast<uint8_t>(201+i*2),timeout,target,
+                  port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
+                  port.timeoutBehavior==0);
    }else if(tcp_[i].listening())tcp_[i].stop();
    if(port.udp) {
     if(udp_[i].begin(networkPort))
      udp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
-                  static_cast<uint8_t>(202+i*2),timeout,target);
+                  static_cast<uint8_t>(202+i*2),timeout,target,
+                  port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
+                  port.timeoutBehavior==0);
    }else if(udp_[i].listening())udp_[i].stop();
   }
  }
@@ -80,7 +91,7 @@ public:
 private:
  struct PortContext { ModbusIpServerModule* module=nullptr;uint8_t index=0; };
  void stopAll_() {
-  for(uint8_t i=0;i<5;++i){tcp_[i].stop();udp_[i].stop();}
+  for(uint8_t i=0;i<5;++i){tcp_[i].stop();udp_[i].stop();caches_[i].clear();}
  }
  bool resolvePort_(uint8_t index,uint8_t& target,
                    flowio::modbus_ip::SerialProfile& profile) const {
@@ -153,6 +164,8 @@ private:
  char loadedDeviceProfiles_[flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
  flowio::modbus_ip::TcpEndpoint tcp_[5]{};
  flowio::modbus_ip::UdpEndpoint udp_[5]{};
+ flowio::modbus_ip::ReadCache caches_[5]{};
+ char loadedPorts_[5][64]{};
  PortContext contexts_[5]{};
  ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
