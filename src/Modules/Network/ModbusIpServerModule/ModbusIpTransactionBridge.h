@@ -41,7 +41,7 @@ public:
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
   }
-  if(cache_&&request.kind==RequestKind::ReadRegisters){
+  if(cache_&&request.kind==RequestKind::ReadRegisters&&request.count<=ReadCache::MaxRegisters){
    uint16_t cached[32]{};
    if(cache_->lookup(request,profile,nowMs,cacheTtlMs_,cached)){
     emit_(Event::CacheHit);
@@ -109,14 +109,15 @@ public:
    }
    prepareException_(request_.function,gatewayExceptionCode(static_cast<ModbusResultCode>(response.result)));return;
   }
-  if(response.slaveAddress!=request_.unitId||response.function!=request_.function){
+  if(response.slaveAddress!=request_.unitId||response.function!=request_.function||
+     response.registerAddress!=request_.address){
    prepareException_(request_.function,4);return;
   }
   if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
    prepareException_(request_.function,4);return;
   }
   if(cache_){
-   if(request_.kind==RequestKind::ReadRegisters)
+   if(request_.kind==RequestKind::ReadRegisters&&request_.count<=ReadCache::MaxRegisters)
     cache_->store(request_,profile_,nowMs_,response.values);
    else cache_->invalidate(request_.unitId);
   }
