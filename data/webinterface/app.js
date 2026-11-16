@@ -14529,11 +14529,13 @@
       const selectPort = (index) => {
         portEntries.forEach((entry, i) => {
           entry.row.hidden = i !== index;
-          entry.row.style.display = i === index ? 'flex' : 'none';
+          entry.row.style.display = i === index ? '' : 'none';
           // Do not disable hidden port fields: saving one port must preserve
           // the configuration of the other four ports.
           buttons[i].setAttribute('aria-selected', i === index ? 'true' : 'false');
-          buttons[i].className = i === index ? 'control-field-apply' : 'control-input';
+          buttons[i].className = 'control-input';
+          buttons[i].style.fontWeight = i === index ? '700' : '400';
+          buttons[i].style.borderWidth = i === index ? '2px' : '1px';
           buttons[i].style.cssText = 'min-width:68px;min-height:38px;cursor:pointer';
         });
       };
@@ -14630,7 +14632,9 @@
       manual.appendChild(idWrap);manual.appendChild(serial);
       const refresh = () => {
         target.wrap.hidden = mode.input.value !== '0';
+        target.wrap.style.display = mode.input.value === '0' ? 'grid' : 'none';
         manual.hidden = mode.input.value !== '1';
+        manual.style.display = mode.input.value === '1' ? 'grid' : 'none';
         const selected = mode.input.value === '0' ? target.input.value : manualId.value;
         const encoded = [
           enabled.input.checked?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
