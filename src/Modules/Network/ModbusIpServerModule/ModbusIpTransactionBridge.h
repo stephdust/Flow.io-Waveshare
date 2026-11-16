@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <Arduino.h>
 #include "Core/Services/IModbusMaster.h"
 #include "ModbusIpSchedulerAdapter.h"
 #include "ModbusIpReadCache.h"
@@ -28,6 +29,10 @@ public:
   header_=header;
   if(fixedUnitId>=1&&fixedUnitId<=247)request.unitId=fixedUnitId;
   request_=request;
+  Serial.printf("[Modbus IP] RX unit=%u fc=%u addr=%u count=%u timeout=%lu ms\n",
+    static_cast<unsigned>(request.unitId),static_cast<unsigned>(request.function),
+    static_cast<unsigned>(request.address),static_cast<unsigned>(request.count),
+    static_cast<unsigned long>(timeoutMs));
   cache_=cache;profile_=profile;cacheTtlMs_=cacheTtlMs;
   silentTimeout_=silentTimeout;nowMs_=nowMs;
   onEvent_=onEvent;eventCtx_=eventCtx;
@@ -63,6 +68,10 @@ public:
    return prepareException_(request.function,gatewayExceptionCode(result));
   }
   service_=&service;transactionId_=transactionId;ownerId_=ownerId;state_=State::Pending;
+  submittedAtMs_=nowMs;
+  Serial.printf("[Modbus IP] SCHEDULER ACCEPTED tx=%u unit=%u addr=%u count=%u\n",
+    static_cast<unsigned>(transactionId_),static_cast<unsigned>(request_.unitId),
+    static_cast<unsigned>(request_.address),static_cast<unsigned>(request_.count));
   return true;
  }
  void tick(uint32_t nowMs=0) {
@@ -72,6 +81,9 @@ public:
   const ModbusResultCode polled=service_->poll(service_->ctx,transactionId_,&response);
   if(polled==MODBUS_RESULT_NOT_READY)return;
   if(polled!=MODBUS_RESULT_OK){
+   Serial.printf("[Modbus IP] SCHEDULER ERROR tx=%u code=%u elapsed=%lu ms\n",
+     static_cast<unsigned>(transactionId_),static_cast<unsigned>(polled),
+     static_cast<unsigned long>(nowMs-submittedAtMs_));
    if(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
    if(silentTimeout_){
     reset_();return;
@@ -79,6 +91,9 @@ public:
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
+  Serial.printf("[Modbus IP] SCHEDULER RESULT tx=%u state=%u code=%u elapsed=%lu ms\n",
+    static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.state),
+    static_cast<unsigned>(response.result),static_cast<unsigned long>(nowMs-submittedAtMs_));
   if(response.result==MODBUS_RESULT_EXCEPTION){
    if(silentTimeout_){reset_();return;}
    if(response.slaveAddress!=request_.unitId||
@@ -144,6 +159,7 @@ private:
  SerialProfile profile_{};
  uint32_t cacheTtlMs_=800;
  uint32_t nowMs_=0;
+ uint32_t submittedAtMs_=0;
  bool silentTimeout_=false;
  EventCallback onEvent_=nullptr;
  void* eventCtx_=nullptr;
