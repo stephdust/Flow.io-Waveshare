@@ -750,6 +750,12 @@
     "modbusIp.portTitle": "Network port",
     "modbusIp.currentSlot": "Configured slot",
     "modbusIp.portTimeout": "Response timeout (ms)",
-    "modbusIp.invalidTimeout": "Timeout must be between 10 and 5000 ms"
+    "modbusIp.invalidTimeout": "Timeout must be between 10 and 5000 ms",
+    "modbusIp.portCacheEnabled": "Enable Modbus read cache",
+    "modbusIp.portCacheTtl": "Cache validity (ms)",
+    "modbusIp.portTimeoutBehavior": "RS485 timeout behavior",
+    "modbusIp.portTimeoutSilent": "Silent: do not respond",
+    "modbusIp.portTimeoutException": "Send Modbus exception (0x0B)",
+    "modbusIp.invalidCacheTtl": "Cache validity must be between 1 and 60,000 ms"
   }
 }
