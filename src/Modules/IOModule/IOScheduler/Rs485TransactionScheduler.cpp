@@ -14,6 +14,18 @@
 
 #include "Modules/IOModule/IOProtocols/Modbus/ModbusRtuCodec.h"
 
+#ifndef FLOW_MODBUS_IP_UDP_TIMING
+#define FLOW_MODBUS_IP_UDP_TIMING 0
+#endif
+
+#if FLOW_MODBUS_IP_UDP_TIMING
+namespace {
+bool isModbusUdpOwner(uint8_t owner) {
+    return owner == 205U || owner == 210U || owner == 215U;
+}
+}
+#endif
+
 namespace {
 uint32_t busAvailableAt(const SerialLineProfile& line, uint32_t sentAt, uint32_t now, bool guard)
 {
@@ -303,6 +315,14 @@ bool Rs485TransactionScheduler::sendActive_(Slot& slot, uint32_t nowMs, uint32_t
     LOGD_HEX("Modbus TX", slot.transactionId, storage_->txFrame, txLength);
     slot.state = SlotState::Active;
     slot.sentAtMs = nowMs;
+#if FLOW_MODBUS_IP_UDP_TIMING
+    if (isModbusUdpOwner(slot.request.ownerId)) {
+        LOGI("Modbus UDP RS485 tx=%u owner=%u slave=%u fc=%u addr=%u count=%u queue_ms=%lu",
+             slot.transactionId, slot.request.ownerId, slot.request.slaveAddress,
+             slot.request.function, slot.request.registerAddress, slot.request.registerCount,
+             (unsigned long)(nowMs - slot.queuedAtMs));
+    }
+#endif
     LOGD("Modbus TX id=%u bytes=%u attempt=%u/%u timeout_ms=%lu protocol=%u",
          slot.transactionId, (unsigned)txLength, slot.attempts + 1U, slot.request.retries + 1U,
          (unsigned long)slot.request.responseTimeoutMs, (unsigned)slot.request.protocol);
@@ -321,6 +341,16 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
                               : MODBUS_TRANSACTION_FAILED;
     availableAtMs_ = busAvailableAt(slot.request.line, slot.sentAtMs, millis(),
                                     result != MODBUS_RESULT_OK || slot.abandoned);
+#if FLOW_MODBUS_IP_UDP_TIMING
+    if (isModbusUdpOwner(slot.request.ownerId)) {
+        const uint32_t finishedMs = millis();
+        LOGI("Modbus UDP RS485 done tx=%u owner=%u slave=%u result=%s queue_ms=%lu rs485_ms=%lu total_ms=%lu",
+             slot.transactionId, slot.request.ownerId, slot.request.slaveAddress,
+             resultName(result), (unsigned long)(slot.sentAtMs - slot.queuedAtMs),
+             (unsigned long)(finishedMs - slot.sentAtMs),
+             (unsigned long)(finishedMs - slot.queuedAtMs));
+    }
+#endif
     LOGD("Modbus done id=%u slave=%u result=%s exception=0x%02X total_ms=%lu abandoned=%u",
          slot.transactionId, slot.request.slaveAddress, resultName(result),
          slot.response.exceptionCode, (unsigned long)(millis() - slot.queuedAtMs), slot.abandoned);
