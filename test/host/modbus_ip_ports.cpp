@@ -27,6 +27,12 @@ int main() {
  assert(port.mode==1&&port.target==17&&port.serial.baud==19200&&port.serial.parity==1);
  assert(parsePortConfig("1:1:0:1:17:19200:1:2:1250",port));
  assert(port.timeoutMs==1250);
+ assert(!port.cacheEnabled&&port.cacheTtlMs==800&&port.timeoutBehavior==0);
+ assert(parsePortConfig("1:1:1:1:17:19200:1:2:1250:1:800:1",port));
+ assert(port.cacheEnabled&&port.cacheTtlMs==800&&port.timeoutBehavior==1);
+ assert(!validPortConfigText("1:1:1:1:17:19200:1:2:1250:2:800:1"));
+ assert(!validPortConfigText("1:1:1:1:17:19200:1:2:1250:1:0:1"));
+ assert(!validPortConfigText("1:1:1:1:17:19200:1:2:1250:1:800:2"));
  assert(!validPortConfigText("1:1:0:1:17:19200:1:2:9"));
  assert(!validPortConfigText("1:1:0:1:17:19200:1:2:5001"));
  assert(!validPortConfigText("1:1:0:1:17:19200:1:2:1250:garbage"));
