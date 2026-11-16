@@ -88,7 +88,7 @@ private:
    case TransactionBridge::Event::RtuTimeout:label="RTU TIMEOUT";break;
    case TransactionBridge::Event::ModbusException:label="MODBUS EXCEPTION";break;
   }
-  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\\n",
+  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\n",
    "UDP",static_cast<unsigned>(self->port_),
    label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
  }
