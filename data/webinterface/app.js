@@ -13999,7 +13999,10 @@
         baud: ['baud', 'int32'],
         parity: ['parity', 'uint8'],
         stop_bits: ['stopBits', 'uint8'],
-        device_profiles: ['deviceProfiles', 'string']
+        device_profiles: ['deviceProfiles', 'string'],
+        port_502: ['port502', 'string'],port_503: ['port503', 'string'],
+        port_504: ['port504', 'string'],port_505: ['port505', 'string'],
+        port_506: ['port506', 'string']
       };
       const spec = specs[field];
       if (!spec) return null;
@@ -14515,6 +14518,105 @@
       return { element: root, input: hidden };
     }
 
+    function buildModbusNetworkPortEditor(key, rawValue) {
+      const portNumber = key.slice(5);
+      const parts = String(rawValue || '').split(':');
+      const initial = parts.length === 8 ? parts : ['0','1','0','0','0','9600','0','1'];
+      const root = document.createElement('div');
+      root.style.cssText = 'display:grid;gap:10px;width:100%';
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.value = String(rawValue || '');
+      const addSelect = (label, options, current) => {
+        const wrap = document.createElement('label');
+        wrap.style.cssText = 'display:grid;gap:4px;flex:1 1 140px;min-width:125px';
+        const caption = document.createElement('span');
+        caption.textContent = label;
+        wrap.appendChild(caption);
+        const select = document.createElement('select');
+        select.className = 'control-input';
+        options.forEach(([value, title]) => {
+          const option = document.createElement('option');
+          option.value = String(value);
+          option.textContent = String(title);
+          select.appendChild(option);
+        });
+        if (![...select.options].some((opt) => opt.value === String(current))) {
+          const extra = document.createElement('option');
+          extra.value = String(current); extra.textContent = String(current);
+          select.appendChild(extra);
+        }
+        select.value = String(current);
+        wrap.appendChild(select);
+        return { wrap, input: select };
+      };
+      const addCheck = (label, value) => {
+        const wrap = document.createElement('label');
+        wrap.style.cssText = 'display:inline-flex;align-items:center;gap:7px';
+        const check = document.createElement('input');
+        check.type = 'checkbox'; check.checked = value === '1';
+        wrap.appendChild(check); wrap.appendChild(document.createTextNode(label));
+        return { wrap, input: check };
+      };
+      const toggles = document.createElement('div');
+      toggles.style.cssText = 'display:flex;flex-wrap:wrap;gap:16px';
+      const enabled = addCheck(tr('modbusIp.enabled', 'Enabled'), initial[0]);
+      const tcp = addCheck('TCP', initial[1]);
+      const udp = addCheck('UDP', initial[2]);
+      [enabled,tcp,udp].forEach((item) => toggles.appendChild(item.wrap));
+      const mode = addSelect(tr('modbusIp.portTargetMode', 'RS485 target'), [
+        ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
+        ['1', tr('modbusIp.portManualDevice', 'Manual serial configuration')]
+      ], initial[3]);
+      const target = addSelect(tr('modbusIp.portDevice', 'Flow.io RS485 device'), 
+        Array.from({length:16},(_,slot) => {
+          const matching = (flowCfgPoolDeviceOptions || []).find((item) =>
+            Number(item.slot ?? item.id ?? item.value) === slot);
+          const name = matching && String(matching.label || matching.name || matching.title || '').trim();
+          return [String(slot), name ? (name + ' (slot ' + slot + ')') : ('Slot ' + slot)];
+        }), initial[4]);
+      const manualId = document.createElement('input');
+      manualId.type='number';manualId.min='1';manualId.max='247';manualId.step='1';
+      manualId.className='control-input';manualId.value=initial[4]==='0'?'1':initial[4];
+      const idWrap = document.createElement('label');
+      idWrap.style.cssText='display:grid;gap:4px';
+      idWrap.textContent=tr('modbusIp.portUnitId', 'RTU device ID (1–247)');
+      idWrap.appendChild(manualId);
+      const baud = addSelect(tr('modbusIp.baud', 'Baud'), 
+        ['1200','2400','4800','9600','19200','38400','57600','115200'].map(v=>[v,v]), initial[5]);
+      const parity = addSelect(tr('modbusIp.parity', 'Parity'), [
+        ['0',tr('modbusIp.parity.none','None')],['1',tr('modbusIp.parity.even','Even')],
+        ['2',tr('modbusIp.parity.odd','Odd')]],initial[6]);
+      const stop = addSelect(tr('modbusIp.stopBits', 'Stop bits'), [['1','1'],['2','2']],initial[7]);
+      const serial = document.createElement('div');
+      serial.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+      [baud,parity,stop].forEach(item=>serial.appendChild(item.wrap));
+      const manual = document.createElement('div');
+      manual.style.cssText='display:grid;gap:8px';
+      manual.appendChild(idWrap);manual.appendChild(serial);
+      const refresh = () => {
+        target.wrap.hidden = mode.input.value !== '0';
+        manual.hidden = mode.input.value !== '1';
+        const selected = mode.input.value === '0' ? target.input.value : manualId.value;
+        const encoded = [
+          enabled.input.checked?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
+          mode.input.value,selected,baud.input.value,parity.input.value,stop.input.value
+        ].join(':');
+        const valid = mode.input.value === '0' ||
+          (Number.isInteger(Number(selected))&&Number(selected)>=1&&Number(selected)<=247);
+        hidden.setCustomValidity(valid?'':tr('modbusIp.invalidUnitId','Invalid RTU ID'));
+        hidden.value = encoded;
+        hidden.dispatchEvent(new Event('input',{bubbles:true}));
+        hidden.dispatchEvent(new Event('change',{bubbles:true}));
+      };
+      root.appendChild(toggles);root.appendChild(mode.wrap);root.appendChild(target.wrap);
+      root.appendChild(manual);root.appendChild(hidden);
+      [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
+       baud.input,parity.input,stop.input].forEach(el=>el.addEventListener('change',refresh));
+      refresh();
+      return {element:root,input:hidden};
+    }
+
     function renderConfigFields(containerEl, moduleName, dataObj, options) {
       const opts = options || {};
       const appendMode = !!opts.append;
@@ -14559,6 +14661,8 @@
       }
 
       for (const key of keys) {
+        if ((moduleName === 'modbus_ip' || moduleName === 'network/modbus_server') &&
+            ['tcp_enabled','udp_enabled','port','profile_mode','baud','parity','stop_bits','device_profiles'].includes(key)) continue;
         const value = data[key];
         const row = document.createElement('div');
         row.className = 'control-row';
@@ -14587,6 +14691,14 @@
 
         if (doc && doc.widget === 'action' && doc.action) {
           valueWrap.appendChild(buildConfigAction(doc));
+        } else if (/^port_50[2-6]$/.test(key) &&
+                   (moduleName === 'modbus_ip' || moduleName === 'network/modbus_server')) {
+          const editor = buildModbusNetworkPortEditor(key, value);
+          inputEl = editor.input;
+          inputEl.dataset.key = key;inputEl.dataset.kind = 'string';
+          inputEl.dataset.module = moduleName;
+          storeConfigFieldInitialValue(inputEl,value);
+          valueWrap.appendChild(editor.element);
         } else if (key === 'device_profiles' && (moduleName === 'modbus_ip' || moduleName === 'network/modbus_server')) {
           const editor = buildModbusDeviceProfilesEditor(value);
           inputEl = editor.input;
@@ -14994,7 +15106,7 @@
         if (pdmModule) {
           await ensureCfgDocsForModule(pdmModule);
         }
-        if (pdmModule || dependencyMaskSlotFromModule(m) >= 0) {
+        if (pdmModule || dependencyMaskSlotFromModule(m) >= 0 || m === 'modbus_ip') {
           await ensureFlowCfgPoolDeviceOptions();
         }
         if (isWaveshareProfile() && m === 'poollogic/devices') {
