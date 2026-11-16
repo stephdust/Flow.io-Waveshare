@@ -15158,7 +15158,8 @@
         if (pdmModule) {
           await ensureCfgDocsForModule(pdmModule);
         }
-        if (pdmModule || dependencyMaskSlotFromModule(m) >= 0 || m === 'modbus_ip') {
+        if (pdmModule || dependencyMaskSlotFromModule(m) >= 0 ||
+            m === 'modbus_ip' || m === 'network/modbus_server') {
           await ensureFlowCfgPoolDeviceOptions();
         }
         if (isWaveshareProfile() && m === 'poollogic/devices') {
