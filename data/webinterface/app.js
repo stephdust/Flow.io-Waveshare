@@ -14487,7 +14487,7 @@
       };
       const source = String(rawValue || '');
       const parts = source.split(';').filter(Boolean);
-      const validParts = parts.every((part) => /^\\d+:\\d+:[012]:[12]$/.test(part));
+      const validParts = parts.every((part) => /^\d+:\d+:[012]:[12]$/.test(part));
       if (validParts && parts.length <= 32) {
         parts.forEach((part) => {
           const fields = part.split(':');
