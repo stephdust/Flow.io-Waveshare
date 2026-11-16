@@ -23,6 +23,7 @@ bool ModbusRtuCodec::validRequest(const ModbusRequest& r)
         uint8_t(r.responseLayout) > uint8_t(RegisterResponseLayout::AddressByteCount)) return false;
     if (r.protocol == RegisterWireProtocol::ModbusRtu) {
         if (r.responseLayout != RegisterResponseLayout::Standard) return false;
+        if (r.function == MODBUS_FC_WRITE_MULTIPLE_REGISTERS && r.registerCount > 123U) return false;
         if (r.function != 0x03 && r.function != 0x04 && r.function != 0x06 && r.function != 0x10) return false;
     } else if (r.protocol == RegisterWireProtocol::VendorRegisterRtu) {
         if (!r.function || uint8_t(r.operation) > uint8_t(RegisterOperation::WriteMultiple)) return false;
