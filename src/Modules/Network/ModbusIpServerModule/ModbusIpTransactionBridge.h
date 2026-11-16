@@ -39,13 +39,19 @@ public:
     return n&&setResponse_(pduOut,n);
    }
   }
+  // A write makes prior reads potentially stale even before its RTU acknowledgement.
+  if(cache_&&request.kind!=RequestKind::ReadRegisters)cache_->invalidate(request.unitId);
   ModbusRequest outgoing{};
   if(!makeSchedulerRequest(request,profile,ownerId,timeoutMs,outgoing))
    return prepareException_(request.function,3);
   uint16_t transactionId=MODBUS_TRANSACTION_INVALID;
   const ModbusResultCode result=service.submit(service.ctx,&outgoing,&transactionId);
-  if(result!=MODBUS_RESULT_OK||transactionId==MODBUS_TRANSACTION_INVALID)
+  if(result!=MODBUS_RESULT_OK||transactionId==MODBUS_TRANSACTION_INVALID){
+   if(silentTimeout_&&(result==MODBUS_RESULT_TIMEOUT||result==MODBUS_RESULT_EXPIRED)){
+    reset_();return true;
+   }
    return prepareException_(request.function,gatewayExceptionCode(result));
+  }
   service_=&service;transactionId_=transactionId;ownerId_=ownerId;state_=State::Pending;
   return true;
  }
