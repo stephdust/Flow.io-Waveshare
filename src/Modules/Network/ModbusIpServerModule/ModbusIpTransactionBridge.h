@@ -10,13 +10,16 @@ namespace flowio::modbus_ip {
 // datagram endpoints and framing; the bridge never touches the physical UART.
 class TransactionBridge {
 public:
+ enum class Event : uint8_t { CacheHit,CacheMiss,RtuTimeout,ModbusException };
+ using EventCallback=void (*)(void*,Event,uint8_t,uint8_t);
  enum class State : uint8_t { Idle, Pending, ResponseReady };
  bool busy() const { return state_!=State::Idle; }
  State state() const { return state_; }
  bool start(const uint8_t* adu,std::size_t size,const SerialProfile& profile,
             uint8_t ownerId,uint32_t timeoutMs,const ModbusMasterService& service,
             uint8_t fixedUnitId=0,ReadCache* cache=nullptr,uint32_t nowMs=0,
-            uint32_t cacheTtlMs=800,bool silentTimeout=false) {
+            uint32_t cacheTtlMs=800,bool silentTimeout=false,
+            EventCallback onEvent=nullptr,void* eventCtx=nullptr) {
   if(state_!=State::Idle||!service.submit||!service.poll)return false;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(adu,size,header,pdu,pduSize))return false;
@@ -27,6 +30,7 @@ public:
   request_=request;
   cache_=cache;profile_=profile;cacheTtlMs_=cacheTtlMs;
   silentTimeout_=silentTimeout;nowMs_=nowMs;
+  onEvent_=onEvent;eventCtx_=eventCtx;
   if(parsed!=ParseResult::Ok) {
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
@@ -34,10 +38,12 @@ public:
   if(cache_&&request.kind==RequestKind::ReadRegisters){
    uint16_t cached[32]{};
    if(cache_->lookup(request,profile,nowMs,cacheTtlMs_,cached)){
+    emit_(Event::CacheHit);
     uint8_t pduOut[2U+2U*MODBUS_MAX_REGISTERS_PER_REQUEST]{};
     const auto n=encodeRegisterResponse(request,cached,pduOut,sizeof(pduOut));
     return n&&setResponse_(pduOut,n);
    }
+   emit_(Event::CacheMiss);
   }
   // A write makes prior reads potentially stale even before its RTU acknowledgement.
   if(cache_&&request.kind!=RequestKind::ReadRegisters)cache_->invalidate(request.unitId);
@@ -47,6 +53,7 @@ public:
   uint16_t transactionId=MODBUS_TRANSACTION_INVALID;
   const ModbusResultCode result=service.submit(service.ctx,&outgoing,&transactionId);
   if(result!=MODBUS_RESULT_OK||transactionId==MODBUS_TRANSACTION_INVALID){
+   if(result==MODBUS_RESULT_TIMEOUT||result==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
    if(silentTimeout_&&(result==MODBUS_RESULT_TIMEOUT||result==MODBUS_RESULT_EXPIRED)){
     reset_();return true;
    }
@@ -62,6 +69,7 @@ public:
   const ModbusResultCode polled=service_->poll(service_->ctx,transactionId_,&response);
   if(polled==MODBUS_RESULT_NOT_READY)return;
   if(polled!=MODBUS_RESULT_OK){
+   if(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
    if(silentTimeout_&&(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)){
     reset_();return;
    }
@@ -76,6 +84,7 @@ public:
    prepareException_(request_.function,response.exceptionCode?response.exceptionCode:4);return;
   }
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
+   if(response.result==MODBUS_RESULT_TIMEOUT||response.result==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
    if(silentTimeout_&&(response.result==MODBUS_RESULT_TIMEOUT||response.result==MODBUS_RESULT_EXPIRED)){
     reset_();return;
    }
@@ -108,6 +117,7 @@ public:
  }
 private:
  bool prepareException_(uint8_t function,uint8_t code) {
+  emit_(Event::ModbusException);
   uint8_t pdu[2]{};
   const auto size=encodeException(function,code,pdu,sizeof(pdu));
   return size&&setResponse_(pdu,size);
@@ -117,9 +127,10 @@ private:
   state_=responseLength_?State::ResponseReady:State::Idle;
   return responseLength_!=0;
  }
+ void emit_(Event event){if(onEvent_)onEvent_(eventCtx_,event,request_.unitId,request_.function);}
  void reset_() {
   state_=State::Idle;service_=nullptr;transactionId_=MODBUS_TRANSACTION_INVALID;
-  responseLength_=0;ownerId_=0;cache_=nullptr;
+  responseLength_=0;ownerId_=0;cache_=nullptr;onEvent_=nullptr;eventCtx_=nullptr;
  }
  State state_=State::Idle;
  MbapHeader header_{};
@@ -129,6 +140,8 @@ private:
  uint32_t cacheTtlMs_=800;
  uint32_t nowMs_=0;
  bool silentTimeout_=false;
+ EventCallback onEvent_=nullptr;
+ void* eventCtx_=nullptr;
  const ModbusMasterService* service_=nullptr;
  uint16_t transactionId_=MODBUS_TRANSACTION_INVALID;
  uint8_t ownerId_=0;
