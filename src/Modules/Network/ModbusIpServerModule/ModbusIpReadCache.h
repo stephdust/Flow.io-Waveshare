@@ -59,3 +59,4 @@ private:
  }
  Entry entries_[Capacity]{};
 };
+}  // namespace flowio::modbus_ip
