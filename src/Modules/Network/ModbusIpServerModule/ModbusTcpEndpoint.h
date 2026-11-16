@@ -5,11 +5,12 @@
 #include "ModbusIpTransactionBridge.h"
 #include "ModbusTcpFramer.h"
 namespace flowio::modbus_ip {
-// Single-client cooperative TCP transport. The shared RS485 scheduler remains
-// the only bus owner; this endpoint never opens or configures a UART.
+// Up to four independent TCP clients per port. The shared RS485 scheduler
+// remains the only bus owner; this endpoint never configures a UART.
 class TcpEndpoint {
 public:
  using ResolveProfile=bool (*)(void*,uint8_t,SerialProfile&);
+ static constexpr uint8_t MaxClients=4;
  bool begin(uint16_t port) {
   if(server_)return port==port_;
   if(!port)return false;
@@ -18,68 +19,77 @@ public:
   server_->begin();port_=port;return true;
  }
  void stop() {
-  bridge_.cancel();client_.stop();
+  for(auto& slot:slots_)disconnect_(slot);
   if(server_){server_->stop();delete server_;server_=nullptr;}
-  port_=0;framer_.reset();
+  port_=0;nextSlot_=0;
  }
  void tick(const ModbusMasterService& service,ResolveProfile resolve,void* ctx,
            uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0,
            ReadCache* cache=nullptr,uint32_t cacheTtlMs=800,bool silentTimeout=false) {
   if(!server_)return;
-  if(!client_||!client_.connected()) {
-   // A disconnected socket may evaluate false even while its RTU request
-   // is still pending. Always release the previous client's transaction
-   // before accepting a new client to prevent cross-client replies.
-   bridge_.cancel();
-   client_.stop();
-   framer_.reset();
-   WiFiClient incoming=server_->accept();
-   if(incoming)client_=incoming;
+  // Each socket has its own frame buffer, transaction bridge and scheduler owner.
+  // A pending request on one socket must not block the other clients.
+  for(auto& slot:slots_) {
+   if(slot.client&&!slot.client.connected())disconnect_(slot);
   }
-  if(!client_||!client_.connected())return;
-  bridge_.tick(millis());
-  if(bridge_.state()==TransactionBridge::State::ResponseReady){
-   std::size_t length=0;
-   if(bridge_.takeResponse(tx_,sizeof(tx_),length)){
-    if(client_.write(tx_,length)!=length){client_.stop();framer_.reset();return;}
-   }
+  WiFiClient incoming=server_->accept();
+  if(incoming){
+   Slot* freeSlot=nullptr;
+   for(auto& slot:slots_)if(!slot.client){freeSlot=&slot;break;}
+   if(freeSlot)freeSlot->client=incoming;
+   else incoming.stop();
   }
-  // Do not consume a second ADU while the scheduler transaction is pending.
-  if(bridge_.busy())return;
-  // Read only up to the end of the current ADU. Any pipelined bytes stay
-  // in the socket until the current RTU transaction has completed.
-  std::size_t budget=64;
-  while(budget--&&client_.available()>0) {
-   const int next=client_.read();
-   if(next<0)break;
-   const uint8_t byte=static_cast<uint8_t>(next);
-   std::size_t consumed=0;
-   const auto status=framer_.push(&byte,1,consumed);
-   if(status==TcpFramer::FeedResult::Invalid||
-      status==TcpFramer::FeedResult::Overflow){client_.stop();framer_.reset();return;}
-   if(status!=TcpFramer::FeedResult::Complete)continue;
-   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
-   if(decodeAdu(framer_.data(),framer_.size(),header,pdu,pduSize)){
-    RegisterRequest request{};
-    const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
-    SerialProfile profile{};
-    const bool profileFound=validation==ParseResult::Ok&&resolve&&
-                            resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
-    if(profileFound) {
-     bridge_.start(framer_.data(),framer_.size(),profile,ownerId,timeoutMs,service,fixedUnitId,
-                   cache,millis(),cacheTtlMs,silentTimeout,&logEvent_,this);
-    }else{
-     uint8_t exception[2]{};
-     const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
-     const auto pduLen=encodeException(pdu[0],code,exception,sizeof(exception));
-     const auto length=pduLen?encodeAdu(tx_,sizeof(tx_),header.transactionId,
-                                         header.unitId,exception,pduLen):0;
-     if(length)client_.write(tx_,length);
+  const uint32_t now=millis();
+  for(auto& slot:slots_){
+   if(!slot.client||!slot.client.connected())continue;
+   slot.bridge.tick(now);
+   if(slot.bridge.state()==TransactionBridge::State::ResponseReady){
+    std::size_t length=0;
+    if(slot.bridge.takeResponse(slot.tx,sizeof(slot.tx),length)){
+     if(slot.client.write(slot.tx,length)!=length){disconnect_(slot);continue;}
     }
    }
-   framer_.reset();
-   if(bridge_.busy())break;
   }
+  // Rotate the first serviced client to avoid starving higher-index slots.
+  for(uint8_t n=0;n<MaxClients;++n){
+   const uint8_t index=static_cast<uint8_t>((nextSlot_+n)%MaxClients);
+   auto& slot=slots_[index];
+   if(!slot.client||!slot.client.connected()||slot.bridge.busy())continue;
+   std::size_t budget=64;
+   while(budget--&&slot.client.available()>0){
+    const int next=slot.client.read();
+    if(next<0)break;
+    const uint8_t byte=static_cast<uint8_t>(next);
+    std::size_t consumed=0;
+    const auto status=slot.framer.push(&byte,1,consumed);
+    if(status==TcpFramer::FeedResult::Invalid||
+       status==TcpFramer::FeedResult::Overflow){disconnect_(slot);break;}
+    if(status!=TcpFramer::FeedResult::Complete)continue;
+    MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
+    if(decodeAdu(slot.framer.data(),slot.framer.size(),header,pdu,pduSize)){
+     RegisterRequest request{};
+     const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
+     SerialProfile profile{};
+     const bool profileFound=validation==ParseResult::Ok&&resolve&&
+                             resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
+     if(profileFound){
+      slot.bridge.start(slot.framer.data(),slot.framer.size(),profile,
+                        static_cast<uint8_t>(ownerId+index),timeoutMs,service,fixedUnitId,
+                        cache,now,cacheTtlMs,silentTimeout,&logEvent_,this);
+     }else{
+      uint8_t exception[2]{};
+      const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
+      const auto pduLen=encodeException(pdu[0],code,exception,sizeof(exception));
+      const auto length=pduLen?encodeAdu(slot.tx,sizeof(slot.tx),header.transactionId,
+                                         header.unitId,exception,pduLen):0;
+      if(length&&slot.client.write(slot.tx,length)!=length){disconnect_(slot);break;}
+     }
+    }
+    slot.framer.reset();
+    if(slot.bridge.busy())break;
+   }
+  }
+  nextSlot_=static_cast<uint8_t>((nextSlot_+1)%MaxClients);
  }
  bool listening()const{return server_!=nullptr;}
 private:
@@ -97,10 +107,17 @@ private:
    label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
  }
  WiFiServer* server_=nullptr;
- WiFiClient client_{};
- TcpFramer framer_{};
- TransactionBridge bridge_{};
+ struct Slot {
+  WiFiClient client{};
+  TcpFramer framer{};
+  TransactionBridge bridge{};
+  uint8_t tx[kMaxAduBytes]{};
+ };
+ static void disconnect_(Slot& slot){
+  slot.bridge.cancel();slot.client.stop();slot.framer.reset();
+ }
+ Slot slots_[MaxClients]{};
+ uint8_t nextSlot_=0;
  uint16_t port_=0;
- uint8_t tx_[kMaxAduBytes]{};
 };
 }
