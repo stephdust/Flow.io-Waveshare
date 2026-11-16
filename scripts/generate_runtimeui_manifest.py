@@ -1,6 +1,8 @@
 # Generate the compact runtime UI manifest used by the Waveshare web UI.
 
 import json
+import io
+from contextlib import contextmanager
 import os
 import re
 from pathlib import Path
@@ -89,9 +91,21 @@ def _resolve_module_id(raw_value, numeric_by_name, alias_to_numeric):
     raise RuntimeError(f"Unknown moduleId reference: {raw_value}")
 
 
+@contextmanager
+def _write_if_changed(path: Path):
+    """Avoid touching generated outputs unless their bytes change."""
+    buffer = io.StringIO()
+    yield buffer
+    content = buffer.getvalue()
+    if not path.exists() or path.read_text(encoding="utf-8") != content:
+        path.write_text(content, encoding="utf-8")
+
+
 def _json_dump(path: Path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+    content = json.dumps(payload, indent=2, ensure_ascii=True) + "\n"
+    if not path.exists() or path.read_text(encoding="utf-8") != content:
+        path.write_text(content, encoding="utf-8")
 
 
 def _c_string(text):
@@ -116,7 +130,7 @@ def _c_string(text):
 
 def _write_header(out_path: Path, entries):
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
+    with _write_if_changed(out_path) as f:
         f.write("#pragma once\n")
         f.write("/**\n")
         f.write(" * @file RuntimeUiManifest_Generated.h\n")
@@ -217,7 +231,7 @@ def _write_manifest_json_header(out_path: Path, manifest: dict):
     if f"){delimiter}\"" in payload:
         raise RuntimeError("Runtime manifest payload collides with raw-string delimiter")
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
+    with _write_if_changed(out_path) as f:
         f.write("#pragma once\n")
         f.write("/**\n")
         f.write(" * @file RuntimeUiManifestJson_Generated.h\n")
@@ -267,7 +281,7 @@ def _write_alarm_text_catalog_header(out_path: Path, entries_fr, entries_en):
     masks = sorted(set(fr_flags.keys()) | set(en_flags.keys()))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
+    with _write_if_changed(out_path) as f:
         f.write("#pragma once\n")
         f.write("/**\n")
         f.write(" * @file RuntimeUiAlarmText_Generated.h\n")
