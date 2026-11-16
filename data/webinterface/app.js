@@ -13974,7 +13974,7 @@
           }
         });
       }
-      return Object.assign({}, modbusIpConfigMeta(moduleName + '/' + k) || {}, enrichResolvedDoc(merged, sources) || {});
+      return Object.assign({}, enrichResolvedDoc(merged, sources) || {}, modbusIpConfigMeta(moduleName + '/' + k) || {});
     }
 
     // Native Modbus IP settings are registered in ConfigStore and use the
