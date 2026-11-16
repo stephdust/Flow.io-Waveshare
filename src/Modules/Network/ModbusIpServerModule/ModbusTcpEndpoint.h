@@ -1,3 +1,11 @@
+#ifndef FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_VERBOSE_TRACE 0
+#endif
+#if FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_TRACE(...) Serial.printf(__VA_ARGS__)
+#else
+#define FLOW_MODBUS_IP_TRACE(...) do {} while (0)
+#endif
 #pragma once
 #include <Arduino.h>
 #include <WiFi.h>
@@ -46,7 +54,7 @@ public:
    if(slot.bridge.state()==TransactionBridge::State::ResponseReady){
     std::size_t length=0;
     if(slot.bridge.takeResponse(slot.tx,sizeof(slot.tx),length)){
-     Serial.printf("[Modbus TCP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
+     FLOW_MODBUS_IP_TRACE("[Modbus TCP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
        static_cast<unsigned>(port_),static_cast<unsigned>(length),
        static_cast<unsigned>(readBe16(slot.tx)),static_cast<unsigned>(slot.tx[6]),
        static_cast<unsigned>(slot.tx[7]));
@@ -71,7 +79,7 @@ public:
     if(status!=TcpFramer::FeedResult::Complete)continue;
     MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
     if(decodeAdu(slot.framer.data(),slot.framer.size(),header,pdu,pduSize)){
-     Serial.printf("[Modbus TCP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
+     FLOW_MODBUS_IP_TRACE("[Modbus TCP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
        static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
        static_cast<unsigned>(header.unitId),static_cast<unsigned>(pdu[0]),
        static_cast<unsigned>(slot.framer.size()));
@@ -110,7 +118,7 @@ private:
    case TransactionBridge::Event::RtuTimeout:label="RTU TIMEOUT";break;
    case TransactionBridge::Event::ModbusException:label="MODBUS EXCEPTION";break;
   }
-  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus %s:%u] %s unit=%u fc=%u\n",
    "TCP",static_cast<unsigned>(self->port_),
    label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
  }
