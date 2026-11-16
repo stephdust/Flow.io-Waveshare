@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "Core/Services/IModbusMaster.h"
 #include "ModbusIpSchedulerAdapter.h"
+#include "ModbusIpReadCache.h"
 #include "ModbusMbapCodec.h"
 namespace flowio::modbus_ip {
 // One in-flight request per bridge instance. Network transports own sockets,
@@ -14,7 +15,8 @@ public:
  State state() const { return state_; }
  bool start(const uint8_t* adu,std::size_t size,const SerialProfile& profile,
             uint8_t ownerId,uint32_t timeoutMs,const ModbusMasterService& service,
-            uint8_t fixedUnitId=0) {
+            uint8_t fixedUnitId=0,ReadCache* cache=nullptr,uint32_t nowMs=0,
+            uint32_t cacheTtlMs=800,bool silentTimeout=false) {
   if(state_!=State::Idle||!service.submit||!service.poll)return false;
   MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
   if(!decodeAdu(adu,size,header,pdu,pduSize))return false;
@@ -23,9 +25,19 @@ public:
   header_=header;
   if(fixedUnitId>=1&&fixedUnitId<=247)request.unitId=fixedUnitId;
   request_=request;
+  cache_=cache;profile_=profile;cacheTtlMs_=cacheTtlMs;
+  silentTimeout_=silentTimeout;nowMs_=nowMs;
   if(parsed!=ParseResult::Ok) {
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
+  }
+  if(cache_&&request.kind==RequestKind::ReadRegisters){
+   uint16_t cached[32]{};
+   if(cache_->lookup(request,profile,nowMs,cacheTtlMs_,cached)){
+    uint8_t pduOut[2U+2U*MODBUS_MAX_REGISTERS_PER_REQUEST]{};
+    const auto n=encodeRegisterResponse(request,cached,pduOut,sizeof(pduOut));
+    return n&&setResponse_(pduOut,n);
+   }
   }
   ModbusRequest outgoing{};
   if(!makeSchedulerRequest(request,profile,ownerId,timeoutMs,outgoing))
@@ -37,12 +49,16 @@ public:
   service_=&service;transactionId_=transactionId;ownerId_=ownerId;state_=State::Pending;
   return true;
  }
- void tick() {
+ void tick(uint32_t nowMs=0) {
+  nowMs_=nowMs;
   if(state_!=State::Pending||!service_)return;
   ModbusResponse response{};
   const ModbusResultCode polled=service_->poll(service_->ctx,transactionId_,&response);
   if(polled==MODBUS_RESULT_NOT_READY)return;
   if(polled!=MODBUS_RESULT_OK){
+   if(silentTimeout_&&(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)){
+    reset_();return;
+   }
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
@@ -54,6 +70,9 @@ public:
    prepareException_(request_.function,response.exceptionCode?response.exceptionCode:4);return;
   }
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
+   if(silentTimeout_&&(response.result==MODBUS_RESULT_TIMEOUT||response.result==MODBUS_RESULT_EXPIRED)){
+    reset_();return;
+   }
    prepareException_(request_.function,gatewayExceptionCode(static_cast<ModbusResultCode>(response.result)));return;
   }
   if(response.slaveAddress!=request_.unitId||response.function!=request_.function){
@@ -61,6 +80,11 @@ public:
   }
   if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
    prepareException_(request_.function,4);return;
+  }
+  if(cache_){
+   if(request_.kind==RequestKind::ReadRegisters)
+    cache_->store(request_,profile_,nowMs_,response.values);
+   else cache_->invalidate(request_.unitId);
   }
   uint8_t pdu[2U+2U*MODBUS_MAX_REGISTERS_PER_REQUEST]{};
   const std::size_t pduLength=encodeRegisterResponse(request_,response.values,pdu,sizeof(pdu));
@@ -89,11 +113,16 @@ private:
  }
  void reset_() {
   state_=State::Idle;service_=nullptr;transactionId_=MODBUS_TRANSACTION_INVALID;
-  responseLength_=0;ownerId_=0;
+  responseLength_=0;ownerId_=0;cache_=nullptr;
  }
  State state_=State::Idle;
  MbapHeader header_{};
  RegisterRequest request_{};
+ ReadCache* cache_=nullptr;
+ SerialProfile profile_{};
+ uint32_t cacheTtlMs_=800;
+ uint32_t nowMs_=0;
+ bool silentTimeout_=false;
  const ModbusMasterService* service_=nullptr;
  uint16_t transactionId_=MODBUS_TRANSACTION_INVALID;
  uint8_t ownerId_=0;
