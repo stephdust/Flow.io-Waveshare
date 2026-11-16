@@ -15,6 +15,7 @@ tests=(
   modbus_ip_known_device_profile
   modbus_ip_transaction_bridge
   modbus_ip_ports
+  modbus_ip_read_cache
 )
 for test in "${tests[@]}"; do
   echo "[modbus-ip] compiling ${test}"
