@@ -7,7 +7,7 @@ namespace flowio::modbus_ip {
 inline bool makeSchedulerRequest(const RegisterRequest& source,const SerialProfile& profile,
  uint8_t ownerId,uint32_t timeoutMs,ModbusRequest& dest) {
  if(!ownerId||!validProfile(profile)||timeoutMs<10||timeoutMs>5000||
-    source.unitId<1||source.unitId>247||source.count<1||source.count>32)return false;
+    source.unitId<1||source.unitId>247||source.count<1||source.count>MODBUS_MAX_REGISTERS_PER_REQUEST)return false;
  ModbusRequest request{};
  request.ownerId=ownerId;
  request.protocol=RegisterWireProtocol::ModbusRtu;
