@@ -734,6 +734,17 @@
     "modbusIp.parity.even": "Paire",
     "modbusIp.parity.odd": "Impaire",
     "modbusIp.deviceProfiles": "Profils série par équipement",
-    "modbusIp.deviceProfilesHelp": "Format : id:baud:parité:bits_arrêt; Exemple : 17:9600:0:1; (parité 0=aucune, 1=paire, 2=impaire). Plusieurs équipements peuvent être séparés par des points-virgules."
+    "modbusIp.deviceProfilesHelp": "Format : id:baud:parité:bits_arrêt; Exemple : 17:9600:0:1; (parité 0=aucune, 1=paire, 2=impaire). Plusieurs équipements peuvent être séparés par des points-virgules.",
+    "modbusIp.port502": "Port réseau 502",
+    "modbusIp.port503": "Port réseau 503",
+    "modbusIp.port504": "Port réseau 504",
+    "modbusIp.port505": "Port réseau 505",
+    "modbusIp.port506": "Port réseau 506",
+    "modbusIp.portTargetMode": "Cible RS485",
+    "modbusIp.portExistingDevice": "Équipement Flow.io existant",
+    "modbusIp.portManualDevice": "Configuration série manuelle",
+    "modbusIp.portDevice": "Équipement RS485 Flow.io",
+    "modbusIp.portUnitId": "Adresse Modbus RTU (1–247)",
+    "modbusIp.invalidUnitId": "Adresse RTU invalide (1–247)"
   }
 }
