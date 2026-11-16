@@ -750,6 +750,12 @@
     "modbusIp.portTitle": "Port réseau",
     "modbusIp.currentSlot": "Emplacement configuré",
     "modbusIp.portTimeout": "Délai de réponse (ms)",
-    "modbusIp.invalidTimeout": "Le délai doit être compris entre 10 et 5000 ms"
+    "modbusIp.invalidTimeout": "Le délai doit être compris entre 10 et 5000 ms",
+    "modbusIp.portCacheEnabled": "Activer le cache Modbus (lectures)",
+    "modbusIp.portCacheTtl": "Durée de validité du cache (ms)",
+    "modbusIp.portTimeoutBehavior": "Comportement en cas de timeout RS485",
+    "modbusIp.portTimeoutSilent": "Silencieux : ne pas répondre",
+    "modbusIp.portTimeoutException": "Envoyer une exception Modbus (0x0B)",
+    "modbusIp.invalidCacheTtl": "La durée du cache doit être comprise entre 1 et 60 000 ms"
   }
 }
