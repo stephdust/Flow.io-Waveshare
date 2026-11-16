@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <WiFiUdp.h>
 #include "ModbusIpTransactionBridge.h"
 namespace flowio::modbus_ip {
@@ -72,12 +73,25 @@ public:
    return;
   }
   if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service,fixedUnitId,
-                   cache,millis(),cacheTtlMs,silentTimeout)){
+                   cache,millis(),cacheTtlMs,silentTimeout,&logEvent_,this)){
    remote_=sender;remotePort_=senderPort;
   }
  }
  bool listening()const{return listening_;}
 private:
+ static void logEvent_(void* ctx,TransactionBridge::Event event,uint8_t unit,uint8_t fc) {
+  const auto* self=static_cast<UdpEndpoint*>(ctx);
+  const char* label="";
+  switch(event){
+   case TransactionBridge::Event::CacheHit:label="CACHE HIT";break;
+   case TransactionBridge::Event::CacheMiss:label="CACHE MISS";break;
+   case TransactionBridge::Event::RtuTimeout:label="RTU TIMEOUT";break;
+   case TransactionBridge::Event::ModbusException:label="MODBUS EXCEPTION";break;
+  }
+  Serial.printf("[Modbus %s:%u] %s unit=%u fc=%u\\n",
+   "UDP",static_cast<unsigned>(self->port_),
+   label,static_cast<unsigned>(unit),static_cast<unsigned>(fc));
+ }
  WiFiUDP udp_{};
  TransactionBridge bridge_{};
  IPAddress remote_{};
