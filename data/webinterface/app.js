@@ -14557,7 +14557,7 @@
     function buildModbusNetworkPortEditor(key, rawValue) {
       const portNumber = key.slice(5);
       const parts = String(rawValue || '').split(':');
-      const initial = (parts.length === 8 || parts.length === 9) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
+      const initial = ([8,9,12].includes(parts.length)) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
       const root = document.createElement('div');
       root.style.cssText = 'display:grid;gap:10px;width:100%';
       const hidden = document.createElement('input');
@@ -14613,6 +14613,19 @@
       timeoutInput.value = initial[8] || '3000';
       timeoutWrap.appendChild(timeoutLabel);
       timeoutWrap.appendChild(timeoutInput);
+      const cacheEnabled = addCheck(tr('modbusIp.portCacheEnabled','Enable Modbus read cache'),initial[9] || '0');
+      const cacheTtlWrap = document.createElement('label');
+      cacheTtlWrap.style.cssText = 'display:grid;gap:4px;max-width:240px';
+      const cacheTtlLabel = document.createElement('span');
+      cacheTtlLabel.textContent=tr('modbusIp.portCacheTtl','Cache validity (ms)');
+      const cacheTtlInput=document.createElement('input');
+      cacheTtlInput.type='number';cacheTtlInput.min='1';cacheTtlInput.max='60000';cacheTtlInput.step='1';
+      cacheTtlInput.className='control-input';cacheTtlInput.value=initial[10] || '800';
+      cacheTtlWrap.appendChild(cacheTtlLabel);cacheTtlWrap.appendChild(cacheTtlInput);
+      const timeoutBehavior=addSelect(tr('modbusIp.portTimeoutBehavior','On RS485 timeout'),[
+        ['0',tr('modbusIp.portTimeoutSilent','Silent: no Modbus response')],
+        ['1',tr('modbusIp.portTimeoutException','Send Modbus exception (0x0B)')]
+      ],initial[11] || '0');
       const mode = addSelect(tr('modbusIp.portTargetMode', 'RS485 target'), [
         ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
         ['1', tr('modbusIp.portManualDevice', 'Manual serial configuration')]
@@ -14659,27 +14672,37 @@
         manual.hidden = mode.input.value !== '1';
         manual.style.display = mode.input.value === '1' ? 'grid' : 'none';
         const selected = mode.input.value === '0' ? target.input.value : manualId.value;
+        cacheTtlInput.disabled=!cacheEnabled.input.checked;
         const encoded = [
           enabled.input.checked?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
           mode.input.value,selected,baud.input.value,parity.input.value,stop.input.value,
-          timeoutInput.value
+          timeoutInput.value,cacheEnabled.input.checked?'1':'0',cacheTtlInput.value,
+          timeoutBehavior.input.value
         ].join(':');
         const validTarget = mode.input.value === '0' ||
           (Number.isInteger(Number(selected))&&Number(selected)>=1&&Number(selected)<=247);
         const timeout = Number(timeoutInput.value);
+        const ttl=Number(cacheTtlInput.value);
+        const validTtl=cacheTtlInput.value.trim()!==''&&Number.isInteger(ttl)&&ttl>=1&&ttl<=60000;
         const valid = validTarget && timeoutInput.value.trim() !== '' &&
-          Number.isInteger(timeout) && timeout>=10 && timeout<=5000;
+          Number.isInteger(timeout) && timeout>=10 && timeout<=5000 && validTtl;
+        cacheTtlInput.setCustomValidity(validTtl?'':tr('modbusIp.invalidCacheTtl','Cache validity must be between 1 and 60000 ms'));
         timeoutInput.setCustomValidity(valid ? '' : tr('modbusIp.invalidTimeout', 'Timeout must be between 10 and 5000 ms'));
         hidden.setCustomValidity(valid?'':tr('modbusIp.invalidUnitId','Invalid RTU ID'));
         hidden.value = encoded;
         hidden.dispatchEvent(new Event('input',{bubbles:true}));
         hidden.dispatchEvent(new Event('change',{bubbles:true}));
       };
-      root.appendChild(toggles);root.appendChild(timeoutWrap);root.appendChild(mode.wrap);root.appendChild(target.wrap);
+      root.appendChild(toggles);root.appendChild(timeoutWrap);
+      root.appendChild(cacheEnabled.wrap);root.appendChild(cacheTtlWrap);
+      root.appendChild(timeoutBehavior.wrap);
+      root.appendChild(mode.wrap);root.appendChild(target.wrap);
       root.appendChild(manual);root.appendChild(hidden);
       [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
-       baud.input,parity.input,stop.input,timeoutInput].forEach(el=>el.addEventListener('change',refresh));
+       baud.input,parity.input,stop.input,timeoutInput,cacheEnabled.input,
+       cacheTtlInput,timeoutBehavior.input].forEach(el=>el.addEventListener('change',refresh));
       timeoutInput.addEventListener('input',refresh);
+      cacheTtlInput.addEventListener('input',refresh);
       refresh();
       return {element:root,input:hidden};
     }
