@@ -9,10 +9,11 @@ namespace flowio::modbus_ip {
 class ReadCache {
 public:
  static constexpr unsigned Capacity=8;
+ static constexpr uint16_t MaxRegisters=32;
  void clear(){for(auto& e:entries_)e.valid=false;}
  bool lookup(const RegisterRequest& req,const SerialProfile& profile,uint32_t now,
              uint32_t ttl,uint16_t* out) {
-  if(!out||ttl==0||req.kind!=RequestKind::ReadRegisters)return false;
+  if(!out||ttl==0||req.kind!=RequestKind::ReadRegisters||req.count>MaxRegisters)return false;
   for(auto& e:entries_) {
    if(!e.valid)continue;
    if(static_cast<uint32_t>(now-e.storedAt)>=ttl){e.valid=false;continue;}
