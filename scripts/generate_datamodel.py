@@ -4,6 +4,8 @@
 import os
 import re
 import fnmatch
+import io
+from contextlib import contextmanager
 from pathlib import Path
 
 # PlatformIO provides the project directory via env
@@ -103,9 +105,19 @@ def _has_runtime_public_marker(path: Path):
     return False
 
 
+@contextmanager
+def _write_if_changed(path: Path):
+    """Preserve generated header mtime when its content is unchanged."""
+    buffer = io.StringIO()
+    yield buffer
+    content = buffer.getvalue()
+    if not path.exists() or path.read_text(encoding="utf-8") != content:
+        path.write_text(content, encoding="utf-8")
+
+
 def _write_generated(out_path: Path, rel_includes, entries):
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
+    with _write_if_changed(out_path) as f:
         f.write("#pragma once\n")
         f.write("/**\n")
         f.write(" * @file ModuleDataModel_Generated.h\n")
@@ -128,7 +140,7 @@ def _write_generated(out_path: Path, rel_includes, entries):
 
 def _write_runtime_generated(out_path: Path, rel_includes):
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
+    with _write_if_changed(out_path) as f:
         f.write("#pragma once\n")
         f.write("/**\n")
         f.write(" * @file ModuleRuntime_Generated.h\n")
