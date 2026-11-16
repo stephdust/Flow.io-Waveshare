@@ -22,8 +22,14 @@ int main() {
  PortConfig port{};
  assert(parsePortConfig("1:1:1:0:3:9600:0:1",port));
  assert(port.enabled&&port.tcp&&port.udp&&port.mode==0&&port.target==3);
+ assert(port.timeoutMs==3000); // legacy eight-field NVS config
  assert(parsePortConfig("1:1:0:1:17:19200:1:2",port));
  assert(port.mode==1&&port.target==17&&port.serial.baud==19200&&port.serial.parity==1);
+ assert(parsePortConfig("1:1:0:1:17:19200:1:2:1250",port));
+ assert(port.timeoutMs==1250);
+ assert(!validPortConfigText("1:1:0:1:17:19200:1:2:9"));
+ assert(!validPortConfigText("1:1:0:1:17:19200:1:2:5001"));
+ assert(!validPortConfigText("1:1:0:1:17:19200:1:2:1250:garbage"));
  assert(!validPortConfigText("1:1:0:1:0:9600:0:1"));
  assert(!validPortConfigText("1:1:0:1:248:9600:0:1"));
  assert(!validPortConfigText("1:1:0:1:17:9600:3:1"));
