@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "ModbusMbapCodec.h"
+#include "Core/Services/IModbusMaster.h"
 namespace flowio::modbus_ip {
 // Supported by Flow.io's current shared RS485 master service. Other function
 // codes require a deliberate extension of IModbusMaster and its RTU codec.
@@ -12,7 +13,7 @@ struct RegisterRequest {
  uint8_t unitId=0;
  uint16_t address=0;
  uint16_t count=0;
- uint16_t values[32]{};
+ uint16_t values[MODBUS_MAX_REGISTERS_PER_REQUEST]{};
 };
 enum class ParseResult : uint8_t { Ok, Malformed, UnsupportedFunction, InvalidUnit, InvalidQuantity };
 inline ParseResult parseRegisterRequest(uint8_t unitId,const uint8_t* pdu,std::size_t size,RegisterRequest& out) {
@@ -29,7 +30,7 @@ inline ParseResult parseRegisterRequest(uint8_t unitId,const uint8_t* pdu,std::s
  } else {
   if(size<5)return ParseResult::Malformed;
   parsed.count=readBe16(pdu+3);
-  if(parsed.count==0||parsed.count>32||static_cast<uint32_t>(parsed.address)+parsed.count>65536U)return ParseResult::InvalidQuantity;
+  if(parsed.count==0||parsed.count>(fc==16?123U:MODBUS_MAX_REGISTERS_PER_REQUEST)||static_cast<uint32_t>(parsed.address)+parsed.count>65536U)return ParseResult::InvalidQuantity;
   if(fc==16){
    if(size!=static_cast<std::size_t>(6+2*parsed.count)||pdu[5]!=2*parsed.count)return ParseResult::Malformed;
    parsed.kind=RequestKind::WriteRegisters;
@@ -56,7 +57,7 @@ inline uint8_t requestExceptionCode(ParseResult result) {
 }
 inline std::size_t encodeRegisterResponse(const RegisterRequest& req,const uint16_t* values,
  uint8_t* pdu,std::size_t capacity) {
- if(!pdu||req.count==0||req.count>32)return 0;
+ if(!pdu||req.count==0||req.count>MODBUS_MAX_REGISTERS_PER_REQUEST)return 0;
  if(req.function==3||req.function==4){
   const std::size_t size=2U+2U*req.count;
   if(!values||capacity<size)return 0;
