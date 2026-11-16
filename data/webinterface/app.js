@@ -14623,9 +14623,9 @@
       cacheTtlInput.type='number';cacheTtlInput.min='1';cacheTtlInput.max='60000';cacheTtlInput.step='1';
       cacheTtlInput.className='control-input';cacheTtlInput.value=initial[10] || '800';
       cacheTtlWrap.appendChild(cacheTtlLabel);cacheTtlWrap.appendChild(cacheTtlInput);
-      const timeoutBehavior=addSelect(tr('modbusIp.portTimeoutBehavior','On RS485 timeout'),[
-        ['0',tr('modbusIp.portTimeoutSilent','Silent: no Modbus response')],
-        ['1',tr('modbusIp.portTimeoutException','Send Modbus exception (0x0B)')]
+      const timeoutBehavior=addSelect(tr('modbusIp.errorBehavior','Comportement en cas d’erreur Modbus'),[
+        ['0',tr('modbusIp.allErrorsSilent','Silencieux : aucune réponse en cas d’erreur')],
+        ['1',tr('modbusIp.sendException','Envoyer une exception Modbus')]
       ],initial[11] || '0');
       const mode = addSelect(tr('modbusIp.portTargetMode', 'RS485 target'), [
         ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
