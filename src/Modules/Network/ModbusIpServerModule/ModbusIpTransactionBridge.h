@@ -41,6 +41,9 @@ public:
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
   }
+  if(cache_&&request.kind==RequestKind::ReadRegisters&&request.count>ReadCache::MaxRegisters)
+   Serial.printf("[Modbus IP] CACHE BYPASS count=%u limit=%u\n",
+     static_cast<unsigned>(request.count),static_cast<unsigned>(ReadCache::MaxRegisters));
   if(cache_&&request.kind==RequestKind::ReadRegisters&&request.count<=ReadCache::MaxRegisters){
    uint16_t cached[32]{};
    if(cache_->lookup(request,profile,nowMs,cacheTtlMs_,cached)){
@@ -111,9 +114,17 @@ public:
   }
   if(response.slaveAddress!=request_.unitId||response.function!=request_.function||
      response.registerAddress!=request_.address){
+   Serial.printf("[Modbus IP] INVALID RESPONSE tx=%u unit=%u/%u fc=%u/%u addr=%u/%u\n",
+     static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.slaveAddress),
+     static_cast<unsigned>(request_.unitId),static_cast<unsigned>(response.function),
+     static_cast<unsigned>(request_.function),static_cast<unsigned>(response.registerAddress),
+     static_cast<unsigned>(request_.address));
    prepareException_(request_.function,4);return;
   }
   if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
+   Serial.printf("[Modbus IP] INVALID COUNT tx=%u got=%u expected=%u\n",
+     static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.registerCount),
+     static_cast<unsigned>(request_.count));
    prepareException_(request_.function,4);return;
   }
   if(cache_){
@@ -137,7 +148,12 @@ public:
  }
 private:
  bool prepareException_(uint8_t function,uint8_t code) {
-  if(silentTimeout_){reset_();return true;}
+  if(silentTimeout_){
+   Serial.printf("[Modbus IP] SILENT DROP tx=%u unit=%u fc=%u code=%u\n",
+     static_cast<unsigned>(transactionId_),static_cast<unsigned>(request_.unitId),
+     static_cast<unsigned>(function),static_cast<unsigned>(code));
+   reset_();return true;
+  }
   emit_(Event::ModbusException);
   uint8_t pdu[2]{};
   const auto size=encodeException(function,code,pdu,sizeof(pdu));
