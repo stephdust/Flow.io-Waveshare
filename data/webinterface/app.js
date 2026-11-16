@@ -13985,7 +13985,7 @@
     function modbusIpConfigMeta(pathValue) {
       const path = nettoyerNomFlowCfg(pathValue).toLowerCase();
       if (path === 'modbus_ip' || path === 'network/modbus_server') {
-        return { label: 'modbus server' };
+        return { label: 'modbus_server' };
       }
       const storePath = path.startsWith('network/modbus_server/')
         ? 'modbus_ip/' + path.slice('network/modbus_server/'.length) : path;
