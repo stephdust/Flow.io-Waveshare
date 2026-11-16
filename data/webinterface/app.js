@@ -11209,6 +11209,11 @@
           return !isConfigPathHidden(childPath) && !cfgIsAliasStoreShadowPath(childPath);
         });
 
+      // This is a display-only alias; the API still stores the module as modbus_ip.
+      if (p === 'network' && cfgTreeAliases.some((alias) =>
+        alias.display === 'network/modbus_server' && alias.store === 'modbus_ip')) {
+        children.push('modbus_server');
+      }
       const node = {
         prefix: p,
         hasExact: !!data.has_exact,
@@ -11849,6 +11854,12 @@
         });
       }
 
+      // Keep the ConfigStore key modbus_ip unchanged (NVS/API compatibility),
+      // but display the module under network/modbus_server in the tree.
+      const modbusDisplay = 'network/modbus_server';
+      if (!aliases.some((alias) => alias.store === 'modbus_ip')) {
+        aliases.push({ display: modbusDisplay, store: 'modbus_ip' });
+      }
       cfgTreeAliases = aliases;
       cfgTreeVirtualBranches = virtualBranches;
     }
@@ -13966,11 +13977,13 @@
     // the optional generated cfgdoc bundle does not include this module.
     function modbusIpConfigMeta(pathValue) {
       const path = nettoyerNomFlowCfg(pathValue).toLowerCase();
-      if (path === 'modbus_ip') {
-        return { label: tr('modbusIp.title', 'Modbus TCP / UDP server') };
+      if (path === 'modbus_ip' || path === 'network/modbus_server') {
+        return { label: 'modbus server' };
       }
-      if (!path.startsWith('modbus_ip/')) return null;
-      const field = path.slice('modbus_ip/'.length);
+      const storePath = path.startsWith('network/modbus_server/')
+        ? 'modbus_ip/' + path.slice('network/modbus_server/'.length) : path;
+      if (!storePath.startsWith('modbus_ip/')) return null;
+      const field = storePath.slice('modbus_ip/'.length);
       const specs = {
         enabled: ['enabled', 'bool'],
         tcp_enabled: ['tcpEnabled', 'bool'],
