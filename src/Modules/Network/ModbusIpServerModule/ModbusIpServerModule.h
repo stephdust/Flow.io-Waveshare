@@ -44,8 +44,8 @@ public:
    stopAll_();return;
   }
   for(uint8_t i=0;i<5;++i) {
-   flowio::modbus_ip::PortConfig port{};
-   const bool configured=flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
+   ::flowio::modbus_ip::PortConfig port{};
+   const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
    if(!configured||!port.enabled) {
     tcp_[i].stop();udp_[i].stop();caches_[i].clear();
     loadedPorts_[i][0]=0;continue;
@@ -58,7 +58,7 @@ public:
    }
    uint8_t target=port.target;
    if(port.mode==0) {
-    flowio::modbus_ip::SerialProfile profile{};
+    ::flowio::modbus_ip::SerialProfile profile{};
     if(!resolvePort_(i,target,profile)) {
      tcp_[i].stop();udp_[i].stop();continue;
     }
@@ -81,10 +81,10 @@ public:
    }else if(udp_[i].listening())udp_[i].stop();
   }
  }
- bool setDeviceProfile(uint8_t id,const flowio::modbus_ip::SerialProfile& profile) {
+ bool setDeviceProfile(uint8_t id,const ::flowio::modbus_ip::SerialProfile& profile) {
   return profiles_.set(id,profile);
  }
- void setKnownDeviceResolver(bool (*resolver)(void*,uint8_t,flowio::modbus_ip::SerialProfile&),
+ void setKnownDeviceResolver(bool (*resolver)(void*,uint8_t,::flowio::modbus_ip::SerialProfile&),
                              void* ctx) {
   knownResolver_=resolver;knownCtx_=ctx;
  }
@@ -94,25 +94,25 @@ private:
   for(uint8_t i=0;i<5;++i){tcp_[i].stop();udp_[i].stop();caches_[i].clear();}
  }
  bool resolvePort_(uint8_t index,uint8_t& target,
-                   flowio::modbus_ip::SerialProfile& profile) const {
-  flowio::modbus_ip::PortConfig port{};
-  if(index>=5||!flowio::modbus_ip::parsePortConfig(config_.portText(index),port)||
+                   ::flowio::modbus_ip::SerialProfile& profile) const {
+  ::flowio::modbus_ip::PortConfig port{};
+  if(index>=5||!::flowio::modbus_ip::parsePortConfig(config_.portText(index),port)||
      !port.enabled)return false;
   if(port.mode==1) {
    target=port.target;profile=port.serial;
-   return target>=1&&target<=247&&flowio::modbus_ip::validProfile(profile);
+   return target>=1&&target<=247&&::flowio::modbus_ip::validProfile(profile);
   }
   if(!poolDevices_||!poolDevices_->getSerialConfig||
      port.target>=Limits::Io::MaxPoolDevices)return false;
   PoolDriverConfig device{};
   if(!poolDevices_->getSerialConfig(poolDevices_->ctx,port.target,&device))return false;
   const uint8_t address=device.serial.address;
-  if(!flowio::modbus_ip::profileFromPoolSerialConfig(device,address,profile))return false;
+  if(!::flowio::modbus_ip::profileFromPoolSerialConfig(device,address,profile))return false;
   target=address;
   return true;
  }
  static bool resolvePortCallback_(void* ctx,uint8_t unitId,
-                                  flowio::modbus_ip::SerialProfile& profile) {
+                                  ::flowio::modbus_ip::SerialProfile& profile) {
   const auto& context=*static_cast<PortContext*>(ctx);
   if(!context.module)return false;
   uint8_t target=0;
@@ -122,56 +122,56 @@ private:
 
  void refreshDeviceProfiles_() {
   if(std::strcmp(loadedDeviceProfiles_,config_.deviceProfiles)==0)return;
-  flowio::modbus_ip::ProfileTable candidate{};
+  ::flowio::modbus_ip::ProfileTable candidate{};
   if(!candidate.parse(config_.deviceProfiles))return;
   profiles_=candidate;
   std::memcpy(loadedDeviceProfiles_,config_.deviceProfiles,
               std::strlen(config_.deviceProfiles)+1);
  }
- bool resolveKnownDevice_(uint8_t id,flowio::modbus_ip::SerialProfile& profile) const {
+ bool resolveKnownDevice_(uint8_t id,::flowio::modbus_ip::SerialProfile& profile) const {
   if(!poolDevices_||!poolDevices_->getSerialConfig)return false;
   bool found=false;
-  flowio::modbus_ip::SerialProfile selected{};
+  ::flowio::modbus_ip::SerialProfile selected{};
   // PoolDeviceService::count counts used slots, not the highest slot index.
   // Iterate the full configured slot range to include sparse allocations.
   for(uint8_t slot=0;slot<Limits::Io::MaxPoolDevices;++slot){
    PoolDriverConfig device{};
    if(!poolDevices_->getSerialConfig(poolDevices_->ctx,slot,&device))continue;
-   flowio::modbus_ip::SerialProfile candidate{};
-   if(!flowio::modbus_ip::profileFromPoolSerialConfig(device,id,candidate))continue;
+   ::flowio::modbus_ip::SerialProfile candidate{};
+   if(!::flowio::modbus_ip::profileFromPoolSerialConfig(device,id,candidate))continue;
    // Conflicting configurations for the same RTU address are ambiguous.
    // Refuse to guess a serial line configuration for the shared bus.
-   if(!flowio::modbus_ip::mergeKnownDeviceProfile(candidate,found,selected))
+   if(!::flowio::modbus_ip::mergeKnownDeviceProfile(candidate,found,selected))
     return false;
   }
   if(found)profile=selected;
   return found;
  }
- static bool resolve_(void* ctx,uint8_t id,flowio::modbus_ip::SerialProfile& profile) {
+ static bool resolve_(void* ctx,uint8_t id,::flowio::modbus_ip::SerialProfile& profile) {
   auto& self=*static_cast<ModbusIpServerModule*>(ctx);
-  flowio::modbus_ip::KnownDeviceProfile known{};
+  ::flowio::modbus_ip::KnownDeviceProfile known{};
   if(self.knownResolver_)known.found=self.knownResolver_(self.knownCtx_,id,known.profile);
   if(!known.found)known.found=self.resolveKnownDevice_(id,known.profile);
   const auto& cfg=self.config_.data;
-  const auto selection=flowio::modbus_ip::resolveProfile(
-   static_cast<flowio::modbus_ip::ProfileMode>(cfg.profileMode),id,
+  const auto selection=::flowio::modbus_ip::resolveProfile(
+   static_cast<::flowio::modbus_ip::ProfileMode>(cfg.profileMode),id,
    cfg.commonProfile(),self.profiles_,known);
-  if(selection.status!=flowio::modbus_ip::ResolveStatus::Ok)return false;
+  if(selection.status!=::flowio::modbus_ip::ResolveStatus::Ok)return false;
   profile=selection.profile;return true;
  }
- flowio::modbus_ip::GatewayConfigVariables config_{};
- flowio::modbus_ip::ProfileTable profiles_{};
- char loadedDeviceProfiles_[flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
- flowio::modbus_ip::TcpEndpoint tcp_[5]{};
- flowio::modbus_ip::UdpEndpoint udp_[5]{};
- flowio::modbus_ip::ReadCache caches_[5]{};
+ ::flowio::modbus_ip::GatewayConfigVariables config_{};
+ ::flowio::modbus_ip::ProfileTable profiles_{};
+ char loadedDeviceProfiles_[::flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
+ ::flowio::modbus_ip::TcpEndpoint tcp_[5]{};
+ ::flowio::modbus_ip::UdpEndpoint udp_[5]{};
+ ::flowio::modbus_ip::ReadCache caches_[5]{};
  char loadedPorts_[5][64]{};
  PortContext contexts_[5]{};
  ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
  const NetworkAccessService* network_=nullptr;
  const PoolDeviceService* poolDevices_=nullptr;
- bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
+ bool (*knownResolver_)(void*,uint8_t,::flowio::modbus_ip::SerialProfile&)=nullptr;
  void* knownCtx_=nullptr;
  bool started_=false;
 
