@@ -14518,6 +14518,40 @@
       return { element: root, input: hidden };
     }
 
+    function organizeModbusPortTabs(containerEl, entries) {
+      const portEntries = entries.filter(entry => /^port_50[2-6]$/.test(entry.key));
+      if (!portEntries.length) return;
+      const nav = document.createElement('div');
+      nav.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px';
+      nav.setAttribute('role', 'tablist');
+      nav.setAttribute('aria-label', tr('modbusIp.ports', 'Modbus network ports'));
+      const buttons = [];
+      const selectPort = (index) => {
+        portEntries.forEach((entry, i) => {
+          entry.row.hidden = i !== index;
+          entry.row.style.display = i === index ? 'flex' : 'none';
+          // Do not disable hidden port fields: saving one port must preserve
+          // the configuration of the other four ports.
+          buttons[i].setAttribute('aria-selected', i === index ? 'true' : 'false');
+          buttons[i].className = i === index ? 'control-field-apply' : 'control-input';
+          buttons[i].style.cssText = 'min-width:68px;min-height:38px;cursor:pointer';
+        });
+      };
+      portEntries.forEach((entry, i) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = entry.key.slice(5);
+        button.setAttribute('role', 'tab');
+        button.addEventListener('click', () => selectPort(i));
+        nav.appendChild(button);
+        buttons.push(button);
+        const label = entry.row.querySelector('.control-label');
+        if (label) label.textContent = tr('modbusIp.portTitle', 'Network port') + ' ' + entry.key.slice(5);
+      });
+      containerEl.insertBefore(nav, portEntries[0].row);
+      selectPort(0);
+    }
+
     function buildModbusNetworkPortEditor(key, rawValue) {
       const portNumber = key.slice(5);
       const parts = String(rawValue || '').split(':');
@@ -14870,6 +14904,10 @@
         row.appendChild(valueWrap);
         containerEl.appendChild(row);
         visibilityEntries.push({ row, inputEl, key, doc });
+      }
+
+      if (moduleName === 'modbus_ip' || moduleName === 'network/modbus_server') {
+        organizeModbusPortTabs(containerEl, visibilityEntries);
       }
 
       // Declarative conditions also apply when the user changes a field before saving.
