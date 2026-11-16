@@ -14597,11 +14597,10 @@
         return { wrap, input: check };
       };
       const toggles = document.createElement('div');
-      toggles.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;column-gap:24px;row-gap:12px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px';
-      const enabled = addCheck(tr('modbusIp.enabled', 'Enabled'), initial[0]);
+      toggles.style.cssText = 'display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;column-gap:28px;row-gap:12px;padding:12px;border:1px solid var(--border, #d8e1ee);border-radius:8px;width:100%;box-sizing:border-box';
       const tcp = addCheck('TCP', initial[1]);
       const udp = addCheck('UDP', initial[2]);
-      [enabled,tcp,udp].forEach((item) => toggles.appendChild(item.wrap));
+      [tcp,udp].forEach((item) => toggles.appendChild(item.wrap));
       const timeoutWrap = document.createElement('label');
       timeoutWrap.style.cssText = 'display:grid;gap:5px;max-width:320px;width:100%';
       const timeoutLabel = document.createElement('span');
@@ -14677,7 +14676,7 @@
         const selected = mode.input.value === '0' ? target.input.value : manualId.value;
         cacheTtlInput.disabled=!cacheEnabled.input.checked;
         const encoded = [
-          enabled.input.checked?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
+          (tcp.input.checked||udp.input.checked)?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
           mode.input.value,selected,baud.input.value,parity.input.value,stop.input.value,
           timeoutInput.value,cacheEnabled.input.checked?'1':'0',cacheTtlInput.value,
           timeoutBehavior.input.value
@@ -14708,7 +14707,7 @@
       root.appendChild(toggles);root.appendChild(networkSettings);
       root.appendChild(cacheSettings);root.appendChild(targetSettings);
       targetSettings.appendChild(manual);root.appendChild(hidden);
-      [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
+      [tcp.input,udp.input,mode.input,target.input,manualId,
        baud.input,parity.input,stop.input,timeoutInput,cacheEnabled.input,
        cacheTtlInput,timeoutBehavior.input].forEach(el=>el.addEventListener('change',refresh));
       timeoutInput.addEventListener('input',refresh);
@@ -14762,7 +14761,7 @@
 
       for (const key of keys) {
         if ((moduleName === 'modbus_ip' || moduleName === 'network/modbus_server') &&
-            ['tcp_enabled','udp_enabled','port','timeout_ms','profile_mode','baud','parity','stop_bits','device_profiles'].includes(key)) continue;
+            ['enabled','tcp_enabled','udp_enabled','port','timeout_ms','profile_mode','baud','parity','stop_bits','device_profiles'].includes(key)) continue;
         const value = data[key];
         const row = document.createElement('div');
         row.className = 'control-row';
@@ -14771,7 +14770,7 @@
         if (isModbusPort) {
           // Generic configuration rows reserve half their width for a label.
           // This editor is already a complete form: give it the full row.
-          row.style.cssText = 'display:block;width:100%;min-width:0;box-sizing:border-box';
+          row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr);grid-column:1/-1;width:100%;min-width:0;box-sizing:border-box;gap:12px';
         }
 
         const doc = configDocFor(moduleName, key, []);
@@ -14796,8 +14795,8 @@
         const valueWrap = document.createElement('div');
         valueWrap.className = 'control-value-wrap';
         if (isModbusPort) {
-          valueWrap.style.cssText = 'display:block;width:100%;max-width:none;min-width:0;box-sizing:border-box';
-          labelWrap.style.cssText = 'display:block;width:100%;margin-bottom:12px';
+          valueWrap.style.cssText = 'display:block;grid-column:1/-1;width:100%;max-width:none;min-width:0;box-sizing:border-box';
+          labelWrap.style.cssText = 'display:block;grid-column:1/-1;width:100%;margin-bottom:0';
         }
 
         if (doc && doc.widget === 'action' && doc.action) {
