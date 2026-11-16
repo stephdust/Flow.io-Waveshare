@@ -46,6 +46,10 @@ public:
    if(slot.bridge.state()==TransactionBridge::State::ResponseReady){
     std::size_t length=0;
     if(slot.bridge.takeResponse(slot.tx,sizeof(slot.tx),length)){
+     Serial.printf("[Modbus TCP:%u] TX bytes=%u tid=%u unit=%u fc=%u\n",
+       static_cast<unsigned>(port_),static_cast<unsigned>(length),
+       static_cast<unsigned>(readBe16(slot.tx)),static_cast<unsigned>(slot.tx[6]),
+       static_cast<unsigned>(slot.tx[7]));
      if(slot.client.write(slot.tx,length)!=length){disconnect_(slot);continue;}
     }
    }
@@ -67,6 +71,10 @@ public:
     if(status!=TcpFramer::FeedResult::Complete)continue;
     MbapHeader header{};const uint8_t* pdu=nullptr;std::size_t pduSize=0;
     if(decodeAdu(slot.framer.data(),slot.framer.size(),header,pdu,pduSize)){
+     Serial.printf("[Modbus TCP:%u] RX tid=%u unit=%u fc=%u bytes=%u\n",
+       static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
+       static_cast<unsigned>(header.unitId),static_cast<unsigned>(pdu[0]),
+       static_cast<unsigned>(slot.framer.size()));
      RegisterRequest request{};
      const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
      SerialProfile profile{};
