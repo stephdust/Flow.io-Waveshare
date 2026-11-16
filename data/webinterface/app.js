@@ -11857,11 +11857,16 @@
       // Keep the ConfigStore key modbus_ip unchanged (NVS/API compatibility),
       // but display the module under network/modbus_server in the tree.
       const modbusDisplay = 'network/modbus_server';
-      if (!aliases.some((alias) => alias.store === 'modbus_ip')) {
-        aliases.push({ display: modbusDisplay, store: 'modbus_ip' });
-      }
-      cfgTreeAliases = aliases;
-      cfgTreeVirtualBranches = virtualBranches;
+      // Override any stale cfgdoc alias for this module so the canonical
+      // display path remains visible and the original ConfigStore key stays intact.
+      const filteredAliases = aliases.filter((alias) =>
+        alias.store !== 'modbus_ip' && alias.display !== modbusDisplay);
+      filteredAliases.push({ display: modbusDisplay, store: 'modbus_ip' });
+      cfgTreeAliases = filteredAliases;
+      cfgTreeVirtualBranches = virtualBranches.map((branch) =>
+        branch.display === 'network'
+          ? { display: branch.display, children: Array.from(new Set([...branch.children, 'modbus_server'])) }
+          : branch);
     }
 
     function resolveEnumOptions(enumSetName, sources) {
