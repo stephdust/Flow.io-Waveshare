@@ -745,6 +745,9 @@
     "modbusIp.portManualDevice": "Manual serial configuration",
     "modbusIp.portDevice": "Flow.io RS485 device",
     "modbusIp.portUnitId": "Modbus RTU address (1–247)",
-    "modbusIp.invalidUnitId": "Invalid RTU address (1–247)"
+    "modbusIp.invalidUnitId": "Invalid RTU address (1–247)",
+    "modbusIp.ports": "Modbus network ports",
+    "modbusIp.portTitle": "Network port",
+    "modbusIp.currentSlot": "Configured slot"
   }
 }
