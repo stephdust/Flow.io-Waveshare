@@ -4,6 +4,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_BASE = 32768
 
+def _write_if_changed(path, content):
+    if not path.exists() or path.read_text(encoding='utf-8') != content:
+        path.write_text(content, encoding='utf-8')
+
 def load_catalog():
     entries = json.loads((ROOT / 'src/Core/Values/catalog.json').read_text())['values']
     equipment = json.loads((ROOT / 'src/Core/Values/equipment_metrics.json').read_text())
@@ -40,7 +44,7 @@ def write_header():
     for name, value in [('Base', equipment['base']), ('Stride', equipment['stride']),
                         ('LegacyStride', equipment['legacy_stride']), ('Slots', equipment['slots'])]:
         symbols.append(f'inline constexpr uint16_t EquipmentValue{name} = {value};')
-    (ROOT/'src/Core/Generated/EquipmentMetric_Generated.h').write_text('\n'.join(symbols)+'\n')
+    _write_if_changed(ROOT/'src/Core/Generated/EquipmentMetric_Generated.h', '\n'.join(symbols)+'\n')
     out = ['#pragma once', '// Generated from Core/Values/catalog.json; no runtime value storage.',
            '#include "Core/Values/Value.h"', '#include <string.h>',
            'enum class DataValueKind : uint8_t { Analog, Counter, Derived, Tank, Uptime, Digital, Equipment, EquipmentBinary };',
@@ -55,7 +59,7 @@ def write_header():
         'inline ValueId dataValueReference(const char* text, size_t length) { for (const auto& d : kDataValues) if (strlen(d.reference) == length && memcmp(d.reference, text, length) == 0) return d.id; return VALUE_INVALID; }']
     out += ['inline bool dataValueIsEquipment(const DataValueDescriptor& d) { return d.kind == DataValueKind::Equipment || d.kind == DataValueKind::EquipmentBinary; }',
         'inline bool dataValueIsBinary(const DataValueDescriptor& d) { return d.kind == DataValueKind::Digital || d.kind == DataValueKind::EquipmentBinary; }']
-    (ROOT/'src/Core/Generated/DataValueCatalog_Generated.h').write_text('\n'.join(out)+'\n')
+    _write_if_changed(ROOT/'src/Core/Generated/DataValueCatalog_Generated.h', '\n'.join(out)+'\n')
 
 def runtime_entries():
     return [dict(id=RUNTIME_BASE+v['id'], runtimeId=RUNTIME_BASE+v['id'], dataValueId=v['id'], module='datastore', moduleId=0,
