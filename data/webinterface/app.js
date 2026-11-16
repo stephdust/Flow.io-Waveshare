@@ -14604,13 +14604,23 @@
         ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
         ['1', tr('modbusIp.portManualDevice', 'Manual serial configuration')]
       ], initial[3]);
-      const target = addSelect(tr('modbusIp.portDevice', 'Flow.io RS485 device'), 
-        Array.from({length:16},(_,slot) => {
-          const matching = (flowCfgPoolDeviceOptions || []).find((item) =>
-            Number(item.slot ?? item.id ?? item.value) === slot);
-          const name = matching && String(matching.label || matching.name || matching.title || '').trim();
-          return [String(slot), name ? (name + ' (slot ' + slot + ')') : ('Slot ' + slot)];
-        }), initial[4]);
+      const knownOptions = (flowCfgPoolDeviceOptions || []).filter(item => {
+        const slot = Number(item.slot ?? item.id ?? item.value);
+        if (!Number.isInteger(slot) || slot < 0 || slot >= 16) return false;
+        const type = String(item.protocol ?? item.kind ?? item.driver ?? '').toLowerCase();
+        // When the runtime exposes a protocol/type, exclude non-Modbus devices.
+        return !type || /modbus|rs485|rtu/.test(type);
+      });
+      const deviceChoices = knownOptions.map(item => {
+        const slot = Number(item.slot ?? item.id ?? item.value);
+        const name = String(item.label || item.name || item.title || '').trim();
+        return [String(slot), name ? (name + ' (slot ' + slot + ')') : ('Slot ' + slot)];
+      });
+      if (!deviceChoices.some(option => option[0] === initial[4])) {
+        deviceChoices.push([initial[4], tr('modbusIp.currentSlot', 'Configured slot') + ' ' + initial[4]]);
+      }
+      const target = addSelect(tr('modbusIp.portDevice', 'Flow.io RS485 device'),
+        deviceChoices, initial[4]);
       const manualId = document.createElement('input');
       manualId.type='number';manualId.min='1';manualId.max='247';manualId.step='1';
       manualId.className='control-input';manualId.value=initial[4]==='0'?'1':initial[4];
