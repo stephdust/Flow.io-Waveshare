@@ -21,9 +21,15 @@ inline bool parsePortConfig(const char* text,PortConfig& result) {
  if(!text||!*text)return false;
  unsigned values[9]{};
  int consumed=0;
- const int fields=std::sscanf(text,"%u:%u:%u:%u:%u:%u:%u:%u:%u%n",
+ int fields=std::sscanf(text,"%u:%u:%u:%u:%u:%u:%u:%u:%u%n",
    &values[0],&values[1],&values[2],&values[3],&values[4],
    &values[5],&values[6],&values[7],&values[8],&consumed);
+ if(fields!=9) {
+  consumed=0;
+  fields=std::sscanf(text,"%u:%u:%u:%u:%u:%u:%u:%u%n",
+   &values[0],&values[1],&values[2],&values[3],&values[4],
+   &values[5],&values[6],&values[7],&consumed);
+ }
  if((fields!=8&&fields!=9)||text[consumed]!='\0')return false;
  if(values[0]>1||values[1]>1||values[2]>1||values[3]>1||
     values[4]>247||values[5]>115200||values[6]>2||values[7]<1||values[7]>2||
