@@ -13,6 +13,8 @@
 #endif
 #include <Arduino.h>
 #include <WiFiUdp.h>
+#include "Core/Log.h"
+#include "Core/LogModuleIds.h"
 #include "ModbusIpTransactionBridge.h"
 namespace flowio::modbus_ip {
 // Cooperative UDP endpoint. One request at a time; the reply is always sent
@@ -35,7 +37,7 @@ public:
   bridge_.tick(millis());
 #if FLOW_MODBUS_IP_UDP_TIMING
   if(timingPending_ && bridge_.state()==TransactionBridge::State::Idle){
-   Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=silent elapsed_ms=%lu\n",
+   ::Log::info((LogModuleId)LogModuleIdValue::IOModule, "[Modbus UDP:%u] TIMING tid=%u outcome=silent elapsed_ms=%lu\n",
      static_cast<unsigned>(port_),static_cast<unsigned>(timingTid_),
      static_cast<unsigned long>(millis()-timingStartedMs_));
    timingPending_=false;
@@ -52,7 +54,7 @@ public:
     udp_.write(tx_,length);udp_.endPacket();
 #if FLOW_MODBUS_IP_UDP_TIMING
     if(timingPending_){
-     Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=reply elapsed_ms=%lu bytes=%u\n",
+     ::Log::info((LogModuleId)LogModuleIdValue::IOModule, "[Modbus UDP:%u] TIMING tid=%u outcome=reply elapsed_ms=%lu bytes=%u\n",
        static_cast<unsigned>(port_),static_cast<unsigned>(timingTid_),
        static_cast<unsigned long>(millis()-timingStartedMs_),static_cast<unsigned>(length));
      timingPending_=false;
@@ -117,7 +119,7 @@ public:
    timingTid_=header.transactionId;
    timingStartedMs_=millis();
    timingPending_=bridge_.state()!=TransactionBridge::State::Idle;
-   Serial.printf("[Modbus UDP:%u] TIMING tid=%u outcome=accepted unit=%u fc=%u addr=%u count=%u\n",
+   ::Log::info((LogModuleId)LogModuleIdValue::IOModule, "[Modbus UDP:%u] TIMING tid=%u outcome=accepted unit=%u fc=%u addr=%u count=%u\n",
      static_cast<unsigned>(port_),static_cast<unsigned>(header.transactionId),
      static_cast<unsigned>(fixedUnitId?fixedUnitId:header.unitId),
      static_cast<unsigned>(request.function),static_cast<unsigned>(request.address),
