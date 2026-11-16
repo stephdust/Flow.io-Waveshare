@@ -2351,6 +2351,8 @@
     let flowCfgCurrentData = {};
     let flowCfgCurrentPdmExtension = null;
     let flowCfgPoolDeviceOptions = null;
+    let flowCfgModbusDeviceOptions = null;
+    let flowCfgModbusDeviceOptionsTs = 0;
     let flowCfgPoolDeviceOptionsTs = 0;
     const flowCfgPoolDeviceOptionsTtlMs = 20000;
     let flowCfgChildrenCache = {};
@@ -14631,7 +14633,7 @@
         ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
         ['1', tr('modbusIp.portManualDevice', 'Manual serial configuration')]
       ], initial[3]);
-      const knownOptions = (flowCfgPoolDeviceOptions || []).filter(item => {
+      const knownOptions = (flowCfgModbusDeviceOptions || []).filter(item => {
         const slot = Number(item.slot ?? item.id ?? item.value);
         if (!Number.isInteger(slot) || slot < 0 || slot >= 16) return false;
         // The runtime may expose a numeric driver kind (3 = serial RS485),
@@ -15114,6 +15116,26 @@
       return 'Extension PoolDevice - ' + label + ' (pd' + String(slot) + ')';
     }
 
+    async function ensureFlowCfgModbusDeviceOptions() {
+      const now = Date.now();
+      if (flowCfgModbusDeviceOptions &&
+          (now - flowCfgModbusDeviceOptionsTs) < flowCfgPoolDeviceOptionsTtlMs) {
+        return flowCfgModbusDeviceOptions;
+      }
+      try {
+        const res = await fetchWithBusyRetry('/api/runtime/modbus_device_options', { cache: 'no-store' });
+        const payload = await res.json();
+        if (res.ok && payload && payload.ok === true && Array.isArray(payload.options)) {
+          flowCfgModbusDeviceOptions = payload.options;
+          flowCfgModbusDeviceOptionsTs = Date.now();
+          return flowCfgModbusDeviceOptions;
+        }
+      } catch (_) {
+        // Preserve the previously loaded choices on a temporary network error.
+      }
+      return flowCfgModbusDeviceOptions || [];
+    }
+
     async function ensureFlowCfgPoolDeviceOptions(forceReload) {
       const now = Date.now();
       if (!forceReload && flowCfgPoolDeviceOptions &&
@@ -15220,8 +15242,9 @@
         if (pdmModule) {
           await ensureCfgDocsForModule(pdmModule);
         }
-        if (pdmModule || dependencyMaskSlotFromModule(m) >= 0 ||
-            m === 'modbus_ip' || m === 'network/modbus_server') {
+        if (m === 'modbus_ip' || m === 'network/modbus_server') {
+          await ensureFlowCfgModbusDeviceOptions();
+        } else if (pdmModule || dependencyMaskSlotFromModule(m) >= 0) {
           await ensureFlowCfgPoolDeviceOptions();
         }
         if (isWaveshareProfile() && m === 'poollogic/devices') {
