@@ -16,7 +16,7 @@ public:
   bridge_.cancel();udp_.stop();listening_=false;port_=0;
  }
  void tick(const ModbusMasterService& service,ResolveProfile resolve,void* ctx,
-           uint8_t ownerId,uint32_t timeoutMs) {
+           uint8_t ownerId,uint32_t timeoutMs,uint8_t fixedUnitId=0) {
   if(!listening_)return;
   bridge_.tick();
   if(bridge_.state()==TransactionBridge::State::ResponseReady) {
@@ -56,7 +56,7 @@ public:
   const auto validation=parseRegisterRequest(header.unitId,pdu,pduSize,request);
   SerialProfile profile{};
   const bool profileFound=validation==ParseResult::Ok&&resolve&&
-                          resolve(ctx,header.unitId,profile);
+                          resolve(ctx,fixedUnitId?fixedUnitId:header.unitId,profile);
   if(!profileFound) {
    // Invalid Modbus requests get protocol errors; unknown profiles get 0x0A.
    // Neither condition is allowed to touch the shared RS485 bus.
@@ -70,7 +70,7 @@ public:
    }
    return;
   }
-  if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service)){
+  if(bridge_.start(rx_,received,profile,ownerId,timeoutMs,service,fixedUnitId)){
    remote_=sender;remotePort_=senderPort;
   }
  }
