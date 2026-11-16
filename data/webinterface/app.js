@@ -14634,13 +14634,14 @@
       const knownOptions = (flowCfgPoolDeviceOptions || []).filter(item => {
         const slot = Number(item.slot ?? item.id ?? item.value);
         if (!Number.isInteger(slot) || slot < 0 || slot >= 16) return false;
+        // The runtime may expose a numeric driver kind (3 = serial RS485),
+        // not a textual protocol. Do not discard these valid devices.
         const type = String(item.protocol ?? item.kind ?? item.driver ?? '').toLowerCase();
-        // When the runtime exposes a protocol/type, exclude non-Modbus devices.
-        return !type || /modbus|rs485|rtu/.test(type);
+        return !type || type === '3' || /modbus|rs485|rtu|serial/.test(type);
       });
       const deviceChoices = knownOptions.map(item => {
         const slot = Number(item.slot ?? item.id ?? item.value);
-        const name = String(item.label || item.name || item.title || '').trim();
+        const name = String(item.label || item.name || item.title || item.device_name || '').trim();
         return [String(slot), name ? (name + ' · ' + tr('modbusIp.slotNumber', 'Emplacement') + ' ' + (slot + 1)) : (tr('modbusIp.unnamedDevice', 'Équipement sans nom') + ' · ' + tr('modbusIp.slotNumber', 'Emplacement') + ' ' + (slot + 1))];
       });
       if (!deviceChoices.some(option => option[0] === initial[4])) {
