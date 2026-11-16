@@ -32,6 +32,7 @@ public:
   silentTimeout_=silentTimeout;nowMs_=nowMs;
   onEvent_=onEvent;eventCtx_=eventCtx;
   if(parsed!=ParseResult::Ok) {
+   if(silentTimeout_){reset_();return true;}
    const uint8_t code=requestExceptionCode(parsed);
    return prepareException_(pdu[0],code);
   }
@@ -48,13 +49,15 @@ public:
   // A write makes prior reads potentially stale even before its RTU acknowledgement.
   if(cache_&&request.kind!=RequestKind::ReadRegisters)cache_->invalidate(request.unitId);
   ModbusRequest outgoing{};
-  if(!makeSchedulerRequest(request,profile,ownerId,timeoutMs,outgoing))
+  if(!makeSchedulerRequest(request,profile,ownerId,timeoutMs,outgoing)) {
+   if(silentTimeout_){reset_();return true;}
    return prepareException_(request.function,3);
+  }
   uint16_t transactionId=MODBUS_TRANSACTION_INVALID;
   const ModbusResultCode result=service.submit(service.ctx,&outgoing,&transactionId);
   if(result!=MODBUS_RESULT_OK||transactionId==MODBUS_TRANSACTION_INVALID){
    if(result==MODBUS_RESULT_TIMEOUT||result==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
-   if(silentTimeout_&&(result==MODBUS_RESULT_TIMEOUT||result==MODBUS_RESULT_EXPIRED)){
+   if(silentTimeout_){
     reset_();return true;
    }
    return prepareException_(request.function,gatewayExceptionCode(result));
@@ -70,13 +73,14 @@ public:
   if(polled==MODBUS_RESULT_NOT_READY)return;
   if(polled!=MODBUS_RESULT_OK){
    if(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
-   if(silentTimeout_&&(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)){
+   if(silentTimeout_){
     reset_();return;
    }
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
   if(response.result==MODBUS_RESULT_EXCEPTION){
+   if(silentTimeout_){reset_();return;}
    if(response.slaveAddress!=request_.unitId||
       (response.function!=request_.function&&response.function!=(request_.function|0x80U))){
     prepareException_(request_.function,4);return;
@@ -85,7 +89,7 @@ public:
   }
   if(response.state!=MODBUS_TRANSACTION_COMPLETE||response.result!=MODBUS_RESULT_OK){
    if(response.result==MODBUS_RESULT_TIMEOUT||response.result==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
-   if(silentTimeout_&&(response.result==MODBUS_RESULT_TIMEOUT||response.result==MODBUS_RESULT_EXPIRED)){
+   if(silentTimeout_){
     reset_();return;
    }
    prepareException_(request_.function,gatewayExceptionCode(static_cast<ModbusResultCode>(response.result)));return;
@@ -117,6 +121,7 @@ public:
  }
 private:
  bool prepareException_(uint8_t function,uint8_t code) {
+  if(silentTimeout_){reset_();return true;}
   emit_(Event::ModbusException);
   uint8_t pdu[2]{};
   const auto size=encodeException(function,code,pdu,sizeof(pdu));
