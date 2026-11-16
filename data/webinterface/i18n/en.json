@@ -715,7 +715,7 @@
     "data.introScope": "Home Assistant publishes the value, history records it and the interface makes it selectable in TFT/Web fields and formulas. The three settings are independent.",
     "data.introRestart": "Exposure changes take effect after a restart.",
     "data.introMigration": "To replace an old IOSlot → calculated value setup, select the source value in your fields, then disable the now-useless intermediate publications here.",
-    "modbusIp.title": "Modbus TCP / UDP server",
+    "modbusIp.title": "modbus server",
     "modbusIp.enabled": "Enable Modbus IP gateway",
     "modbusIp.tcpEnabled": "Enable TCP server",
     "modbusIp.udpEnabled": "Enable UDP server",
