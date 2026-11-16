@@ -370,6 +370,7 @@ bool SerialDeviceDriver::submit_(Operation op, uint32_t now)
         case Operation::Status: wire = &c.status; break;
         case Operation::Feedback: wire = &c.feedback; break;
         case Operation::Telemetry: wire = &telemetryRead; break;
+        case Operation::StatusFeedback: wire = &c.status; break;
         case Operation::Limits: wire = &limitRead; break;
         default: return false;
     }
@@ -378,6 +379,7 @@ bool SerialDeviceDriver::submit_(Operation op, uint32_t now)
     r.function = wire->function; r.operation = wire->operation; r.registerAddress = wire->address;
     r.responseLayout = wire->responseLayout;
     if (op == Operation::Telemetry) r.registerCount = kHeatPumpPolyBlocks[telemetryBlock_].count;
+    if (op == Operation::StatusFeedback) r.registerCount = 2;
     r.responseTimeoutMs = c.timeoutMs;
     r.retries = wire->operation == RegisterOperation::Read || !c.hasFeedback ? c.retries : 0;
     r.transactionBudgetMs = 3000U + c.timeoutMs * (1U + r.retries) + c.line.lateResponseGuardMs * r.retries;
@@ -587,6 +589,8 @@ void SerialDeviceDriver::consume_(const ModbusResponse& r, uint32_t now)
         state_.changedAtMs = now;
         return;
     }
+    if (r.result == MODBUS_RESULT_OK && operation_ == Operation::StatusFeedback && r.registerCount != 2)
+        { linkFailure_(MODBUS_RESULT_PROTOCOL_ERROR, now); return; }
     if (r.result != MODBUS_RESULT_OK) {
         if ((r.result == MODBUS_RESULT_EXCEPTION && !transientModbusException(r.exceptionCode)) ||
             r.result == MODBUS_RESULT_INVALID_ARGUMENT) {
@@ -621,6 +625,20 @@ void SerialDeviceDriver::consume_(const ModbusResponse& r, uint32_t now)
     state_.online = true;
     if (!moreReads) state_.error = 0;
     switch (operation_) {
+        case Operation::StatusFeedback: {
+            lastStatusWord_ = r.values[0];
+            state_.observed.running = (r.values[0] & config_.serial.runningMask) != 0;
+            const auto& c = config_.serial;
+            const int32_t raw = poolRegisterNumber(r.values[1], c.feedbackType == PoolRegisterValueType::Signed16);
+            state_.observed.setpoint = raw * c.feedbackUnitsPerRaw + c.feedbackOffset;
+            statusAt_ = levelAt_ = now;
+            statusValid_ = levelValid_ = true;
+            observeRunning_(now);
+            if (state_.appliedValid && state_.appliedRevision == revision_ &&
+                state_.observed.running == target_.running && modeMatches_(lastStatusWord_, target_))
+                runVerified_ = true;
+            break;
+        }
         case Operation::Setpoint:
             speedRevision_ = sentRevision_;
             if (!sentTarget_.running) {
@@ -661,7 +679,8 @@ void SerialDeviceDriver::consume_(const ModbusResponse& r, uint32_t now)
         }
         default: break;
     }
-    if (operation_ == Operation::Status || operation_ == Operation::Feedback) {
+    if (operation_ == Operation::Status || operation_ == Operation::Feedback ||
+        operation_ == Operation::StatusFeedback) {
         lastCommunicationAtMs_ = now;
         communicationResponseSeen_ = true;
     }
@@ -681,7 +700,8 @@ void SerialDeviceDriver::consume_(const ModbusResponse& r, uint32_t now)
             nextPollAt_ = now + config_.serial.pollMs;
         }
     }
-    if (operation_ == Operation::Status || operation_ == Operation::Feedback) reconcileObservation_(now);
+    if (operation_ == Operation::Status || operation_ == Operation::Feedback ||
+        operation_ == Operation::StatusFeedback) reconcileObservation_(now);
     state_.changedAtMs = now;
 }
 void SerialDeviceDriver::tick(uint32_t now, bool enabled)
@@ -822,7 +842,15 @@ void SerialDeviceDriver::tick(uint32_t now, bool enabled)
         const bool feedbackOnly = config_.serial.runningSource != PoolRunningSource::StatusMask;
         const bool telemetry = config_.serial.telemetryProfile != PoolTelemetryProfile::None &&
             (!config_.serial.hasFeedback || pollTelemetry_);
+        const bool contiguous = config_.serial.protocol == RegisterWireProtocol::ModbusRtu &&
+            config_.serial.status.operation == RegisterOperation::Read &&
+            config_.serial.feedback.operation == RegisterOperation::Read &&
+            config_.serial.status.function == config_.serial.feedback.function &&
+            config_.serial.status.address < UINT16_MAX &&
+            config_.serial.feedback.address == config_.serial.status.address + 1U &&
+            config_.serial.runningSource == PoolRunningSource::StatusMask;
         const Operation next = telemetry ? Operation::Telemetry :
+            contiguous ? Operation::StatusFeedback :
             (feedbackOnly || pollLevel_ ? Operation::Feedback : Operation::Status);
         if (submit_(next, now)) {
             if (!telemetry) pollLevel_ = !pollLevel_;
