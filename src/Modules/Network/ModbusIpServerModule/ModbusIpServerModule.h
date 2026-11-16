@@ -57,8 +57,7 @@ public:
     }
    }
    const uint16_t networkPort=static_cast<uint16_t>(502+i);
-   const uint32_t timeout=static_cast<uint32_t>(config_.data.timeoutMs>=10&&
-     config_.data.timeoutMs<=5000?config_.data.timeoutMs:3000);
+   const uint32_t timeout=port.timeoutMs;
    if(port.tcp) {
     if(tcp_[i].begin(networkPort))
      tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
