@@ -30,6 +30,7 @@ public:
   master_=services.get<ModbusMasterService>(ServiceId::ModbusMaster);
   network_=services.get<NetworkAccessService>(ServiceId::NetworkAccess);
   poolDevices_=services.get<PoolDeviceService>(ServiceId::PoolDevice);
+  for(uint8_t i=0;i<5;++i)contexts_[i]={this,i};
   started_=true;
  }
  void loop() override {
@@ -38,22 +39,37 @@ public:
    if(!network_)network_=services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
    if(!poolDevices_)poolDevices_=services_->get<PoolDeviceService>(ServiceId::PoolDevice);
   }
-  if(!started_||!master_||!config_.data.enabled||!config_.data.valid()||
+  if(!started_||!master_||!config_.data.enabled||
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
-   if(active_){tcp_.stop();udp_.stop();active_=false;}return;
+   stopAll_();return;
   }
-  refreshDeviceProfiles_();
-  const auto& cfg=config_.data;
-  if(active_&&boundPort_!=cfg.port){tcp_.stop();udp_.stop();active_=false;}
-  boundPort_=cfg.port;active_=true;
-  if(cfg.tcpEnabled){
-   if(tcp_.begin(cfg.port))tcp_.tick(*master_,&resolve_,this,201,
-                                        static_cast<uint32_t>(cfg.timeoutMs));
-  }else if(tcp_.listening())tcp_.stop();
-  if(cfg.udpEnabled){
-   if(udp_.begin(cfg.port))udp_.tick(*master_,&resolve_,this,202,
-                                        static_cast<uint32_t>(cfg.timeoutMs));
-  }else if(udp_.listening())udp_.stop();
+  for(uint8_t i=0;i<5;++i) {
+   flowio::modbus_ip::PortConfig port{};
+   const bool configured=flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
+   if(!configured||!port.enabled) {
+    tcp_[i].stop();udp_[i].stop();continue;
+   }
+   uint8_t target=port.target;
+   if(port.mode==0) {
+    flowio::modbus_ip::SerialProfile profile{};
+    if(!resolvePort_(i,target,profile)) {
+     tcp_[i].stop();udp_[i].stop();continue;
+    }
+   }
+   const uint16_t networkPort=static_cast<uint16_t>(502+i);
+   const uint32_t timeout=static_cast<uint32_t>(config_.data.timeoutMs>=10&&
+     config_.data.timeoutMs<=5000?config_.data.timeoutMs:3000);
+   if(port.tcp) {
+    if(tcp_[i].begin(networkPort))
+     tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
+                  static_cast<uint8_t>(201+i*2),timeout,target);
+   }else if(tcp_[i].listening())tcp_[i].stop();
+   if(port.udp) {
+    if(udp_[i].begin(networkPort))
+     udp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
+                  static_cast<uint8_t>(202+i*2),timeout,target);
+   }else if(udp_[i].listening())udp_[i].stop();
+  }
  }
  bool setDeviceProfile(uint8_t id,const flowio::modbus_ip::SerialProfile& profile) {
   return profiles_.set(id,profile);
@@ -63,6 +79,37 @@ public:
   knownResolver_=resolver;knownCtx_=ctx;
  }
 private:
+ struct PortContext { ModbusIpServerModule* module=nullptr;uint8_t index=0; };
+ void stopAll_() {
+  for(uint8_t i=0;i<5;++i){tcp_[i].stop();udp_[i].stop();}
+ }
+ bool resolvePort_(uint8_t index,uint8_t& target,
+                   flowio::modbus_ip::SerialProfile& profile) const {
+  flowio::modbus_ip::PortConfig port{};
+  if(index>=5||!flowio::modbus_ip::parsePortConfig(config_.portText(index),port)||
+     !port.enabled)return false;
+  if(port.mode==1) {
+   target=port.target;profile=port.serial;
+   return target>=1&&target<=247&&flowio::modbus_ip::validProfile(profile);
+  }
+  if(!poolDevices_||!poolDevices_->getSerialConfig||
+     port.target>=Limits::Io::MaxPoolDevices)return false;
+  PoolDriverConfig device{};
+  if(!poolDevices_->getSerialConfig(poolDevices_->ctx,port.target,&device))return false;
+  const uint8_t address=device.serial.address;
+  if(!flowio::modbus_ip::profileFromPoolSerialConfig(device,address,profile))return false;
+  target=address;
+  return true;
+ }
+ static bool resolvePortCallback_(void* ctx,uint8_t unitId,
+                                  flowio::modbus_ip::SerialProfile& profile) {
+  const auto& context=*static_cast<PortContext*>(ctx);
+  if(!context.module)return false;
+  uint8_t target=0;
+  if(!context.module->resolvePort_(context.index,target,profile))return false;
+  return unitId==target;
+ }
+
  void refreshDeviceProfiles_() {
   if(std::strcmp(loadedDeviceProfiles_,config_.deviceProfiles)==0)return;
   flowio::modbus_ip::ProfileTable candidate{};
@@ -105,8 +152,9 @@ private:
  flowio::modbus_ip::GatewayConfigVariables config_{};
  flowio::modbus_ip::ProfileTable profiles_{};
  char loadedDeviceProfiles_[flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
- flowio::modbus_ip::TcpEndpoint tcp_{};
- flowio::modbus_ip::UdpEndpoint udp_{};
+ flowio::modbus_ip::TcpEndpoint tcp_[5]{};
+ flowio::modbus_ip::UdpEndpoint udp_[5]{};
+ PortContext contexts_[5]{};
  ServiceRegistry* services_=nullptr;
  const ModbusMasterService* master_=nullptr;
  const NetworkAccessService* network_=nullptr;
@@ -114,6 +162,5 @@ private:
  bool (*knownResolver_)(void*,uint8_t,flowio::modbus_ip::SerialProfile&)=nullptr;
  void* knownCtx_=nullptr;
  bool started_=false;
- bool active_=false;
- uint16_t boundPort_=0;
+
 };
