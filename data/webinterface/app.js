@@ -14557,7 +14557,7 @@
     function buildModbusNetworkPortEditor(key, rawValue) {
       const portNumber = key.slice(5);
       const parts = String(rawValue || '').split(':');
-      const initial = parts.length === 8 ? parts : ['0','1','0','0','0','9600','0','1'];
+      const initial = (parts.length === 8 || parts.length === 9) ? parts : ['0','1','0','0','0','9600','0','1','3000'];
       const root = document.createElement('div');
       root.style.cssText = 'display:grid;gap:10px;width:100%';
       const hidden = document.createElement('input');
@@ -14600,6 +14600,19 @@
       const tcp = addCheck('TCP', initial[1]);
       const udp = addCheck('UDP', initial[2]);
       [enabled,tcp,udp].forEach((item) => toggles.appendChild(item.wrap));
+      const timeoutWrap = document.createElement('label');
+      timeoutWrap.style.cssText = 'display:grid;gap:4px;max-width:240px';
+      const timeoutLabel = document.createElement('span');
+      timeoutLabel.textContent = tr('modbusIp.portTimeout', 'Response timeout (ms)');
+      const timeoutInput = document.createElement('input');
+      timeoutInput.type = 'number';
+      timeoutInput.min = '10';
+      timeoutInput.max = '5000';
+      timeoutInput.step = '1';
+      timeoutInput.className = 'control-input';
+      timeoutInput.value = initial[8] || '3000';
+      timeoutWrap.appendChild(timeoutLabel);
+      timeoutWrap.appendChild(timeoutInput);
       const mode = addSelect(tr('modbusIp.portTargetMode', 'RS485 target'), [
         ['0', tr('modbusIp.portExistingDevice', 'Existing Flow.io device')],
         ['1', tr('modbusIp.portManualDevice', 'Manual serial configuration')]
@@ -14648,19 +14661,24 @@
         const selected = mode.input.value === '0' ? target.input.value : manualId.value;
         const encoded = [
           enabled.input.checked?'1':'0',tcp.input.checked?'1':'0',udp.input.checked?'1':'0',
-          mode.input.value,selected,baud.input.value,parity.input.value,stop.input.value
+          mode.input.value,selected,baud.input.value,parity.input.value,stop.input.value,
+          timeoutInput.value
         ].join(':');
-        const valid = mode.input.value === '0' ||
+        const validTarget = mode.input.value === '0' ||
           (Number.isInteger(Number(selected))&&Number(selected)>=1&&Number(selected)<=247);
+        const timeout = Number(timeoutInput.value);
+        const valid = validTarget && timeoutInput.value.trim() !== '' &&
+          Number.isInteger(timeout) && timeout>=10 && timeout<=5000;
+        timeoutInput.setCustomValidity(valid ? '' : tr('modbusIp.invalidTimeout', 'Timeout must be between 10 and 5000 ms'));
         hidden.setCustomValidity(valid?'':tr('modbusIp.invalidUnitId','Invalid RTU ID'));
         hidden.value = encoded;
         hidden.dispatchEvent(new Event('input',{bubbles:true}));
         hidden.dispatchEvent(new Event('change',{bubbles:true}));
       };
-      root.appendChild(toggles);root.appendChild(mode.wrap);root.appendChild(target.wrap);
+      root.appendChild(toggles);root.appendChild(timeoutWrap);root.appendChild(mode.wrap);root.appendChild(target.wrap);
       root.appendChild(manual);root.appendChild(hidden);
       [enabled.input,tcp.input,udp.input,mode.input,target.input,manualId,
-       baud.input,parity.input,stop.input].forEach(el=>el.addEventListener('change',refresh));
+       baud.input,parity.input,stop.input,timeoutInput].forEach(el=>el.addEventListener('change',refresh));
       refresh();
       return {element:root,input:hidden};
     }
