@@ -76,7 +76,7 @@ public:
       slot.bridge.start(slot.framer.data(),slot.framer.size(),profile,
                         static_cast<uint8_t>(ownerId+index),timeoutMs,service,fixedUnitId,
                         cache,now,cacheTtlMs,silentTimeout,&logEvent_,this);
-     }else{
+     }else if(!silentTimeout){
       uint8_t exception[2]{};
       const uint8_t code=validation==ParseResult::Ok?0x0a:requestExceptionCode(validation);
       const auto pduLen=encodeException(pdu[0],code,exception,sizeof(exception));
