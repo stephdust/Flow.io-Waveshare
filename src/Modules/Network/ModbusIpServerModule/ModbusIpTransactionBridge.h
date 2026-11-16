@@ -1,3 +1,11 @@
+#ifndef FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_VERBOSE_TRACE 0
+#endif
+#if FLOW_MODBUS_IP_VERBOSE_TRACE
+#define FLOW_MODBUS_IP_TRACE(...) Serial.printf(__VA_ARGS__)
+#else
+#define FLOW_MODBUS_IP_TRACE(...) do {} while (0)
+#endif
 #pragma once
 #include <cstddef>
 #include <cstdint>
@@ -29,7 +37,7 @@ public:
   header_=header;
   if(fixedUnitId>=1&&fixedUnitId<=247)request.unitId=fixedUnitId;
   request_=request;
-  Serial.printf("[Modbus IP] RX unit=%u fc=%u addr=%u count=%u timeout=%lu ms\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus IP] RX unit=%u fc=%u addr=%u count=%u timeout=%lu ms\n",
     static_cast<unsigned>(request.unitId),static_cast<unsigned>(request.function),
     static_cast<unsigned>(request.address),static_cast<unsigned>(request.count),
     static_cast<unsigned long>(timeoutMs));
@@ -42,7 +50,7 @@ public:
    return prepareException_(pdu[0],code);
   }
   if(cache_&&request.kind==RequestKind::ReadRegisters&&request.count>ReadCache::MaxRegisters)
-   Serial.printf("[Modbus IP] CACHE BYPASS count=%u limit=%u\n",
+   FLOW_MODBUS_IP_TRACE("[Modbus IP] CACHE BYPASS count=%u limit=%u\n",
      static_cast<unsigned>(request.count),static_cast<unsigned>(ReadCache::MaxRegisters));
   if(cache_&&request.kind==RequestKind::ReadRegisters&&request.count<=ReadCache::MaxRegisters){
    uint16_t cached[32]{};
@@ -72,7 +80,7 @@ public:
   }
   service_=&service;transactionId_=transactionId;ownerId_=ownerId;state_=State::Pending;
   submittedAtMs_=nowMs;
-  Serial.printf("[Modbus IP] SCHEDULER ACCEPTED tx=%u unit=%u addr=%u count=%u\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus IP] SCHEDULER ACCEPTED tx=%u unit=%u addr=%u count=%u\n",
     static_cast<unsigned>(transactionId_),static_cast<unsigned>(request_.unitId),
     static_cast<unsigned>(request_.address),static_cast<unsigned>(request_.count));
   return true;
@@ -84,7 +92,7 @@ public:
   const ModbusResultCode polled=service_->poll(service_->ctx,transactionId_,&response);
   if(polled==MODBUS_RESULT_NOT_READY)return;
   if(polled!=MODBUS_RESULT_OK){
-   Serial.printf("[Modbus IP] SCHEDULER ERROR tx=%u code=%u elapsed=%lu ms\n",
+   FLOW_MODBUS_IP_TRACE("[Modbus IP] SCHEDULER ERROR tx=%u code=%u elapsed=%lu ms\n",
      static_cast<unsigned>(transactionId_),static_cast<unsigned>(polled),
      static_cast<unsigned long>(nowMs-submittedAtMs_));
    if(polled==MODBUS_RESULT_TIMEOUT||polled==MODBUS_RESULT_EXPIRED)emit_(Event::RtuTimeout);
@@ -94,7 +102,7 @@ public:
    prepareException_(request_.function,gatewayExceptionCode(polled));return;
   }
   if(response.state==MODBUS_TRANSACTION_QUEUED)return;
-  Serial.printf("[Modbus IP] SCHEDULER RESULT tx=%u state=%u code=%u elapsed=%lu ms\n",
+  FLOW_MODBUS_IP_TRACE("[Modbus IP] SCHEDULER RESULT tx=%u state=%u code=%u elapsed=%lu ms\n",
     static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.state),
     static_cast<unsigned>(response.result),static_cast<unsigned long>(nowMs-submittedAtMs_));
   if(response.result==MODBUS_RESULT_EXCEPTION){
@@ -114,7 +122,7 @@ public:
   }
   if(response.slaveAddress!=request_.unitId||response.function!=request_.function||
      response.registerAddress!=request_.address){
-   Serial.printf("[Modbus IP] INVALID RESPONSE tx=%u unit=%u/%u fc=%u/%u addr=%u/%u\n",
+   FLOW_MODBUS_IP_TRACE("[Modbus IP] INVALID RESPONSE tx=%u unit=%u/%u fc=%u/%u addr=%u/%u\n",
      static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.slaveAddress),
      static_cast<unsigned>(request_.unitId),static_cast<unsigned>(response.function),
      static_cast<unsigned>(request_.function),static_cast<unsigned>(response.registerAddress),
@@ -122,7 +130,7 @@ public:
    prepareException_(request_.function,4);return;
   }
   if((request_.function==3||request_.function==4)&&response.registerCount!=request_.count){
-   Serial.printf("[Modbus IP] INVALID COUNT tx=%u got=%u expected=%u\n",
+   FLOW_MODBUS_IP_TRACE("[Modbus IP] INVALID COUNT tx=%u got=%u expected=%u\n",
      static_cast<unsigned>(transactionId_),static_cast<unsigned>(response.registerCount),
      static_cast<unsigned>(request_.count));
    prepareException_(request_.function,4);return;
@@ -149,7 +157,7 @@ public:
 private:
  bool prepareException_(uint8_t function,uint8_t code) {
   if(silentTimeout_){
-   Serial.printf("[Modbus IP] SILENT DROP tx=%u unit=%u fc=%u code=%u\n",
+   FLOW_MODBUS_IP_TRACE("[Modbus IP] SILENT DROP tx=%u unit=%u fc=%u code=%u\n",
      static_cast<unsigned>(transactionId_),static_cast<unsigned>(request_.unitId),
      static_cast<unsigned>(function),static_cast<unsigned>(code));
    reset_();return true;
