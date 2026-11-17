@@ -419,6 +419,20 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
         activeIndex_ = selectNextSlot_(nowMs);
         if (activeIndex_ >= 0) {
             Slot& slot = storage_->slots[(uint8_t)activeIndex_];
+#if FLOW_MODBUS_IP_UDP_TIMING
+            if (isModbusUdpOwner(slot.request.ownerId)) {
+                uint8_t pendingHigher = 0U;
+                uint8_t pendingSame = 0U;
+                for (const Slot& other : storage_->slots) {
+                    if (&other == &slot || other.state != SlotState::Queued) continue;
+                    if (other.request.priority > slot.request.priority) ++pendingHigher;
+                    else if (other.request.priority == slot.request.priority) ++pendingSame;
+                }
+                LOGI("Modbus UDP RS485 dispatch tx=%u owner=%u priority=%u pending_higher=%u pending_same=%u queue_ms=%lu",
+                     slot.transactionId, slot.request.ownerId, slot.request.priority,
+                     pendingHigher, pendingSame, (unsigned long)(nowMs - slot.queuedAtMs));
+            }
+#endif
             (void)sendActive_(slot, nowMs, nowUs);
         }
         unlock_();
