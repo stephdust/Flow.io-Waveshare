@@ -262,8 +262,8 @@ void WebInterfaceModule::flushLocalLogQueue_()
 
     auto sendLogLine = [&](const char* text) -> bool {
         if (!text || text[0] == '\0') return true;
-        const uint32_t freeBytes = (uint32_t)heap_caps_get_free_size(MALLOC_CAP_8BIT);
-        const uint32_t largestBytes = freeBytes;
+        const uint32_t freeBytes = (uint32_t)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t largestBytes = (uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         if (freeBytes < kWsLogMinFreeBytes || largestBytes < kWsLogMinLargestBytes) {
             ++wsLogDropCount_;
             ++wsLogCoalescedCount_;
