@@ -343,6 +343,49 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
                  (unsigned)(slot.attempts + 1U), resultName(result));
         }
     }
+    // Lightweight aggregate metrics for internal polling and external Modbus IP traffic.
+    // No frame dumps, allocations or extra UART operations. One line per class / 15 s.
+    {
+        struct TimingBucket {
+            uint32_t windowStartMs = 0U;
+            uint32_t samples = 0U;
+            uint32_t errors = 0U;
+            uint64_t queueTotalMs = 0U;
+            uint64_t busTotalMs = 0U;
+            uint32_t queueMaxMs = 0U;
+            uint32_t busMaxMs = 0U;
+        };
+        static TimingBucket buckets[4]{};
+        const bool ipOwner = slot.request.ownerId >= 201U && slot.request.ownerId <= 212U;
+        const uint8_t category = ipOwner ? 2U :
+            (slot.request.slaveAddress == 0x11U ? 0U :
+             (slot.request.slaveAddress == 0xAAU ? 1U : 3U));
+        const char* const names[4] = {"internal_polytropic", "internal_aquagem",
+                                      "modbus_ip", "internal_other"};
+        TimingBucket& bucket = buckets[category];
+        const uint32_t finishedMs = millis();
+        const uint32_t queueMs = slot.sentAtMs - slot.queuedAtMs;
+        const uint32_t busMs = finishedMs - slot.sentAtMs;
+        if (bucket.windowStartMs == 0U) bucket.windowStartMs = finishedMs;
+        ++bucket.samples;
+        if (result != MODBUS_RESULT_OK) ++bucket.errors;
+        bucket.queueTotalMs += queueMs;
+        bucket.busTotalMs += busMs;
+        if (queueMs > bucket.queueMaxMs) bucket.queueMaxMs = queueMs;
+        if (busMs > bucket.busMaxMs) bucket.busMaxMs = busMs;
+        if ((uint32_t)(finishedMs - bucket.windowStartMs) >= 15000U) {
+            LOGI("Modbus SCHED class=%s samples=%lu errors=%lu queue_avg_ms=%lu queue_max_ms=%lu rs485_avg_ms=%lu rs485_max_ms=%lu last_owner=%u last_slave=0x%02X last_baud=%lu",
+                 names[category], (unsigned long)bucket.samples,
+                 (unsigned long)bucket.errors,
+                 (unsigned long)(bucket.queueTotalMs / bucket.samples),
+                 (unsigned long)bucket.queueMaxMs,
+                 (unsigned long)(bucket.busTotalMs / bucket.samples),
+                 (unsigned long)bucket.busMaxMs,
+                 (unsigned)slot.request.ownerId, (unsigned)slot.request.slaveAddress,
+                 (unsigned long)slot.request.line.baud);
+            bucket = TimingBucket{};
+        }
+    }
     if (slot.abandoned) slot = Slot{};
     else slot.state = SlotState::Finished;
     activeIndex_ = -1;
