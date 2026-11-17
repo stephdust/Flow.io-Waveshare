@@ -271,7 +271,15 @@ int8_t Rs485TransactionScheduler::selectNextSlot_(uint32_t nowMs) const
         const Slot& current = storage_->slots[(uint8_t)selected];
         const auto rank = [nowMs](const Slot& s) -> uint8_t {
             if (s.request.priority == MODBUS_PRIORITY_SAFETY) return 4;
-            return (uint32_t)(nowMs - s.queuedAtMs) >= 2000 ? 3 : s.request.priority;
+            const uint32_t waitMs = (uint32_t)(nowMs - s.queuedAtMs);
+            // Give periodic internal polls a bounded chance under continuous IP load.
+            // Commands retain precedence until a poll has waited 750 ms; safety
+            // always wins. At 2 s, age every request to avoid starving IP traffic.
+            // Preserve FIFO within each effective priority; no UART/profile changes.
+            if (waitMs >= 2000U) return 3;
+            if (s.request.priority == MODBUS_PRIORITY_BACKGROUND &&
+                s.request.ownerId < 201U && waitMs >= 750U) return 2;
+            return s.request.priority;
         };
         if (rank(candidate) > rank(current) ||
             (rank(candidate) == rank(current) && int32_t(candidate.order - current.order) < 0)) {
