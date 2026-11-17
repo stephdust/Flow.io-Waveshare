@@ -480,10 +480,20 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
         if (!bus_.takeFrame(storage_->rxFrame, sizeof(storage_->rxFrame), rxLength)) {
             retryOrFinish_(slot, MODBUS_RESULT_IO_ERROR, nowMs);
         } else {
-            LOGD_HEX("Modbus RX", slot.transactionId, storage_->rxFrame, rxLength);
             ModbusResponse response{};
             const ModbusResultCode result = ModbusRtuCodec::decodeResponse(
                 slot.request, storage_->rxFrame, rxLength, response);
+            if (result != MODBUS_RESULT_OK && result != MODBUS_RESULT_EXCEPTION) {
+                LOGD_HEX("Modbus BAD RX", slot.transactionId, storage_->rxFrame, rxLength);
+                static uint32_t lastBadFrameLogMs = 0U;
+                if ((uint32_t)(nowMs - lastBadFrameLogMs) >= 2000U) {
+                    lastBadFrameLogMs = nowMs;
+                    LOGI("Modbus BAD RX id=%u owner=%u slave=%u fc=0x%02X bytes=%u result=%s elapsed_ms=%lu",
+                         slot.transactionId, slot.request.ownerId, slot.request.slaveAddress,
+                         slot.request.function, (unsigned)rxLength, resultName(result),
+                         (unsigned long)(nowMs - slot.sentAtMs));
+                }
+            }
             LOGD("Modbus RX id=%u bytes=%u elapsed_ms=%lu result=%s registers=%u",
                  slot.transactionId, (unsigned)rxLength,
                  (unsigned long)(nowMs - slot.sentAtMs), resultName(result), response.registerCount);
