@@ -324,6 +324,22 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
     LOGD("Modbus done id=%u slave=%u result=%s exception=0x%02X total_ms=%lu abandoned=%u",
          slot.transactionId, slot.request.slaveAddress, resultName(result),
          slot.response.exceptionCode, (unsigned long)(millis() - slot.queuedAtMs), slot.abandoned);
+    // Rate-limited timing for Modbus TCP owners (ports 502-504, two clients each).
+    // Measures scheduler queue + RS485 transaction without changing bus behavior.
+    if (slot.request.ownerId >= 201U && slot.request.ownerId <= 212U) {
+        static uint32_t lastIpTimingLogMs = 0U;
+        const uint32_t nowMs = millis();
+        if ((uint32_t)(nowMs - lastIpTimingLogMs) >= 2000U) {
+            lastIpTimingLogMs = nowMs;
+            LOGI("Modbus IP TIMING owner=%u id=%u slave=%u fc=0x%02X reg=0x%04X count=%u queue_ms=%lu rs485_ms=%lu total_ms=%lu attempts=%u result=%s",
+                 slot.request.ownerId, slot.transactionId, slot.request.slaveAddress,
+                 slot.request.function, slot.request.registerAddress, slot.request.registerCount,
+                 (unsigned long)(slot.sentAtMs - slot.queuedAtMs),
+                 (unsigned long)(nowMs - slot.sentAtMs),
+                 (unsigned long)(nowMs - slot.queuedAtMs),
+                 (unsigned)(slot.attempts + 1U), resultName(result));
+        }
+    }
     if (slot.abandoned) slot = Slot{};
     else slot.state = SlotState::Finished;
     activeIndex_ = -1;
