@@ -7,7 +7,6 @@
 #include "Core/SystemLimits.h"
 #include "ModbusIpProfileResolver.h"
 #include "ModbusTcpEndpoint.h"
-#include "ModbusUdpEndpoint.h"
 #include "ModbusIpHealth.h"
 
 // Native Flow.io module. No UART is created here: all requests use the
@@ -64,8 +63,8 @@ public:
 #endif
    ::flowio::modbus_ip::PortConfig port{};
    const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
-   if(!configured||(!port.tcp&&!port.udp)) {
-    tcp_[i].stop();udp_[i].stop();caches_[i].clear();
+   if(!configured||!port.tcp) {
+    tcp_[i].stop();caches_[i].clear();
     loadedPorts_[i][0]=0;continue;
    }
    const char* settings=config_.portText(i);
@@ -78,7 +77,7 @@ public:
    if(port.mode==0) {
     ::flowio::modbus_ip::SerialProfile profile{};
     if(!resolvePort_(i,target,profile)) {
-     tcp_[i].stop();udp_[i].stop();continue;
+     tcp_[i].stop();continue;
     }
    }
    const uint16_t networkPort=static_cast<uint16_t>(502+i);
@@ -93,16 +92,6 @@ public:
                   port.timeoutBehavior==0);
     }
    }else if(tcp_[i].listening())tcp_[i].stop();
-   if(port.udp) {
-    if(udp_[i].begin(networkPort)) {
-     FlowModbusIpHealth::stage=5;
-     FlowModbusIpHealth::lastProgressMs=millis();
-     udp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
-                  static_cast<uint8_t>(205+i*5),timeout,target,
-                  port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
-                  port.timeoutBehavior==0);
-    }
-   }else if(udp_[i].listening())udp_[i].stop();
 #if FLOW_MODBUS_IP_UDP_TIMING
    const uint32_t portUs=micros()-portStartedUs;
    if(portUs>slowestPortUs){slowestPortUs=portUs;slowestPort=i;}
@@ -132,7 +121,7 @@ public:
 private:
  struct PortContext { ModbusIpServerModule* module=nullptr;uint8_t index=0; };
  void stopAll_() {
-  for(uint8_t i=0;i<3;++i){tcp_[i].stop();udp_[i].stop();caches_[i].clear();}
+  for(uint8_t i=0;i<3;++i){tcp_[i].stop();caches_[i].clear();}
  }
  bool resolvePort_(uint8_t index,uint8_t& target,
                    ::flowio::modbus_ip::SerialProfile& profile) const {
@@ -204,7 +193,6 @@ private:
  ::flowio::modbus_ip::ProfileTable profiles_{};
  char loadedDeviceProfiles_[::flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
  ::flowio::modbus_ip::TcpEndpoint tcp_[3]{};
- ::flowio::modbus_ip::UdpEndpoint udp_[3]{};
  ::flowio::modbus_ip::ReadCache caches_[3]{};
  char loadedPorts_[3][64]{};
  PortContext contexts_[3]{};
