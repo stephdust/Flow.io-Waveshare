@@ -14,18 +14,6 @@
 
 #include "Modules/IOModule/IOProtocols/Modbus/ModbusRtuCodec.h"
 
-#ifndef FLOW_MODBUS_IP_UDP_TIMING
-#define FLOW_MODBUS_IP_UDP_TIMING 0
-#endif
-
-#if FLOW_MODBUS_IP_UDP_TIMING
-namespace {
-bool isModbusUdpOwner(uint8_t owner) {
-    return owner == 205U || owner == 210U || owner == 215U;
-}
-}
-#endif
-
 namespace {
 uint32_t busAvailableAt(const SerialLineProfile& line, uint32_t sentAt, uint32_t now, bool guard)
 {
@@ -310,36 +298,11 @@ bool Rs485TransactionScheduler::sendActive_(Slot& slot, uint32_t nowMs, uint32_t
         finish_(slot, MODBUS_RESULT_IO_ERROR);
         return false;
     }
-#if FLOW_MODBUS_IP_UDP_TIMING
-    if (!isModbusUdpOwner(slot.request.ownerId)) {
-        uint8_t waitingUdp = 0U;
-        uint32_t oldestUdpMs = 0U;
-        for (const Slot& other : storage_->slots) {
-            if (other.state != SlotState::Queued || !isModbusUdpOwner(other.request.ownerId)) continue;
-            ++waitingUdp;
-            const uint32_t age = nowMs - other.queuedAtMs;
-            if (age > oldestUdpMs) oldestUdpMs = age;
-        }
-        if (waitingUdp) {
-            LOGI("Modbus RS485 competing start tx=%u owner=%u priority=%u slave=%u waiting_udp=%u oldest_udp_ms=%lu",
-                 slot.transactionId, slot.request.ownerId, slot.request.priority,
-                 slot.request.slaveAddress, waitingUdp, (unsigned long)oldestUdpMs);
-        }
-    }
-#endif
     LOGD("Modbus dispatch id=%u slave=%u queue_ms=%lu", slot.transactionId,
          slot.request.slaveAddress, (unsigned long)(nowMs - slot.enqueuedAttemptAtMs));
     LOGD_HEX("Modbus TX", slot.transactionId, storage_->txFrame, txLength);
     slot.state = SlotState::Active;
     slot.sentAtMs = nowMs;
-#if FLOW_MODBUS_IP_UDP_TIMING
-    if (isModbusUdpOwner(slot.request.ownerId)) {
-        LOGI("Modbus UDP RS485 tx=%u owner=%u slave=%u fc=%u addr=%u count=%u queue_ms=%lu",
-             slot.transactionId, slot.request.ownerId, slot.request.slaveAddress,
-             slot.request.function, slot.request.registerAddress, slot.request.registerCount,
-             (unsigned long)(nowMs - slot.queuedAtMs));
-    }
-#endif
     LOGD("Modbus TX id=%u bytes=%u attempt=%u/%u timeout_ms=%lu protocol=%u",
          slot.transactionId, (unsigned)txLength, slot.attempts + 1U, slot.request.retries + 1U,
          (unsigned long)slot.request.responseTimeoutMs, (unsigned)slot.request.protocol);
@@ -356,36 +319,8 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
     slot.response.state = (result == MODBUS_RESULT_OK)
                               ? MODBUS_TRANSACTION_COMPLETE
                               : MODBUS_TRANSACTION_FAILED;
-#if FLOW_MODBUS_IP_UDP_TIMING
-    if (!isModbusUdpOwner(slot.request.ownerId)) {
-        uint8_t waitingUdp = 0U;
-        uint32_t oldestUdpMs = 0U;
-        const uint32_t completedMs = millis();
-        for (const Slot& other : storage_->slots) {
-            if (other.state != SlotState::Queued || !isModbusUdpOwner(other.request.ownerId)) continue;
-            ++waitingUdp;
-            const uint32_t age = completedMs - other.queuedAtMs;
-            if (age > oldestUdpMs) oldestUdpMs = age;
-        }
-        if (waitingUdp) {
-            LOGI("Modbus RS485 competing done tx=%u owner=%u priority=%u result=%s rs485_ms=%lu waiting_udp=%u oldest_udp_ms=%lu",
-                 slot.transactionId, slot.request.ownerId, slot.request.priority, resultName(result),
-                 (unsigned long)(completedMs - slot.sentAtMs), waitingUdp, (unsigned long)oldestUdpMs);
-        }
-    }
-#endif
     availableAtMs_ = busAvailableAt(slot.request.line, slot.sentAtMs, millis(),
                                     result != MODBUS_RESULT_OK || slot.abandoned);
-#if FLOW_MODBUS_IP_UDP_TIMING
-    if (isModbusUdpOwner(slot.request.ownerId)) {
-        const uint32_t finishedMs = millis();
-        LOGI("Modbus UDP RS485 done tx=%u owner=%u slave=%u result=%s queue_ms=%lu rs485_ms=%lu total_ms=%lu",
-             slot.transactionId, slot.request.ownerId, slot.request.slaveAddress,
-             resultName(result), (unsigned long)(slot.sentAtMs - slot.queuedAtMs),
-             (unsigned long)(finishedMs - slot.sentAtMs),
-             (unsigned long)(finishedMs - slot.queuedAtMs));
-    }
-#endif
     LOGD("Modbus done id=%u slave=%u result=%s exception=0x%02X total_ms=%lu abandoned=%u",
          slot.transactionId, slot.request.slaveAddress, resultName(result),
          slot.response.exceptionCode, (unsigned long)(millis() - slot.queuedAtMs), slot.abandoned);
@@ -454,20 +389,6 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
         activeIndex_ = selectNextSlot_(nowMs);
         if (activeIndex_ >= 0) {
             Slot& slot = storage_->slots[(uint8_t)activeIndex_];
-#if FLOW_MODBUS_IP_UDP_TIMING
-            if (isModbusUdpOwner(slot.request.ownerId)) {
-                uint8_t pendingHigher = 0U;
-                uint8_t pendingSame = 0U;
-                for (const Slot& other : storage_->slots) {
-                    if (&other == &slot || other.state != SlotState::Queued) continue;
-                    if (other.request.priority > slot.request.priority) ++pendingHigher;
-                    else if (other.request.priority == slot.request.priority) ++pendingSame;
-                }
-                LOGI("Modbus UDP RS485 dispatch tx=%u owner=%u priority=%u pending_higher=%u pending_same=%u queue_ms=%lu",
-                     slot.transactionId, slot.request.ownerId, slot.request.priority,
-                     pendingHigher, pendingSame, (unsigned long)(nowMs - slot.queuedAtMs));
-            }
-#endif
             (void)sendActive_(slot, nowMs, nowUs);
         }
         unlock_();
