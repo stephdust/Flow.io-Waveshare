@@ -5627,6 +5627,8 @@ void WebInterfaceModule::startServer_()
     });
 
     server_.on("/webinterface/app.css", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/app.css", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5643,6 +5645,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/app-core.css", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/app-core.css", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5659,6 +5663,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/sh.html", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/sh.html", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5675,6 +5681,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/app.js", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/app.js", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5692,6 +5700,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/app-core.js", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/app-core.js", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5709,6 +5719,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/i18n/fr.json", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/i18n/fr.json", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
@@ -5726,6 +5738,8 @@ void WebInterfaceModule::startServer_()
         sendPreparedAssetResponse(request, response, &forensicMeta);
     });
     server_.on("/webinterface/i18n/en.json", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        // Measure asset handler time during F5 reloads; this does not measure socket transfer completion.
+        HttpLatencyScope latency(request, "/webinterface/i18n/en.json", 200U, 1000U);
         SpiffsAssetForensicMeta forensicMeta{};
         bool heapRejected = false;
         bool buildBusy = false;
