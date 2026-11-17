@@ -57,7 +57,7 @@ public:
   }
   for(uint8_t i=0;i<3;++i) {
    FlowModbusIpHealth::stage=2;
-   FlowModbusIpHealth::port=(uint8_t)(502+i);
+   FlowModbusIpHealth::port=(uint16_t)(502U+i);
    FlowModbusIpHealth::lastProgressMs=millis();
 #if FLOW_MODBUS_IP_UDP_TIMING
    const uint32_t portStartedUs=micros();
@@ -84,18 +84,24 @@ public:
    const uint16_t networkPort=static_cast<uint16_t>(502+i);
    const uint32_t timeout=port.timeoutMs;
    if(port.tcp) {
-    if(tcp_[i].begin(networkPort))
+    if(tcp_[i].begin(networkPort)) {
+     FlowModbusIpHealth::stage=4;
+     FlowModbusIpHealth::lastProgressMs=millis();
      tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
                   static_cast<uint8_t>(201+i*5),timeout,target,
                   port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
                   port.timeoutBehavior==0);
+    }
    }else if(tcp_[i].listening())tcp_[i].stop();
    if(port.udp) {
-    if(udp_[i].begin(networkPort))
+    if(udp_[i].begin(networkPort)) {
+     FlowModbusIpHealth::stage=5;
+     FlowModbusIpHealth::lastProgressMs=millis();
      udp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
                   static_cast<uint8_t>(205+i*5),timeout,target,
                   port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
                   port.timeoutBehavior==0);
+    }
    }else if(udp_[i].listening())udp_[i].stop();
 #if FLOW_MODBUS_IP_UDP_TIMING
    const uint32_t portUs=micros()-portStartedUs;
