@@ -241,6 +241,16 @@ bool candidateFilesystemIsValid_(const char* label, const char* version, const c
     return valid;
 }
 
+void logOtaMemory_(const char* stage)
+{
+    LOGI("[UPGRADE] memory stage=%s internal_free=%lu internal_largest=%lu psram_free=%lu stack_hwm=%lu",
+         stage ? stage : "-",
+         (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+         (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+         (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT),
+         (unsigned long)uxTaskGetStackHighWaterMark(nullptr));
+}
+
 bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
 {
     const esp_partition_t* source = esp_partition_find_first(
@@ -260,6 +270,7 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
     LOGI("[UPGRADE] filesystem clone source=%s addr=0x%08lX target=%s addr=0x%08lX bytes=%lu",
          source->label, (unsigned long)source->address, destination->label,
          (unsigned long)destination->address, (unsigned long)source->size);
+    logOtaMemory_("filesystem_clone_before_erase");
     if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
         return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
     }
@@ -283,6 +294,7 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
         }
     }
     LOGI("[UPGRADE] filesystem clone complete bytes=%lu", (unsigned long)source->size);
+    logOtaMemory_("filesystem_clone_done");
     return true;
 }
 
@@ -1095,6 +1107,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
     }
 
     // Seed the paired inactive filesystem before writing the application.
+    logOtaMemory_("firmware_http_headers_received");
     LOGI("[UPGRADE] stage=filesystem_clone_begin operation_id=%lu",
          (unsigned long)job.operationId);
     if (!cloneActiveReleaseFilesystem_(errOut, errOutLen)) {
@@ -1106,6 +1119,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
     }
     LOGI("[UPGRADE] stage=filesystem_clone_done operation_id=%lu",
          (unsigned long)job.operationId);
+    logOtaMemory_("firmware_write_before_begin");
     LOGI("[UPGRADE] stage=firmware_write_begin operation_id=%lu size=%ld",
          (unsigned long)job.operationId, (long)contentLength);
 
@@ -1402,119 +1416,15 @@ bool FirmwareUpdateModule::runNextionReboot_(char* errOut, size_t errOutLen)
 
 bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, size_t errOutLen)
 {
-    const char* url = job.url;
-    setStatus_(UpdateState::Downloading,
-               FirmwareUpdateTarget::Spiffs,
-               0,
-               "downloading",
-               job.operationId);
-
-    HTTPClient http;
-    configureDownloadHttp_(http);
-    if (!http.begin(url)) {
-        writeHttpBeginFailedError_("fichier de mise a jour", url, errOut, errOutLen);
-        return false;
-    }
-
-    const int code = http.GET();
-    const int32_t contentLength = http.getSize();
-    if (code != HTTP_CODE_OK) {
-        writeHttpCodeFailedError_("fichier de mise a jour", url, http, code, errOut, errOutLen);
-        http.end();
-        return false;
-    }
-
-    setStatus_(UpdateState::Flashing,
-               FirmwareUpdateTarget::Spiffs,
-               0,
-               "flashing spiffs",
-               job.operationId);
-    portENTER_CRITICAL(&lock_);
-    activeTotalBytes_ = (contentLength > 0) ? (uint32_t)contentLength : 0U;
-    activeSentBytes_ = 0;
-    portEXIT_CRITICAL(&lock_);
-
-    attachWebInterfaceSvcIfNeeded_();
-    if (webInterfaceSvc_ && webInterfaceSvc_->setPaused) {
-        webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, true);
-    }
-
-    char failMsg[128] = {0};
-    const char* activeLabel = ReleaseStorage::filesystemLabel(ReleaseStorage::runningSlot());
-    const auto remountActiveFilesystem = [this, activeLabel]() -> bool {
-        const bool remounted = SPIFFS.begin(false, "/spiffs", 10, activeLabel);
-        if (remounted && webInterfaceSvc_ && webInterfaceSvc_->setPaused) {
-            webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, false);
-        }
-        return remounted;
-    };
-    const esp_partition_t* activePartition = esp_partition_find_first(
-        ESP_PARTITION_TYPE_DATA,
-        ESP_PARTITION_SUBTYPE_ANY,
-        activeLabel);
-    LOGI("[UPGRADE] direct filesystem target=%s announced=%d expected=%u",
-         activeLabel,
-         (int)contentLength,
-         activePartition ? (unsigned)activePartition->size : 0U);
-    if (!activePartition || contentLength == 0 ||
-        (contentLength > 0 && (size_t)contentLength != activePartition->size)) {
-        snprintf(failMsg,
-                 sizeof(failMsg),
-                 "spiffs image size incompatible announced=%d expected=%u",
-                 (int)contentLength,
-                 activePartition ? (unsigned)activePartition->size : 0U);
-    } else {
-        SPIFFS.end();
-        if (esp_partition_erase_range(activePartition, 0U, activePartition->size) != ESP_OK) {
-            snprintf(failMsg, sizeof(failMsg), "spiffs erase failed");
-        }
-    }
-
-    const auto reportProgress = [](void* context, size_t writtenBytes) {
-        static_cast<FirmwareUpdateModule*>(context)->onProgressChunk_((uint32_t)writtenBytes);
-    };
-    PartitionWriteStream partitionStream(activePartition, reportProgress, this);
-    int streamedBytes = 0;
-    if (failMsg[0] == '\0') {
-        streamedBytes = http.writeToStream(&partitionStream);
-    }
-    http.end();
-
-    if (failMsg[0] == '\0' && partitionStream.overflowed()) {
-        snprintf(failMsg, sizeof(failMsg), "spiffs image exceeds active slot");
-    } else if (failMsg[0] == '\0' && partitionStream.flashError()) {
-        snprintf(failMsg, sizeof(failMsg), "spiffs write failed");
-    } else if (failMsg[0] == '\0' && streamedBytes < 0) {
-        snprintf(failMsg, sizeof(failMsg), "spiffs download failed (%d)", streamedBytes);
-    } else if (failMsg[0] == '\0' && partitionStream.writtenBytes() != activePartition->size) {
-        snprintf(failMsg,
-                 sizeof(failMsg),
-                 "incomplete spiffs image received=%u expected=%u",
-                 (unsigned)partitionStream.writtenBytes(),
-                 (unsigned)activePartition->size);
-    }
-    if (failMsg[0] != '\0') {
-        (void)remountActiveFilesystem();
-        writeSimpleError_(errOut, errOutLen, failMsg);
-        return false;
-    }
-
-    if (!persistReceipt_(job.target,
-                         job.operationId,
-                         FirmwareUpdateReceiptState::RebootPending)) {
-        (void)remountActiveFilesystem();
-        writeSimpleError_(errOut, errOutLen, "failed to persist update completion");
-        return false;
-    }
-    setStatus_(UpdateState::Rebooting,
-               FirmwareUpdateTarget::Spiffs,
-               100,
-               "rebooting",
-               job.operationId);
-    delay(1800);
-    if (!saveCountersBeforeUpdate_(errOut, errOutLen)) return false;
-    ESP.restart();
-    return true;
+    // A standalone SPIFFS image cannot be installed atomically: the active
+    // filesystem is required by the currently running firmware. The previous
+    // implementation erased that filesystem before validating the download,
+    // leaving the running release unusable after a failed HTTP transfer.
+    // Use the paired A/B release transaction (filesystem + firmware) instead.
+    LOGE("[UPGRADE] unsafe standalone SPIFFS HTTP update rejected operation_id=%lu",
+         (unsigned long)job.operationId);
+    return writeSimpleError_(errOut, errOutLen,
+                             "standalone SPIFFS HTTP update disabled; use paired release update");
 }
 
 bool FirmwareUpdateModule::localTransactionMatches_(uint32_t transactionId) const
@@ -1714,6 +1624,11 @@ bool FirmwareUpdateModule::beginLocalImage_(uint32_t transactionId,
         return writeSimpleError_(errOut, errOutLen, "target partition unavailable");
     }
 
+    LOGI("[UPGRADE] local image target=%s addr=0x%08lX size=%lu active_slot=%s",
+         label, (unsigned long)localRelease_.writePartition->address,
+         (unsigned long)localRelease_.writePartition->size,
+         ReleaseStorage::applicationLabel(ReleaseStorage::runningSlot()));
+    logOtaMemory_("local_image_before_erase");
     esp_err_t flashError = ESP_OK;
     if (filesystemTarget) {
         flashError = esp_partition_erase_range(
