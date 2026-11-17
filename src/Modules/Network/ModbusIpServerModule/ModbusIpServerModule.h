@@ -37,11 +37,6 @@ public:
   FlowModbusIpHealth::loopStartMs=millis();
   FlowModbusIpHealth::lastProgressMs=FlowModbusIpHealth::loopStartMs;
   FlowModbusIpHealth::stage=1;
-#if FLOW_MODBUS_IP_UDP_TIMING
-  const uint32_t loopStartedUs=micros();
-  uint32_t slowestPortUs=0;
-  uint8_t slowestPort=0;
-#endif
   if(started_&&services_){
    if(!master_)master_=services_->get<ModbusMasterService>(ServiceId::ModbusMaster);
    if(!network_)network_=services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
@@ -58,9 +53,6 @@ public:
    FlowModbusIpHealth::stage=2;
    FlowModbusIpHealth::port=(uint16_t)(502U+i);
    FlowModbusIpHealth::lastProgressMs=millis();
-#if FLOW_MODBUS_IP_UDP_TIMING
-   const uint32_t portStartedUs=micros();
-#endif
    ::flowio::modbus_ip::PortConfig port{};
    const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
    if(!configured||!port.tcp) {
@@ -91,24 +83,9 @@ public:
                   port.timeoutBehavior==0);
     }
    }else if(tcp_[i].listening())tcp_[i].stop();
-#if FLOW_MODBUS_IP_UDP_TIMING
-   const uint32_t portUs=micros()-portStartedUs;
-   if(portUs>slowestPortUs){slowestPortUs=portUs;slowestPort=i;}
-#endif
   }
   FlowModbusIpHealth::stage=3;
   FlowModbusIpHealth::lastProgressMs=millis();
-#if FLOW_MODBUS_IP_UDP_TIMING
-  const uint32_t loopUs=micros()-loopStartedUs;
-  static uint32_t lastSlowLogMs=0;
-  const uint32_t nowMs=millis();
-  if(loopUs>=100000U && (uint32_t)(nowMs-lastSlowLogMs)>=2000U){
-   lastSlowLogMs=nowMs;
-   ::Log::info((LogModuleId)LogModuleIdValue::IOModule,
-     "[Modbus IP] SLOW LOOP total_us=%lu max_port=%u port_us=%lu\n",
-     (unsigned long)loopUs,(unsigned)(502U+slowestPort),(unsigned long)slowestPortUs);
-  }
-#endif
  }
  bool setDeviceProfile(uint8_t id,const ::flowio::modbus_ip::SerialProfile& profile) {
   return profiles_.set(id,profile);
