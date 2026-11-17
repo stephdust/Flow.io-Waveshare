@@ -179,11 +179,20 @@ void WebInterfaceModule::formatLogEntryLine_(WebInterfaceModule* self,
     }
 }
 
+// Temporary A/B diagnostic: suppress live WebSocket log traffic only.
+// HTTP routes, WebSocket handshake and persistent log history remain available.
+#ifndef FLOW_DIAG_DISABLE_WS_LOG_STREAM
+#define FLOW_DIAG_DISABLE_WS_LOG_STREAM 1
+#endif
+
 void WebInterfaceModule::onLocalLogSinkWrite_(void* ctx, const LogEntry& e)
 {
     WebInterfaceModule* self = static_cast<WebInterfaceModule*>(ctx);
     if (!self) return;
     self->appendRuntimeLogHistory_(e);
+#if FLOW_DIAG_DISABLE_WS_LOG_STREAM
+    return;
+#endif
     if (!self->localLogQueue_) return;
 
     char line[kLocalLogLineMax] = {0};
@@ -233,6 +242,9 @@ void WebInterfaceModule::dumpBootLogCapture_(AsyncWebSocketClient* client)
 
 void WebInterfaceModule::flushLocalLogQueue_()
 {
+#if FLOW_DIAG_DISABLE_WS_LOG_STREAM
+    return;
+#endif
     if (!started_ || !localLogQueue_) return;
 
     if (wsLog_.count() == 0U) {
