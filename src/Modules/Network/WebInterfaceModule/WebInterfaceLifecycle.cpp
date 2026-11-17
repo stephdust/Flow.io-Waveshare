@@ -6,6 +6,7 @@
 #define LOG_MODULE_ID ((LogModuleId)LogModuleIdValue::WebInterfaceModule)
 #include "WebInterfaceModule.h"
 #include "WebMemoryDiagnostics.h"
+#include "Modules/Network/ModbusIpServerModule/ModbusIpHealth.h"
 #include "Core/CounterPersistence.h"
 
 #include "Core/DataKeys.h"
@@ -196,6 +197,23 @@ void WebInterfaceModule::loop()
     }
 
     noteLoopActivity_();
+#if FLOW_MODBUS_IP_UDP_TIMING
+    // Independent observer: the Web task reports a stalled Modbus IP loop
+    // even when that loop cannot reach its own end-of-iteration logger.
+    static uint32_t lastModbusHealthLogMs = 0U;
+    const uint32_t healthNowMs = millis();
+    const uint32_t lastProgress = FlowModbusIpHealth::lastProgressMs;
+    if (lastProgress != 0U && (uint32_t)(healthNowMs-lastProgress) >= 2000U &&
+        (uint32_t)(healthNowMs-lastModbusHealthLogMs) >= 5000U) {
+        lastModbusHealthLogMs = healthNowMs;
+        LOGW("Modbus IP STALLED age_ms=%lu stage=%u port=%u heap=%lu largest=%lu",
+             (unsigned long)(healthNowMs-lastProgress),
+             (unsigned)FlowModbusIpHealth::stage,
+             (unsigned)FlowModbusIpHealth::port,
+             (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    }
+#endif
 
     if (!netAccessSvc_ && services_) {
         netAccessSvc_ = services_->get<NetworkAccessService>(ServiceId::NetworkAccess);
