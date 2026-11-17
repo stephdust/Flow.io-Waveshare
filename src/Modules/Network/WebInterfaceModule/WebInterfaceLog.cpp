@@ -182,7 +182,7 @@ void WebInterfaceModule::formatLogEntryLine_(WebInterfaceModule* self,
 // Temporary A/B diagnostic: suppress live WebSocket log traffic only.
 // HTTP routes, WebSocket handshake and persistent log history remain available.
 #ifndef FLOW_DIAG_DISABLE_WS_LOG_STREAM
-#define FLOW_DIAG_DISABLE_WS_LOG_STREAM 1
+#define FLOW_DIAG_DISABLE_WS_LOG_STREAM 0
 #endif
 
 void WebInterfaceModule::onLocalLogSinkWrite_(void* ctx, const LogEntry& e)
