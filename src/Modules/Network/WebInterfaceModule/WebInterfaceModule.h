@@ -233,7 +233,8 @@ private:
     uint64_t runtimeLogHistoryNextSequence_ = 1U;
     uint32_t runtimeLogHistoryDropped_ = 0U;
     portMUX_TYPE runtimeLogHistoryMux_ = portMUX_INITIALIZER_UNLOCKED;
-    static constexpr uint8_t kWsLogFlushBurstMax = 4U;
+    // Bound WebSocket log sends per loop to keep network processing responsive.
+    static constexpr uint8_t kWsLogFlushBurstMax = 2U;
 
     char lineBuf_[kLineBufferSize] = {0};
     size_t lineLen_ = 0;
