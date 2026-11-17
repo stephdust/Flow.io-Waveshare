@@ -450,17 +450,21 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
         }
     }
 
-    // Observe why queued traffic cannot dispatch. These are tick counts, not
-    // milliseconds: they avoid assuming a fixed task cadence or changing timing.
-    // Only sample while at least one transaction is queued.
+    // Track elapsed time spent blocked while a queued transaction is waiting.
+    // Attribute each interval to the state observed at the preceding tick.
+    // Unlike tick counts, these durations remain meaningful if the tick rate varies.
     {
+        enum class WaitState : uint8_t { None, Active, Guard, Quiet, Ready };
         static uint32_t windowStartMs = 0U;
-        static uint32_t queuedTicks = 0U;
-        static uint32_t activeTicks = 0U;
-        static uint32_t guardTicks = 0U;
-        static uint32_t quietTicks = 0U;
-        static uint32_t readyTicks = 0U;
+        static uint32_t previousTickMs = 0U;
+        static WaitState previousState = WaitState::None;
+        static uint64_t elapsedMs[4]{};
+        static uint32_t ticks[4]{};
         if (windowStartMs == 0U) windowStartMs = nowMs;
+        if (previousTickMs != 0U && previousState != WaitState::None) {
+            const uint32_t elapsed = (uint32_t)(nowMs - previousTickMs);
+            elapsedMs[(uint8_t)previousState - 1U] += elapsed;
+        }
         bool pending = false;
         for (const Slot& candidate : storage_->slots) {
             if (candidate.state == SlotState::Queued) {
@@ -468,19 +472,26 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
                 break;
             }
         }
+        WaitState state = WaitState::None;
         if (pending) {
-            ++queuedTicks;
-            if (activeIndex_ >= 0) ++activeTicks;
-            else if (availableAtMs_ && int32_t(nowMs - availableAtMs_) < 0) ++guardTicks;
-            else if (!bus_.quiet(nowUs)) ++quietTicks;
-            else ++readyTicks;
+            if (activeIndex_ >= 0) state = WaitState::Active;
+            else if (availableAtMs_ && int32_t(nowMs - availableAtMs_) < 0) state = WaitState::Guard;
+            else if (!bus_.quiet(nowUs)) state = WaitState::Quiet;
+            else state = WaitState::Ready;
+            ++ticks[(uint8_t)state - 1U];
         }
+        previousTickMs = nowMs;
+        previousState = state;
         if ((uint32_t)(nowMs - windowStartMs) >= 15000U) {
-            LOGI("Modbus BUS WAIT queued_ticks=%lu active_ticks=%lu guard_ticks=%lu quiet_ticks=%lu ready_ticks=%lu",
-                 (unsigned long)queuedTicks, (unsigned long)activeTicks,
-                 (unsigned long)guardTicks, (unsigned long)quietTicks,
-                 (unsigned long)readyTicks);
-            queuedTicks = activeTicks = guardTicks = quietTicks = readyTicks = 0U;
+            LOGI("Modbus BUS WAIT active_ms=%llu guard_ms=%llu quiet_ms=%llu ready_ms=%llu active_ticks=%lu guard_ticks=%lu quiet_ticks=%lu ready_ticks=%lu",
+                 (unsigned long long)elapsedMs[0], (unsigned long long)elapsedMs[1],
+                 (unsigned long long)elapsedMs[2], (unsigned long long)elapsedMs[3],
+                 (unsigned long)ticks[0], (unsigned long)ticks[1],
+                 (unsigned long)ticks[2], (unsigned long)ticks[3]);
+            for (uint8_t i = 0U; i < 4U; ++i) {
+                elapsedMs[i] = 0U;
+                ticks[i] = 0U;
+            }
             windowStartMs = nowMs;
         }
     }
