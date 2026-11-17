@@ -2787,7 +2787,7 @@
       const source = logViewMode === 'boot' ? 'boot' : 'runtime';
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = 'flowio-logs-' + source + '-' + stamp + '.txt';
-      const content = lines.join('\\n') + (lines.length ? '\\n' : '');
+      const content = lines.join('\n') + (lines.length ? '\n' : '');
       const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
       const link = document.createElement('a');
       link.href = url;
