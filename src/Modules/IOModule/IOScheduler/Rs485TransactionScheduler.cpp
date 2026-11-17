@@ -4,6 +4,7 @@
  */
 
 #include "Rs485TransactionScheduler.h"
+#include "ModbusTraceControl.h"
 
 #include <esp_heap_caps.h>
 #include <new>
@@ -301,6 +302,8 @@ bool Rs485TransactionScheduler::sendActive_(Slot& slot, uint32_t nowMs, uint32_t
     LOGD("Modbus dispatch id=%u slave=%u queue_ms=%lu", slot.transactionId,
          slot.request.slaveAddress, (unsigned long)(nowMs - slot.enqueuedAttemptAtMs));
     LOGD_HEX("Modbus TX", slot.transactionId, storage_->txFrame, txLength);
+    if (flowio::modbus_trace::enabled.load(std::memory_order_relaxed))
+        flowio::modbus_trace::frame("TX", slot.transactionId, storage_->txFrame, txLength);
     slot.state = SlotState::Active;
     slot.sentAtMs = nowMs;
     LOGD("Modbus TX id=%u bytes=%u attempt=%u/%u timeout_ms=%lu protocol=%u",
@@ -431,6 +434,8 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
                          (unsigned long)(nowMs - slot.sentAtMs));
                 }
             }
+            if (flowio::modbus_trace::enabled.load(std::memory_order_relaxed))
+                flowio::modbus_trace::frame("RX", slot.transactionId, storage_->rxFrame, rxLength);
             LOGD("Modbus RX id=%u bytes=%u elapsed_ms=%lu result=%s registers=%u",
                  slot.transactionId, (unsigned)rxLength,
                  (unsigned long)(nowMs - slot.sentAtMs), resultName(result), response.registerCount);
