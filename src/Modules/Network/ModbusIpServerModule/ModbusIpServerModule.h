@@ -64,12 +64,11 @@ public:
    ::flowio::modbus_ip::PortConfig port{};
    const bool configured=::flowio::modbus_ip::parsePortConfig(config_.portText(i),port);
    if(!configured||!port.tcp) {
-    tcp_[i].stop();caches_[i].clear();
+    tcp_[i].stop();
     loadedPorts_[i][0]=0;continue;
    }
    const char* settings=config_.portText(i);
    if(std::strcmp(loadedPorts_[i],settings)!=0){
-    caches_[i].clear();
     std::strncpy(loadedPorts_[i],settings,sizeof(loadedPorts_[i])-1);
     loadedPorts_[i][sizeof(loadedPorts_[i])-1]=0;
    }
@@ -88,7 +87,7 @@ public:
      FlowModbusIpHealth::lastProgressMs=millis();
      tcp_[i].tick(*master_,&resolvePortCallback_,&contexts_[i],
                   static_cast<uint8_t>(201+i*5),timeout,target,
-                  port.cacheEnabled?&caches_[i]:nullptr,port.cacheTtlMs,
+                  nullptr,0,
                   port.timeoutBehavior==0);
     }
    }else if(tcp_[i].listening())tcp_[i].stop();
@@ -121,7 +120,7 @@ public:
 private:
  struct PortContext { ModbusIpServerModule* module=nullptr;uint8_t index=0; };
  void stopAll_() {
-  for(uint8_t i=0;i<3;++i){tcp_[i].stop();caches_[i].clear();}
+  for(uint8_t i=0;i<3;++i){tcp_[i].stop();}
  }
  bool resolvePort_(uint8_t index,uint8_t& target,
                    ::flowio::modbus_ip::SerialProfile& profile) const {
@@ -193,7 +192,6 @@ private:
  ::flowio::modbus_ip::ProfileTable profiles_{};
  char loadedDeviceProfiles_[::flowio::modbus_ip::GatewayConfigVariables::DeviceProfilesCapacity]{};
  ::flowio::modbus_ip::TcpEndpoint tcp_[3]{};
- ::flowio::modbus_ip::ReadCache caches_[3]{};
  char loadedPorts_[3][64]{};
  PortContext contexts_[3]{};
  ServiceRegistry* services_=nullptr;
