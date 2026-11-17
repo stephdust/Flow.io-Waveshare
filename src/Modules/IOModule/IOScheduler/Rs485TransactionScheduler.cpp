@@ -450,6 +450,41 @@ void Rs485TransactionScheduler::tick(uint32_t nowMs, uint32_t nowUs, bool enable
         }
     }
 
+    // Observe why queued traffic cannot dispatch. These are tick counts, not
+    // milliseconds: they avoid assuming a fixed task cadence or changing timing.
+    // Only sample while at least one transaction is queued.
+    {
+        static uint32_t windowStartMs = 0U;
+        static uint32_t queuedTicks = 0U;
+        static uint32_t activeTicks = 0U;
+        static uint32_t guardTicks = 0U;
+        static uint32_t quietTicks = 0U;
+        static uint32_t readyTicks = 0U;
+        if (windowStartMs == 0U) windowStartMs = nowMs;
+        bool pending = false;
+        for (const Slot& candidate : storage_->slots) {
+            if (candidate.state == SlotState::Queued) {
+                pending = true;
+                break;
+            }
+        }
+        if (pending) {
+            ++queuedTicks;
+            if (activeIndex_ >= 0) ++activeTicks;
+            else if (availableAtMs_ && int32_t(nowMs - availableAtMs_) < 0) ++guardTicks;
+            else if (!bus_.quiet(nowUs)) ++quietTicks;
+            else ++readyTicks;
+        }
+        if ((uint32_t)(nowMs - windowStartMs) >= 15000U) {
+            LOGI("Modbus BUS WAIT queued_ticks=%lu active_ticks=%lu guard_ticks=%lu quiet_ticks=%lu ready_ticks=%lu",
+                 (unsigned long)queuedTicks, (unsigned long)activeTicks,
+                 (unsigned long)guardTicks, (unsigned long)quietTicks,
+                 (unsigned long)readyTicks);
+            queuedTicks = activeTicks = guardTicks = quietTicks = readyTicks = 0U;
+            windowStartMs = nowMs;
+        }
+    }
+
     if (activeIndex_ < 0) {
         if ((availableAtMs_ && int32_t(nowMs - availableAtMs_) < 0) || !bus_.quiet(nowUs)) {
             unlock_();
