@@ -8,6 +8,7 @@
 #include "ModbusIpProfileResolver.h"
 #include "ModbusTcpEndpoint.h"
 #include "ModbusUdpEndpoint.h"
+#include "ModbusIpHealth.h"
 
 // Native Flow.io module. No UART is created here: all requests use the
 // ModbusMaster service provided by IOModule.
@@ -34,6 +35,9 @@ public:
   started_=true;
  }
  void loop() override {
+  FlowModbusIpHealth::loopStartMs=millis();
+  FlowModbusIpHealth::lastProgressMs=FlowModbusIpHealth::loopStartMs;
+  FlowModbusIpHealth::stage=1;
 #if FLOW_MODBUS_IP_UDP_TIMING
   const uint32_t loopStartedUs=micros();
   uint32_t slowestPortUs=0;
@@ -46,9 +50,15 @@ public:
   }
   if(!started_||!master_||
      !network_||!network_->isWebReachable||!network_->isWebReachable(network_->ctx)) {
-   stopAll_();return;
+   stopAll_();
+   FlowModbusIpHealth::stage=3;
+   FlowModbusIpHealth::lastProgressMs=millis();
+   return;
   }
   for(uint8_t i=0;i<3;++i) {
+   FlowModbusIpHealth::stage=2;
+   FlowModbusIpHealth::port=(uint8_t)(502+i);
+   FlowModbusIpHealth::lastProgressMs=millis();
 #if FLOW_MODBUS_IP_UDP_TIMING
    const uint32_t portStartedUs=micros();
 #endif
@@ -92,6 +102,8 @@ public:
    if(portUs>slowestPortUs){slowestPortUs=portUs;slowestPort=i;}
 #endif
   }
+  FlowModbusIpHealth::stage=3;
+  FlowModbusIpHealth::lastProgressMs=millis();
 #if FLOW_MODBUS_IP_UDP_TIMING
   const uint32_t loopUs=micros()-loopStartedUs;
   static uint32_t lastSlowLogMs=0;
