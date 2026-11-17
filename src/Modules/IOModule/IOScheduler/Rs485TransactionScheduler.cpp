@@ -332,6 +332,33 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
                               : MODBUS_TRANSACTION_FAILED;
     availableAtMs_ = busAvailableAt(slot.request.line, slot.sentAtMs, millis(),
                                     result != MODBUS_RESULT_OK || slot.abandoned);
+    // Diagnose the actual source of the inter-transaction delay before tuning it.
+    // The minimum interval is measured from TX start, not from response completion.
+    // Keep all existing timing and safety margins unchanged.
+    {
+        static uint32_t lastGuardLogMs = 0U;
+        const uint32_t finishedAtMs = millis();
+        if ((uint32_t)(finishedAtMs - lastGuardLogMs) >= 2000U) {
+            lastGuardLogMs = finishedAtMs;
+            const uint32_t minimumUntil = slot.sentAtMs + slot.request.line.minimumRequestIntervalMs;
+            const bool lateGuard = result != MODBUS_RESULT_OK || slot.abandoned;
+            const uint32_t quietAndGuardMs = slot.request.line.quietMs +
+                (lateGuard ? slot.request.line.lateResponseGuardMs : 0U);
+            const uint32_t minimumRemaining = int32_t(minimumUntil - finishedAtMs) > 0
+                ? minimumUntil - finishedAtMs : 0U;
+            const uint32_t appliedRemaining = int32_t(availableAtMs_ - finishedAtMs) > 0
+                ? availableAtMs_ - finishedAtMs : 0U;
+            LOGI("Modbus GUARD owner=%u slave=0x%02X result=%s baud=%lu min_interval_ms=%lu min_remaining_ms=%lu quiet_ms=%lu late_guard_ms=%lu applied_ms=%lu dominant=%s",
+                 (unsigned)slot.request.ownerId, (unsigned)slot.request.slaveAddress,
+                 resultName(result), (unsigned long)slot.request.line.baud,
+                 (unsigned long)slot.request.line.minimumRequestIntervalMs,
+                 (unsigned long)minimumRemaining,
+                 (unsigned long)slot.request.line.quietMs,
+                 (unsigned long)(lateGuard ? slot.request.line.lateResponseGuardMs : 0U),
+                 (unsigned long)appliedRemaining,
+                 minimumRemaining > quietAndGuardMs ? "minimum_interval" : "quiet_or_late_guard");
+        }
+    }
     LOGD("Modbus done id=%u slave=%u result=%s exception=0x%02X total_ms=%lu abandoned=%u",
          slot.transactionId, slot.request.slaveAddress, resultName(result),
          slot.response.exceptionCode, (unsigned long)(millis() - slot.queuedAtMs), slot.abandoned);
