@@ -68,21 +68,27 @@ bool Rs485Bus::configureLine(const SerialLineProfile& p)
              ready_, busy(), frameReady_, p.busId, (unsigned long)p.baud, p.parity, p.stopBits);
         return false;
     }
-    const auto port = static_cast<uart_port_t>(spec_.uartIndex);
-    const uart_parity_t parity[] = {UART_PARITY_DISABLE, UART_PARITY_EVEN, UART_PARITY_ODD};
-    if (uart_set_baudrate(port, p.baud) != ESP_OK ||
-        uart_set_parity(port, parity[p.parity]) != ESP_OK ||
-        uart_set_stop_bits(port, p.stopBits == 1 ? UART_STOP_BITS_1 : UART_STOP_BITS_2) != ESP_OK) {
-        LOGD("RS485 line configuration failed uart=%u", spec_.uartIndex);
-        return false;
-    }
-    if (spec_.baud != p.baud || (unsigned)spec_.parity != p.parity || spec_.stopBits != p.stopBits) {
+    // The scheduler calls configureLine before every request. Avoid redundant
+    // ESP-IDF UART driver calls when the serial profile has not changed.
+    // Apply only changed settings; preserve the existing quiet-time contract.
+    const bool baudChanged = spec_.baud != p.baud;
+    const bool parityChanged = (unsigned)spec_.parity != p.parity;
+    const bool stopChanged = spec_.stopBits != p.stopBits;
+    if (baudChanged || parityChanged || stopChanged) {
+        const auto port = static_cast<uart_port_t>(spec_.uartIndex);
+        const uart_parity_t parity[] = {UART_PARITY_DISABLE, UART_PARITY_EVEN, UART_PARITY_ODD};
+        if ((baudChanged && uart_set_baudrate(port, p.baud) != ESP_OK) ||
+            (parityChanged && uart_set_parity(port, parity[p.parity]) != ESP_OK) ||
+            (stopChanged && uart_set_stop_bits(port, p.stopBits == 1 ? UART_STOP_BITS_1 : UART_STOP_BITS_2) != ESP_OK)) {
+            LOGD("RS485 line configuration failed uart=%u", spec_.uartIndex);
+            return false;
+        }
         LOGD("RS485 line uart=%u baud=%lu parity=%u stop=%u",
              spec_.uartIndex, (unsigned long)p.baud, p.parity, p.stopBits);
+        spec_.baud = p.baud;
+        spec_.parity = static_cast<UartSpec::Parity>(p.parity);
+        spec_.stopBits = p.stopBits;
     }
-    spec_.baud = p.baud;
-    spec_.parity = static_cast<UartSpec::Parity>(p.parity);
-    spec_.stopBits = p.stopBits;
     const uint32_t bits = 9U + (p.parity != 0) + p.stopBits;
     frameGapUs_ = p.baud > 19200 ? 1750U : (35U * bits * 100000U + p.baud - 1U) / p.baud;
     return true;
