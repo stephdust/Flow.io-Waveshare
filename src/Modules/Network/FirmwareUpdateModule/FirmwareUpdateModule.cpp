@@ -1055,23 +1055,34 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         http.end();
         return false;
     }
-    // The legacy remote firmware route remains independently usable. Seed the
-    // paired inactive filesystem with the currently running release so the new
-    // application never boots against an empty or older filesystem slot.
-    if (!cloneActiveReleaseFilesystem_(errOut, errOutLen)) {
-        http.end();
-        return false;
-    }
     if (contentLength > 0 && (size_t)contentLength > updatePartition->size) {
         writeSimpleError_(errOut, errOutLen, "ota image too large for partition");
         http.end();
         return false;
     }
 
+    // Pause periodic WebInterface work before the first flash erase. The HTTP
+    // server and RAM-backed OTA status remain available to the progress UI.
     attachWebInterfaceSvcIfNeeded_();
-    if (webInterfaceSvc_ && webInterfaceSvc_->setPaused) {
+    const bool pauseWeb = webInterfaceSvc_ && webInterfaceSvc_->setPaused;
+    if (pauseWeb) {
         webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, true);
     }
+
+    // Seed the paired inactive filesystem before writing the application.
+    LOGI("[UPGRADE] stage=filesystem_clone_begin operation_id=%lu",
+         (unsigned long)job.operationId);
+    if (!cloneActiveReleaseFilesystem_(errOut, errOutLen)) {
+        LOGE("[UPGRADE] stage=filesystem_clone_failed operation_id=%lu",
+             (unsigned long)job.operationId);
+        if (pauseWeb) webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, false);
+        http.end();
+        return false;
+    }
+    LOGI("[UPGRADE] stage=filesystem_clone_done operation_id=%lu",
+         (unsigned long)job.operationId);
+    LOGI("[UPGRADE] stage=firmware_write_begin operation_id=%lu size=%ld",
+         (unsigned long)job.operationId, (long)contentLength);
 
     char failMsg[128] = {0};
     const size_t beginSize = (contentLength > 0) ? (size_t)contentLength : (size_t)UPDATE_SIZE_UNKNOWN;
@@ -1132,12 +1143,13 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         }
     }
 
-    if (webInterfaceSvc_ && webInterfaceSvc_->setPaused) {
-        webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, false);
-    }
+    if (pauseWeb) webInterfaceSvc_->setPaused(webInterfaceSvc_->ctx, false);
 
     http.end();
 
+    LOGI("[UPGRADE] stage=firmware_write_%s operation_id=%lu",
+         failMsg[0] == '\0' ? "done" : "failed",
+         (unsigned long)job.operationId);
     if (failMsg[0] != '\0') {
         writeSimpleError_(errOut, errOutLen, failMsg);
         return false;
