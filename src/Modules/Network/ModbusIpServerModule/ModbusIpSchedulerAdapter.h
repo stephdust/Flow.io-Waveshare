@@ -13,9 +13,11 @@ inline bool makeSchedulerRequest(const RegisterRequest& source,const SerialProfi
  request.protocol=RegisterWireProtocol::ModbusRtu;
  request.slaveAddress=source.unitId;
  request.function=source.function;
- // External gateway requests are latency-sensitive; safety requests still win.
- // Background/normal polling retains the scheduler's existing aging protection.
- request.priority=MODBUS_PRIORITY_COMMAND;
+ // External reads are normal priority so periodic internal telemetry can
+ // compete fairly. Writes remain commands; internal safety always wins.
+ // The scheduler's age-based starvation protection remains unchanged.
+ request.priority=source.kind==RequestKind::ReadRegisters
+  ? MODBUS_PRIORITY_NORMAL : MODBUS_PRIORITY_COMMAND;
  request.line.busId=0;
  request.line.baud=profile.baud;
  request.line.parity=profile.parity;
