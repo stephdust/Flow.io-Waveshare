@@ -181,14 +181,17 @@ void WebInterfaceModule::onEvent_(const Event& e)
 void WebInterfaceModule::loop()
 {
     WebMemoryDiagnostics::poll();
-    // Low-rate diagnostics for HTTP refresh / OTA stalls. Avoid per-request
-    // allocations and logs: the network stack needs internal DMA-capable RAM.
-    // The first sample is taken on the first loop; later samples every 15s.
+    // Sample resource pressure every second without emitting a log on every
+    // sample. Report sudden drops immediately, and summarize every 15s.
     static uint32_t lastResourceSampleMs = 0U;
+    static uint32_t lastResourceReportMs = 0U;
+    static uint32_t previousInternalFree = 0U;
+    static uint32_t windowMinInternal = UINT32_MAX;
+    static uint32_t windowMinLargest = UINT32_MAX;
     static bool resourceSampleTaken = false;
+    static bool lowPreviously = false;
     const uint32_t resourceNowMs = millis();
-    if (!resourceSampleTaken || (uint32_t)(resourceNowMs - lastResourceSampleMs) >= 15000U) {
-        resourceSampleTaken = true;
+    if (!resourceSampleTaken || (uint32_t)(resourceNowMs - lastResourceSampleMs) >= 1000U) {
         lastResourceSampleMs = resourceNowMs;
         constexpr uint32_t internalCaps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
         constexpr uint32_t psramCaps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
@@ -199,18 +202,40 @@ void WebInterfaceModule::loop()
         const uint32_t psramLargest = heap_caps_get_largest_free_block(psramCaps);
         const uint32_t stackWords = uxTaskGetStackHighWaterMark(nullptr);
         const unsigned wsClients = started_ ? (unsigned)wsLog_.count() : 0U;
-        if (internalFree < 40000U || internalLargest < 16000U || stackWords < 512U) {
-            LOGW("WEB RESOURCES LOW internal=%lu largest=%lu min=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
-                 (unsigned long)internalFree, (unsigned long)internalLargest,
-                 (unsigned long)internalMin, (unsigned long)psramFree,
-                 (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
-        } else {
-            LOGI("WEB RESOURCES internal=%lu largest=%lu min=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
-                 (unsigned long)internalFree, (unsigned long)internalLargest,
-                 (unsigned long)internalMin, (unsigned long)psramFree,
-                 (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
+        if (internalFree < windowMinInternal) windowMinInternal = internalFree;
+        if (internalLargest < windowMinLargest) windowMinLargest = internalLargest;
+        const bool low = internalFree < 40000U || internalLargest < 16000U || stackWords < 512U;
+        const bool suddenDrop = resourceSampleTaken &&
+            previousInternalFree > internalFree &&
+            previousInternalFree - internalFree >= 8192U;
+        const bool periodic = !resourceSampleTaken ||
+            (uint32_t)(resourceNowMs - lastResourceReportMs) >= 15000U;
+        if (periodic || suddenDrop || (low && !lowPreviously)) {
+            if (low || suddenDrop) {
+                LOGW("WEB RESOURCES %s internal=%lu largest=%lu min=%lu window_min=%lu window_largest=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
+                     suddenDrop ? "DROP" : "LOW",
+                     (unsigned long)internalFree, (unsigned long)internalLargest,
+                     (unsigned long)internalMin, (unsigned long)windowMinInternal,
+                     (unsigned long)windowMinLargest, (unsigned long)psramFree,
+                     (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
+            } else {
+                LOGI("WEB RESOURCES internal=%lu largest=%lu min=%lu window_min=%lu window_largest=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
+                     (unsigned long)internalFree, (unsigned long)internalLargest,
+                     (unsigned long)internalMin, (unsigned long)windowMinInternal,
+                     (unsigned long)windowMinLargest, (unsigned long)psramFree,
+                     (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
+            }
+            if (periodic) {
+                lastResourceReportMs = resourceNowMs;
+                windowMinInternal = internalFree;
+                windowMinLargest = internalLargest;
+            }
         }
+        previousInternalFree = internalFree;
+        lowPreviously = low;
+        resourceSampleTaken = true;
     }
+
     if (webStartLedPulseActive_ && (int32_t)(millis() - webStartLedPulseUntilMs_) >= 0) {
         if (hmiSvc_ && hmiSvc_->setStatusLedAutoWifiMode && webStartLedPrevAutoModeValid_) {
             hmiSvc_->setStatusLedAutoWifiMode(hmiSvc_->ctx, webStartLedPrevAutoMode_);
