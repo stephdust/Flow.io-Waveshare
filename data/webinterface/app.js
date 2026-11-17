@@ -2215,6 +2215,7 @@
     const wsStatus = document.getElementById('wsStatus');
     const logSourceSelect = document.getElementById('logSourceSelect');
     const bootLogDumpBtn = document.getElementById('bootLogDumpBtn');
+    const exportLogsTxtBtn = document.getElementById('exportLogsTxtBtn');
     const runtimeLogModeBtn = document.getElementById('runtimeLogModeBtn');
     const toggleAutoscrollInput = document.getElementById('toggleAutoscroll');
     const logsOverlay = document.getElementById('logsOverlay');
@@ -2780,6 +2781,23 @@
       if (autoScrollEnabled) term.scrollTop = term.scrollHeight;
     }
 
+    function exportDisplayedLogsTxt() {
+      if (!term) return;
+      const lines = Array.from(term.querySelectorAll('.log-line'), (row) => row.textContent || '');
+      const source = logViewMode === 'boot' ? 'boot' : 'runtime';
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = 'flowio-logs-' + source + '-' + stamp + '.txt';
+      const content = lines.join('\\n') + (lines.length ? '\\n' : '');
+      const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
     async function requestBootLogDump() {
       logViewMode = 'boot';
       const requestToken = ++bootLogRequestToken;
@@ -3185,6 +3203,7 @@
     if (bootLogDumpBtn) {
       bootLogDumpBtn.addEventListener('click', requestBootLogDump);
     }
+    if (exportLogsTxtBtn) exportLogsTxtBtn.addEventListener('click', exportDisplayedLogsTxt);
     function updateLogModeUi() {
       const runtimeSelected = logViewMode === 'runtime';
       if (runtimeLogModeBtn) {
