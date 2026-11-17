@@ -251,9 +251,15 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
         ESP_PARTITION_TYPE_DATA,
         ESP_PARTITION_SUBTYPE_ANY,
         ReleaseStorage::filesystemLabel(ReleaseStorage::inactiveSlot()));
-    if (!source || !destination || source->size != destination->size) {
-        return writeSimpleError_(errOut, errOutLen, "release filesystem slots unavailable");
+    if (!source || !destination || source->size != destination->size ||
+        source->address == destination->address ||
+        (uint64_t)source->address < (uint64_t)destination->address + destination->size &&
+        (uint64_t)destination->address < (uint64_t)source->address + source->size) {
+        return writeSimpleError_(errOut, errOutLen, "release filesystem slots unavailable or overlapping");
     }
+    LOGI("[UPGRADE] filesystem clone source=%s addr=0x%08lX target=%s addr=0x%08lX bytes=%lu",
+         source->label, (unsigned long)source->address, destination->label,
+         (unsigned long)destination->address, (unsigned long)source->size);
     if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
         return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
     }
@@ -264,9 +270,19 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
                                  : sizeof(buffer);
         if (esp_partition_read(source, offset, buffer, count) != ESP_OK ||
             esp_partition_write(destination, offset, buffer, count) != ESP_OK) {
+            LOGE("[UPGRADE] filesystem clone failed offset=%lu", (unsigned long)offset);
             return writeSimpleError_(errOut, errOutLen, "inactive filesystem clone failed");
         }
+        // Let network and watchdog tasks run during the 1.5 MiB flash copy.
+        if (((offset / sizeof(buffer)) & 31U) == 31U) {
+            vTaskDelay(pdMS_TO_TICKS(1U));
+        }
+        if ((offset + count) % (256U * 1024U) == 0U) {
+            LOGI("[UPGRADE] filesystem clone progress=%lu/%lu",
+                 (unsigned long)(offset + count), (unsigned long)source->size);
+        }
     }
+    LOGI("[UPGRADE] filesystem clone complete bytes=%lu", (unsigned long)source->size);
     return true;
 }
 
@@ -1045,8 +1061,8 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
 
     const esp_partition_t* runningPartition = esp_ota_get_running_partition();
     const esp_partition_t* updatePartition = esp_ota_get_next_update_partition(nullptr);
-    if (!updatePartition) {
-        writeSimpleError_(errOut, errOutLen, "ota partition unavailable");
+    if (!runningPartition || !updatePartition) {
+        writeSimpleError_(errOut, errOutLen, "ota running or target partition unavailable");
         http.end();
         return false;
     }
@@ -1055,7 +1071,16 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         http.end();
         return false;
     }
-    if (contentLength > 0 && (size_t)contentLength > updatePartition->size) {
+    LOGI("[UPGRADE] firmware running=%s addr=0x%08lX target=%s addr=0x%08lX size=%ld capacity=%lu",
+         runningPartition->label, (unsigned long)runningPartition->address,
+         updatePartition->label, (unsigned long)updatePartition->address,
+         (long)contentLength, (unsigned long)updatePartition->size);
+    if (contentLength <= 0) {
+        writeSimpleError_(errOut, errOutLen, "ota requires a positive content-length");
+        http.end();
+        return false;
+    }
+    if ((size_t)contentLength > updatePartition->size) {
         writeSimpleError_(errOut, errOutLen, "ota image too large for partition");
         http.end();
         return false;
@@ -1140,6 +1165,10 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         }
         if (failMsg[0] == '\0' && !Update.isFinished()) {
             snprintf(failMsg, sizeof(failMsg), "ota not finished");
+        }
+        if (failMsg[0] != '\0') {
+            LOGE("[UPGRADE] firmware update abort reason=%s", failMsg);
+            Update.abort();
         }
     }
 
