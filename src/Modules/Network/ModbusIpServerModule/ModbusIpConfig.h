@@ -10,6 +10,7 @@ namespace flowio::modbus_ip {
 // Disabled by default to avoid exposing an unexpected network listener.
 struct GatewayConfig {
  bool enabled=false;
+ bool modbusTrace=false;
  bool tcpEnabled=true;
  bool udpEnabled=false;
  uint16_t port=502;
@@ -35,6 +36,7 @@ struct GatewayConfigVariables {
  GatewayConfig data{};
  static constexpr std::size_t DeviceProfilesCapacity=768;
  char deviceProfiles[DeviceProfilesCapacity]{};
+ ConfigVariable<bool,1> modbusTrace{NVS_KEY("mi_trace"),"debug_modbus","modbus_ip",ConfigType::Bool,&data.modbusTrace,ConfigPersistence::Persistent,0};
  ConfigVariable<bool,1> enabled{NVS_KEY(NvsKeys::ModbusIp::Enabled),"enabled","modbus_ip",ConfigType::Bool,&data.enabled,ConfigPersistence::Persistent,0};
  ConfigVariable<bool,1> tcp{NVS_KEY(NvsKeys::ModbusIp::TcpEnabled),"tcp_enabled","modbus_ip",ConfigType::Bool,&data.tcpEnabled,ConfigPersistence::Persistent,0};
  ConfigVariable<bool,1> udp{NVS_KEY(NvsKeys::ModbusIp::UdpEnabled),"udp_enabled","modbus_ip",ConfigType::Bool,&data.udpEnabled,ConfigPersistence::Persistent,0};
@@ -73,7 +75,7 @@ struct GatewayConfigVariables {
   return length<DeviceProfilesCapacity&&table.parse(text);
  }
  template<class Store> void registerWith(Store& store){
-  store.registerVar(enabled);store.registerVar(tcp);store.registerVar(udp);
+  store.registerVar(modbusTrace);store.registerVar(enabled);store.registerVar(tcp);store.registerVar(udp);
   store.registerVar(port);store.registerVar(timeout);store.registerVar(mode);
   store.registerVar(baud);store.registerVar(parity);store.registerVar(stopBits);
   deviceProfilesVar.validateText=&validDeviceProfiles;
