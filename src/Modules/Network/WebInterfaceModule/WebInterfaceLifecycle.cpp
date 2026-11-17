@@ -201,15 +201,28 @@ void WebInterfaceModule::loop()
     // Independent observer: the Web task reports a stalled Modbus IP loop
     // even when that loop cannot reach its own end-of-iteration logger.
     static uint32_t lastModbusHealthLogMs = 0U;
+    static uint32_t lastModbusHeartbeatMs = 0U;
     const uint32_t healthNowMs = millis();
     const uint32_t lastProgress = FlowModbusIpHealth::lastProgressMs;
-    if (lastProgress != 0U && (uint32_t)(healthNowMs-lastProgress) >= 2000U &&
+    // A concurrent writer can update lastProgress after healthNowMs was sampled.
+    // Treat a future snapshot as fresh instead of wrapping to 0xffffffff.
+    const int32_t signedAgeMs = (int32_t)(healthNowMs - lastProgress);
+    const uint32_t ageMs = signedAgeMs < 0 ? 0U : (uint32_t)signedAgeMs;
+    const uint8_t stage = FlowModbusIpHealth::stage;
+    const uint16_t port = FlowModbusIpHealth::port;
+    if (lastProgress != 0U && ageMs >= 2000U &&
         (uint32_t)(healthNowMs-lastModbusHealthLogMs) >= 5000U) {
         lastModbusHealthLogMs = healthNowMs;
         LOGW("Modbus IP STALLED age_ms=%lu stage=%u port=%u heap=%lu largest=%lu",
-             (unsigned long)(healthNowMs-lastProgress),
-             (unsigned)FlowModbusIpHealth::stage,
-             (unsigned)FlowModbusIpHealth::port,
+             (unsigned long)ageMs, (unsigned)stage, (unsigned)port,
+             (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    }
+    if (lastProgress != 0U &&
+        (uint32_t)(healthNowMs-lastModbusHeartbeatMs) >= 15000U) {
+        lastModbusHeartbeatMs = healthNowMs;
+        LOGI("Modbus IP HEALTH age_ms=%lu stage=%u port=%u heap=%lu largest=%lu",
+             (unsigned long)ageMs, (unsigned)stage, (unsigned)port,
              (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
              (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     }
