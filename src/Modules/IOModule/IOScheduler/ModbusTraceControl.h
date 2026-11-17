@@ -6,7 +6,9 @@
 namespace flowio::modbus_trace {
 inline std::atomic<bool> enabled{false};
 inline void frame(const char* direction, uint16_t id, const uint8_t* bytes, size_t length) {
-    static std::atomic<uint32_t> lastMs{0};
+    static std::atomic<uint32_t> lastTxMs{0};
+    static std::atomic<uint32_t> lastRxMs{0};
+    auto& lastMs = direction[0] == 'T' ? lastTxMs : lastRxMs;
     const uint32_t now = millis();
     uint32_t previous = lastMs.load(std::memory_order_relaxed);
     if ((uint32_t)(now - previous) < 500U ||
