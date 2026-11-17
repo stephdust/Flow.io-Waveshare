@@ -8,6 +8,7 @@
 #include "ModbusIpProfileResolver.h"
 #include "ModbusTcpEndpoint.h"
 #include "ModbusIpHealth.h"
+#include "Modules/IOModule/IOScheduler/ModbusTraceControl.h"
 
 // Native Flow.io module. No UART is created here: all requests use the
 // ModbusMaster service provided by IOModule.
@@ -34,6 +35,7 @@ public:
   started_=true;
  }
  void loop() override {
+  flowio::modbus_trace::enabled.store(config_.data.modbusTrace, std::memory_order_relaxed);
   FlowModbusIpHealth::loopStartMs=millis();
   FlowModbusIpHealth::lastProgressMs=FlowModbusIpHealth::loopStartMs;
   FlowModbusIpHealth::stage=1;
