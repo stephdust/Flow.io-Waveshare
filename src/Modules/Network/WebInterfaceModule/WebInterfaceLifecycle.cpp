@@ -181,6 +181,36 @@ void WebInterfaceModule::onEvent_(const Event& e)
 void WebInterfaceModule::loop()
 {
     WebMemoryDiagnostics::poll();
+    // Low-rate diagnostics for HTTP refresh / OTA stalls. Avoid per-request
+    // allocations and logs: the network stack needs internal DMA-capable RAM.
+    // The first sample is taken on the first loop; later samples every 15s.
+    static uint32_t lastResourceSampleMs = 0U;
+    static bool resourceSampleTaken = false;
+    const uint32_t resourceNowMs = millis();
+    if (!resourceSampleTaken || (uint32_t)(resourceNowMs - lastResourceSampleMs) >= 15000U) {
+        resourceSampleTaken = true;
+        lastResourceSampleMs = resourceNowMs;
+        constexpr uint32_t internalCaps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
+        constexpr uint32_t psramCaps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
+        const uint32_t internalFree = heap_caps_get_free_size(internalCaps);
+        const uint32_t internalLargest = heap_caps_get_largest_free_block(internalCaps);
+        const uint32_t internalMin = heap_caps_get_minimum_free_size(internalCaps);
+        const uint32_t psramFree = heap_caps_get_free_size(psramCaps);
+        const uint32_t psramLargest = heap_caps_get_largest_free_block(psramCaps);
+        const uint32_t stackWords = uxTaskGetStackHighWaterMark(nullptr);
+        const unsigned wsClients = started_ ? (unsigned)wsLog_.count() : 0U;
+        if (internalFree < 40000U || internalLargest < 16000U || stackWords < 512U) {
+            LOGW("WEB RESOURCES LOW internal=%lu largest=%lu min=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
+                 (unsigned long)internalFree, (unsigned long)internalLargest,
+                 (unsigned long)internalMin, (unsigned long)psramFree,
+                 (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
+        } else {
+            LOGI("WEB RESOURCES internal=%lu largest=%lu min=%lu psram=%lu psram_largest=%lu stack_free_words=%lu ws=%u",
+                 (unsigned long)internalFree, (unsigned long)internalLargest,
+                 (unsigned long)internalMin, (unsigned long)psramFree,
+                 (unsigned long)psramLargest, (unsigned long)stackWords, wsClients);
+        }
+    }
     if (webStartLedPulseActive_ && (int32_t)(millis() - webStartLedPulseUntilMs_) >= 0) {
         if (hmiSvc_ && hmiSvc_->setStatusLedAutoWifiMode && webStartLedPrevAutoModeValid_) {
             hmiSvc_->setStatusLedAutoWifiMode(hmiSvc_->ctx, webStartLedPrevAutoMode_);
