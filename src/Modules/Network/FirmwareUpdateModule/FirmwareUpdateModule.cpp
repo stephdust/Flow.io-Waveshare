@@ -38,6 +38,44 @@ static bool writeSimpleError_(char* out, size_t outLen, const char* msg);
 
 namespace {
 
+// Retained through many software/watchdog resets, without Flash writes.
+struct OtaRtcTrace {
+    uint32_t magic, operationId, stage, runningAddress, targetAddress, progressBytes;
+};
+static constexpr uint32_t kOtaRtcMagic = 0x4F544131U;
+RTC_NOINIT_ATTR OtaRtcTrace gOtaRtcTrace;
+enum class OtaTraceStage : uint32_t {
+    HttpBegin=1, HttpGet=2, HttpReady=3, CloneErase=4, CloneCopy=5,
+    CloneDone=6, FirmwareBegin=7, FirmwareWrite=8, FirmwareDone=9,
+    RebootRequested=10, Failed=11
+};
+void otaTrace_(OtaTraceStage stage, uint32_t progress=0U) {
+    if (gOtaRtcTrace.magic != kOtaRtcMagic) return;
+    gOtaRtcTrace.stage = static_cast<uint32_t>(stage);
+    gOtaRtcTrace.progressBytes = progress;
+}
+void otaTraceBegin_(uint32_t operationId) {
+    gOtaRtcTrace = {kOtaRtcMagic, operationId, 0U, 0U, 0U, 0U};
+    otaTrace_(OtaTraceStage::HttpBegin);
+}
+void otaTraceBootReport_() {
+    const esp_reset_reason_t reason = esp_reset_reason();
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    LOGI("[UPGRADE] boot reset_reason=%d running=%s addr=0x%08lX",
+         (int)reason, running ? running->label : "-",
+         (unsigned long)(running ? running->address : 0U));
+    if (gOtaRtcTrace.magic != kOtaRtcMagic) {
+        LOGI("[UPGRADE] previous_ota_trace=unavailable");
+        return;
+    }
+    LOGW("[UPGRADE] previous_ota operation_id=%lu stage=%lu progress_bytes=%lu running_addr=0x%08lX target_addr=0x%08lX reset_reason=%d",
+         (unsigned long)gOtaRtcTrace.operationId,
+         (unsigned long)gOtaRtcTrace.stage,
+         (unsigned long)gOtaRtcTrace.progressBytes,
+         (unsigned long)gOtaRtcTrace.runningAddress,
+         (unsigned long)gOtaRtcTrace.targetAddress, (int)reason);
+}
+
 class SemaphoreGuard {
 public:
     explicit SemaphoreGuard(SemaphoreHandle_t semaphore,
@@ -270,10 +308,12 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
     LOGI("[UPGRADE] filesystem clone source=%s addr=0x%08lX target=%s addr=0x%08lX bytes=%lu",
          source->label, (unsigned long)source->address, destination->label,
          (unsigned long)destination->address, (unsigned long)source->size);
+    otaTrace_(OtaTraceStage::CloneErase);
     logOtaMemory_("filesystem_clone_before_erase");
     if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
         return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
     }
+    otaTrace_(OtaTraceStage::CloneCopy);
     uint8_t buffer[1024]{};
     for (size_t offset = 0U; offset < source->size; offset += sizeof(buffer)) {
         const size_t count = ((source->size - offset) < sizeof(buffer))
@@ -289,11 +329,13 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
             vTaskDelay(pdMS_TO_TICKS(1U));
         }
         if ((offset + count) % (256U * 1024U) == 0U) {
+            otaTrace_(OtaTraceStage::CloneCopy, (uint32_t)(offset + count));
             LOGI("[UPGRADE] filesystem clone progress=%lu/%lu",
                  (unsigned long)(offset + count), (unsigned long)source->size);
         }
     }
     LOGI("[UPGRADE] filesystem clone complete bytes=%lu", (unsigned long)source->size);
+    otaTrace_(OtaTraceStage::CloneDone, (uint32_t)source->size);
     logOtaMemory_("filesystem_clone_done");
     return true;
 }
@@ -1040,6 +1082,7 @@ bool FirmwareUpdateModule::queueNextionReboot_(char* errOut, size_t errOutLen)
 bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOut, size_t errOutLen)
 {
     const char* url = job.url;
+    otaTraceBegin_(job.operationId);
     setStatus_(UpdateState::Downloading,
                FirmwareUpdateTarget::Waveshare,
                0,
@@ -1053,6 +1096,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         return false;
     }
 
+    otaTrace_(OtaTraceStage::HttpGet);
     const int code = http.GET();
     const int32_t contentLength = http.getSize();
     if (code != HTTP_CODE_OK) {
@@ -1083,6 +1127,9 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         http.end();
         return false;
     }
+    gOtaRtcTrace.runningAddress = runningPartition->address;
+    gOtaRtcTrace.targetAddress = updatePartition->address;
+    otaTrace_(OtaTraceStage::HttpReady);
     LOGI("[UPGRADE] firmware running=%s addr=0x%08lX target=%s addr=0x%08lX size=%ld capacity=%lu",
          runningPartition->label, (unsigned long)runningPartition->address,
          updatePartition->label, (unsigned long)updatePartition->address,
@@ -1119,6 +1166,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
     }
     LOGI("[UPGRADE] stage=filesystem_clone_done operation_id=%lu",
          (unsigned long)job.operationId);
+    otaTrace_(OtaTraceStage::FirmwareBegin);
     logOtaMemory_("firmware_write_before_begin");
     LOGI("[UPGRADE] stage=firmware_write_begin operation_id=%lu size=%ld",
          (unsigned long)job.operationId, (long)contentLength);
@@ -1155,6 +1203,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
             }
             lastReadMs = millis();
 
+            otaTrace_(OtaTraceStage::FirmwareWrite, (uint32_t)(contentLength - remaining));
             const size_t wr = Update.write(buf, (size_t)rd);
             if (wr != (size_t)rd) {
                 snprintf(failMsg, sizeof(failMsg), "ota write failed (%u)", (unsigned)Update.getError());
@@ -1190,6 +1239,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
 
     http.end();
 
+    otaTrace_(failMsg[0] == '\0' ? OtaTraceStage::FirmwareDone : OtaTraceStage::Failed);
     LOGI("[UPGRADE] stage=firmware_write_%s operation_id=%lu",
          failMsg[0] == '\0' ? "done" : "failed",
          (unsigned long)job.operationId);
@@ -1211,6 +1261,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
                job.operationId);
     delay(1800);
     if (!saveCountersBeforeUpdate_(errOut, errOutLen)) return false;
+    otaTrace_(OtaTraceStage::RebootRequested);
     ESP.restart();
     return true;
 }
@@ -2287,6 +2338,7 @@ void FirmwareUpdateModule::init(ConfigStore& cfg, ServiceRegistry& services)
     cfg.registerVar(updateHostVar_);
     cfg.registerVar(updatePathVar_);
 
+    otaTraceBootReport_();
     bootId_ = esp_random();
     if (bootId_ == 0U) bootId_ = 1U;
     if (loadReceipt_()) {
