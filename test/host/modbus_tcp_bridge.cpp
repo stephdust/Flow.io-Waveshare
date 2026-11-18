@@ -76,4 +76,14 @@ int main() {
     assert(slot.resultCode() == MODBUS_RESULT_TIMEOUT);
     assert(slot.state() == BridgeSlot::State::Ready);
     assert(slot.output()[7] == 0x83 && slot.output()[8] == 0x0B);
+    slot.reset();
+    ModbusTcpAdu::Request unsupported{};
+    unsupported.transactionId = 0x77;
+    unsupported.unitId = 17;
+    unsupported.function = 1;
+    assert(slot.rejectException(unsupported, ErrorMode::ModbusException, 0x01, 999));
+    assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.outputSize() == 9);
+    assert(slot.output()[0] == 0 && slot.output()[1] == 0x77);
+    assert(slot.output()[7] == 0x81 && slot.output()[8] == 0x01);
 }
