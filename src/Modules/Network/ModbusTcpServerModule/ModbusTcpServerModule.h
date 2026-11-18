@@ -82,14 +82,14 @@ public:
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
-        Serial.printf("[MODBUS-TCP] heap_internal=%lu largest_internal=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_crc=%lu rtu_timeouts=%lu\\n",
+        Serial.printf("[MODBUS-TCP] heap_internal=%lu largest_internal=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_crc=%lu rtu_timeouts=%lu\n",
             (unsigned long)freeInternal, (unsigned long)largestInternal,
             (unsigned long)freePsram, (unsigned long)largestPsram,
             (unsigned long)stackWatermark, (unsigned)queue.queued,
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
-            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu completed=%lu silent=%lu rejected=%lu response_max_ms=%lu\\n",
+            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu completed=%lu silent=%lu rejected=%lu response_max_ms=%lu\n",
                 (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
                 (unsigned)p.maxActiveClients, (unsigned long)p.received,
                 (unsigned long)p.completed, (unsigned long)p.silentFailures,
