@@ -4,7 +4,7 @@
 namespace {
 bool lookup(void* context, uint16_t deviceId, SerialLineProfile& out) {
     ++*static_cast<unsigned*>(context);
-    if (deviceId != 7U) return false;
+    if (deviceId != 7U && deviceId != 0U) return false;
     out.baud = 19200U;
     out.parity = 1U;
     out.stopBits = 2U;
@@ -37,6 +37,11 @@ int main() {
     assert(resolver.resolve(1, 17, line));
     assert(line.baud == 19200 && line.parity == 1 && line.stopBits == 2);
     assert(calls == 1);
+    device.deviceId = 0;
+    resolver.configure(1, device);
+    assert(resolver.resolve(1, 17, line));
+    assert(line.baud == 19200);  // Device index zero is valid.
+
     device.deviceId = 8;
     resolver.configure(1, device);
     assert(!resolver.resolve(1, 17, line));
