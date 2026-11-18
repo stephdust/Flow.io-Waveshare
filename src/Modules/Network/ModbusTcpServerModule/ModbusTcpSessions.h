@@ -84,6 +84,11 @@ public:
         sessions_[slot].requestReady = false;
     }
 
+    /** Occupancy is independent of the current socket connectivity state. */
+    bool occupied(uint8_t slot) const {
+        return slot < kMaxClients && sessions_[slot].occupied;
+    }
+
     uint8_t active(uint8_t portIndex) const {
         if (!validPortIndex(portIndex)) return 0U;
         uint8_t count = 0U;
