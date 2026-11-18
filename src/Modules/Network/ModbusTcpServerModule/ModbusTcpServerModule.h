@@ -81,16 +81,22 @@ public:
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
-            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
+            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu resolver_fail=%lu tx_bytes=%lu tx_retry=%lu tx_errors=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
                 (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
                 (unsigned)p.maxActiveClients, (unsigned long)p.received,
                 (unsigned long)p.completed, (unsigned long)p.exceptionsSent,
                 (unsigned long)p.silentFailures, (unsigned long)p.crcErrors,
                 (unsigned long)p.timeouts, (unsigned long)p.connectionsRejected,
+                (unsigned long)p.resolverFailures, (unsigned long)p.tcpBytesSent,
+                (unsigned long)p.txWouldBlock, (unsigned long)p.txErrors,
                 (unsigned long)p.responseTimeMaxMs, (unsigned long)p.queueWaitMaxMs,
                 (unsigned long)p.rtuResponseMaxMs);
         }
     }
+    // MQTT JSON extension retains the existing numeric settings used by HA.
+    // Called by the standard MqttConfigRouteProducer (no second publisher).
+    static MqttBuildResult buildConfigMqtt_(void* owner, uint16_t messageId,
+                                           MqttBuildContext& ctx);
     void setPoolDeviceModule(PoolDeviceModule* devices);
     /** Read ConfigStore settings (applied to listeners after a restart). */
     bool readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const;
@@ -160,8 +166,6 @@ private:
         {kConfigModules_[2], kConfigKeys_[2]}
     };
     static bool validateConfigCandidate_(void* context, const ConfigCandidate& candidate);
-    static MqttBuildResult buildConfigMqtt_(void* owner, uint16_t messageId,
-                                           MqttBuildContext& ctx);
     ModbusTcpServer::PortConfig fromSettings_(uint8_t index) const;
     MqttConfigRouteProducer* cfgMqttPub_ = nullptr;
     static bool lookupDevice_(void* context, uint16_t deviceId,
