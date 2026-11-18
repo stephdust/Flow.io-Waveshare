@@ -44,6 +44,10 @@ struct PortStats {
     uint32_t responseTimeTotalMs = 0U;
     uint32_t responseTimeMaxMs = 0U;
     uint32_t queueWaitMaxMs = 0U;
+    uint32_t queueWaitTotalMs = 0U;
+    uint32_t rtuResponseMaxMs = 0U;
+    uint32_t rtuResponseTotalMs = 0U;
+    uint32_t rtuSamples = 0U;
 };
 
 inline bool validPortIndex(uint8_t index) { return index < kPortCount; }
