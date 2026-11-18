@@ -146,16 +146,19 @@ void ModbusTcpServerModule::onConfigLoaded(ConfigStore& cfg, ServiceRegistry& se
                         cfg.set(p.stopBitsVar, stop) &&
                         cfg.set(p.timeoutVar, timeout) &&
                         cfg.set(p.errorVar, error);
-                    if (ok && cfg.set(p.modeVar, mode)) {
-                        // set() skips writes when the value equals its default.
-                        // Persist all variables anyway, mode last as a commit key.
-                        (void)cfg.persistRegisteredValue(&p.deviceId);
-                        (void)cfg.persistRegisteredValue(&p.baud);
-                        (void)cfg.persistRegisteredValue(&p.parity);
-                        (void)cfg.persistRegisteredValue(&p.stopBits);
-                        (void)cfg.persistRegisteredValue(&p.timeoutMs);
-                        (void)cfg.persistRegisteredValue(&p.errorMode);
-                        (void)cfg.persistRegisteredValue(&p.mode);
+                    if (ok) {
+                        // Persist every field BEFORE the migration marker.
+                        // A partial or interrupted migration must be retried,
+                        // not silently treated as complete on next boot.
+                        const bool fieldsSaved =
+                            cfg.persistRegisteredValue(&p.deviceId) &&
+                            cfg.persistRegisteredValue(&p.baud) &&
+                            cfg.persistRegisteredValue(&p.parity) &&
+                            cfg.persistRegisteredValue(&p.stopBits) &&
+                            cfg.persistRegisteredValue(&p.timeoutMs) &&
+                            cfg.persistRegisteredValue(&p.errorMode);
+                        if (fieldsSaved && cfg.set(p.modeVar, mode))
+                            (void)cfg.persistRegisteredValue(&p.mode);
                     }
                 }
             }
