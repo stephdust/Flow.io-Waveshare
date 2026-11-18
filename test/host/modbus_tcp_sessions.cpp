@@ -32,6 +32,8 @@ int main() {
            TcpSessions::FeedResult::Complete);
     assert(sessions.request(0, request) && request.address == 500);
     sessions.release(0);
+    assert(!sessions.occupied(0));
+    assert(sessions.occupied(1));
     assert(sessions.active(0) == 1);
     assert(sessions.accept(0) == 0);
     const uint8_t bad[] = {0,1,0,1,0,6};
