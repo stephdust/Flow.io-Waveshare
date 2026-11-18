@@ -319,7 +319,12 @@ void Rs485TransactionScheduler::finish_(Slot& slot,
     slot.response.state = (result == MODBUS_RESULT_OK)
                               ? MODBUS_TRANSACTION_COMPLETE
                               : MODBUS_TRANSACTION_FAILED;
-    availableAtMs_ = busAvailableAt(slot.request.line, slot.sentAtMs, millis(),
+    const uint32_t doneAtMs = millis();
+    if (slot.sentAtMs != 0U) {
+        slot.response.queueWaitMs = slot.sentAtMs - slot.enqueuedAttemptAtMs;
+        slot.response.rtuResponseMs = doneAtMs - slot.sentAtMs;
+    }
+    availableAtMs_ = busAvailableAt(slot.request.line, slot.sentAtMs, doneAtMs,
                                     result != MODBUS_RESULT_OK || slot.abandoned);
     LOGD("Modbus done id=%u slave=%u result=%s exception=0x%02X total_ms=%lu abandoned=%u",
          slot.transactionId, slot.request.slaveAddress, resultName(result),
