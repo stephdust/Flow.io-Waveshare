@@ -202,6 +202,12 @@ void WebInterfaceModule::loop()
         const uint32_t psramFree = (uint32_t)heap_caps_get_free_size(psramCaps);
         const uint32_t psramLargest = (uint32_t)heap_caps_get_largest_free_block(psramCaps);
         const uint32_t psramMinimum = (uint32_t)heap_caps_get_minimum_free_size(psramCaps);
+        // Largest allocatable block / total free memory is a useful
+        // fragmentation proxy (not an allocator-internal fragmentation metric).
+        const uint32_t internalFragPct = internalFree > 0U
+            ? (uint32_t)(100ULL * (internalFree - internalLargest) / internalFree) : 0U;
+        const uint32_t psramFragPct = psramFree > 0U
+            ? (uint32_t)(100ULL * (psramFree - psramLargest) / psramFree) : 0U;
         // ESP-IDF high-water marks are bytes, including for the Web task.
         const uint32_t stackFreeBytes = (uint32_t)uxTaskGetStackHighWaterMark(nullptr);
         // AsyncTCP creates this task lazily. Zero means unavailable/not started.
@@ -221,20 +227,22 @@ void WebInterfaceModule::loop()
         if (periodic || suddenDrop || (low && !wasLow)) {
             const char* tag = low ? "[MEM-LOW]" : (suddenDrop ? "[MEM-DROP]" : "[MEM]");
             if (low || suddenDrop) {
-                LOGW("%s ms=%lu int_free=%lu int_largest=%lu int_min=%lu win_free_min=%lu win_largest_min=%lu psram_free=%lu psram_largest=%lu psram_min=%lu web_stack_free_bytes=%lu async_stack_free_bytes=%lu",
+                LOGW("%s ms=%lu int_free=%lu int_largest=%lu int_frag_pct=%lu int_min=%lu win_free_min=%lu win_largest_min=%lu psram_free=%lu psram_largest=%lu psram_frag_pct=%lu psram_min=%lu web_stack_free_bytes=%lu async_stack_free_bytes=%lu",
                      tag, (unsigned long)memNowMs, (unsigned long)internalFree,
-                     (unsigned long)internalLargest, (unsigned long)internalMinimum,
+                     (unsigned long)internalLargest, (unsigned long)internalFragPct,
+                     (unsigned long)internalMinimum,
                      (unsigned long)windowInternalLow, (unsigned long)windowLargestLow,
                      (unsigned long)psramFree, (unsigned long)psramLargest,
-                     (unsigned long)psramMinimum, (unsigned long)stackFreeBytes,
+                     (unsigned long)psramFragPct, (unsigned long)psramMinimum, (unsigned long)stackFreeBytes,
                      (unsigned long)asyncStackFreeBytes);
             } else {
-                LOGI("%s ms=%lu int_free=%lu int_largest=%lu int_min=%lu win_free_min=%lu win_largest_min=%lu psram_free=%lu psram_largest=%lu psram_min=%lu web_stack_free_bytes=%lu async_stack_free_bytes=%lu",
+                LOGI("%s ms=%lu int_free=%lu int_largest=%lu int_frag_pct=%lu int_min=%lu win_free_min=%lu win_largest_min=%lu psram_free=%lu psram_largest=%lu psram_frag_pct=%lu psram_min=%lu web_stack_free_bytes=%lu async_stack_free_bytes=%lu",
                      tag, (unsigned long)memNowMs, (unsigned long)internalFree,
-                     (unsigned long)internalLargest, (unsigned long)internalMinimum,
+                     (unsigned long)internalLargest, (unsigned long)internalFragPct,
+                     (unsigned long)internalMinimum,
                      (unsigned long)windowInternalLow, (unsigned long)windowLargestLow,
                      (unsigned long)psramFree, (unsigned long)psramLargest,
-                     (unsigned long)psramMinimum, (unsigned long)stackFreeBytes,
+                     (unsigned long)psramFragPct, (unsigned long)psramMinimum, (unsigned long)stackFreeBytes,
                      (unsigned long)asyncStackFreeBytes);
             }
             if (periodic) {
