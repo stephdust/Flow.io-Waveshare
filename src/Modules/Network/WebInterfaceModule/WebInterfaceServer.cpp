@@ -220,7 +220,11 @@ static bool extractSessionCookie_(AsyncWebServerRequest* request, char* out, siz
 {
     if (!request || !out || outLen == 0U) return false;
     out[0] = '\0';
-    const String cookieHeader = request->header("Cookie");
+    // Reuse the request-owned header value instead of copying its String
+    // on every authenticated HTTP request.
+    const AsyncWebHeader* cookie = request->getHeader("Cookie");
+    if (!cookie) return false;
+    const String& cookieHeader = cookie->value();
     if (cookieHeader.isEmpty()) return false;
 
     const size_t nameLen = strlen(kSessionCookieName);
