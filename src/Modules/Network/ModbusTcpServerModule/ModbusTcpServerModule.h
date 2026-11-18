@@ -101,11 +101,12 @@ public:
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
-        Serial.printf("[MODBUS-TCP] heap_internal=%lu min_internal=%lu largest_internal=%lu frag_est_percent=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_crc=%lu rtu_timeouts=%lu\n",
+        Serial.printf("[MODBUS-TCP] heap_internal=%lu min_internal=%lu largest_internal=%lu frag_est_percent=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_peak=%u rtu_rejected=%lu rtu_crc=%lu rtu_timeouts=%lu\n",
             (unsigned long)freeInternal, (unsigned long)minInternal,
             (unsigned long)largestInternal, (unsigned long)fragEstimate,
             (unsigned long)freePsram, (unsigned long)largestPsram,
             (unsigned long)stackWatermark, (unsigned)queue.queued,
+            (unsigned)queue.queuedPeak, (unsigned long)queue.queueRejected,
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
@@ -126,6 +127,9 @@ public:
     bool serialDeviceInfo(uint16_t id, SerialLineProfile& line,
                           char* label, size_t labelCapacity) const;
     bool running() const { return running_; }
+    bool schedulerStats(ModbusMasterStats& out) const {
+        return master_ && master_->stats && master_->stats(master_->ctx, &out);
+    }
     bool configurePort(uint8_t index, const ModbusTcpServer::PortConfig& config) {
         if (running_ || !ModbusTcpServer::validConfig(index, config)) return false;
         configs_[index] = config;
