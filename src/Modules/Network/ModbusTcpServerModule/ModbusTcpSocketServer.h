@@ -111,6 +111,7 @@ public:
                                              count, MSG_DONTWAIT);
                     if (wrote > 0) {
                         sent_[slot] += size_t(wrote);
+                        stats_[port].tcpBytesSent += uint32_t(wrote);
                         lastWriteProgressMs_[slot] = nowMs;
                     } else if (wrote < 0 && errno != EAGAIN &&
                                errno != EWOULDBLOCK && errno != EINTR) {
@@ -181,7 +182,7 @@ public:
                                               line, targetUnitId)) {
                     // No matching configured device: reject rather than send
                     // traffic using an arbitrary UART profile.
-                    ++stats_[port].queueRejected;
+                    ++stats_[port].resolverFailures;
                     bridge.reject(request, configs_[port].errorMode,
                                   MODBUS_RESULT_NOT_READY, nowMs);
                     break;
