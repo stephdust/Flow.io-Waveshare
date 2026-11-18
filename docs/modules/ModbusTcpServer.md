@@ -1,4 +1,38 @@
-# Validation en charge — serveur Modbus TCP de Flow.io
+# Serveur Modbus TCP de Flow.io — configuration et validation
+
+## Configuration Web, MQTT et Home Assistant
+
+Dans la page **Configuration / Config Store**, ouvrir **Network → Modbus TCP**
+puis l'un des ports **TCP 502, TCP 503, TCP 504**. La sélection
+**Paramètres RS485** remplace l'ancien bouton d'activation :
+- **Aucun** : port désactivé, autres champs masqués.
+- **Équipement Flow.io** : sélection d'un équipement RS485 configuré ;
+  la communication emprunte le séquenceur RS485 commun.
+- **Configuration manuelle** : débit, parité et bits d'arrêt spécifiés.
+
+Le timeout et la politique d'erreur restent disponibles pour les ports actifs.
+Les données sont désormais des variables **ConfigStore persistantes**, plutôt
+que les anciennes structures NVS `mbtcp0/1/2` ; celles-ci sont importées au
+premier démarrage si aucune nouvelle valeur n'existe encore. Les paramètres
+effectifs du serveur changent **au prochain redémarrage** de Flow.io.
+
+Sur MQTT, Flow.io publie, avec QoS 1 et retained, les paramètres de chaque
+port dans les topics usuels :
+`<base>/cfg/modbustcp/502`, `<base>/cfg/modbustcp/503` et
+`<base>/cfg/modbustcp/504`.
+
+Les **21 entités Home Assistant modifiables** sont enregistrées dans le
+service Discovery **existant** (pas un second système). Par port :
+- 4 listes de choix : mode RS485, parité, bits d'arrêt, politique d'erreur.
+- 3 valeurs numériques : équipement, débit RS485, timeout en ms.
+
+Leurs commandes MQTT utilisent le topic **`<base>/cfg/set`** et les validations
+ConfigStore existantes ; la publication d'état confirme la sauvegarde.
+Une modification ne redémarre pas automatiquement le contrôleur, afin de
+ne pas interrompre le bus RS485 ni les fonctions de sécurité. **Redémarrer
+manuellement** pour appliquer une modification aux listeners actifs. Ne pas
+confondre l'état configuré publié sur MQTT avec l'état de fonctionnement actif
+avant redémarrage.
 
 ## Périmètre
 
@@ -68,7 +102,7 @@ Pendant l'essai, relever toutes les minutes la ligne série
 `rtu_rejected`, `rtu_crc`, `rtu_timeouts`. Les lignes suivantes
 détaillent, pour chaque port, les clients actifs, requêtes, réponses,
 exceptions, refus, temps TCP maximum, attente en queue maximum et durée RTU
-maximum. La page Modbus interroge aussi
+maximum. La route de diagnostic Modbus `GET /api/modbus/ports` est également disponible ; la configuration est maintenant dans Config Store. L'API diagnostique interroge aussi
 `GET /api/modbus/ports` (session web authentifiée) et contient des
 statistiques par port avec moyenne des temps réseau, de file et de RTU.
 
