@@ -13939,6 +13939,11 @@
 
     function configConditionMatches(condition, value) {
       if (!condition || typeof condition !== 'object') return true;
+      // Backward compatible equality and "not equal" for modes such as
+      // Modbus TCP -> Aucun where additional RS485 fields must disappear.
+      if (Object.prototype.hasOwnProperty.call(condition, 'not_equals')) {
+        return Number(value) !== Number(condition.not_equals);
+      }
       return Number(value) === Number(condition.equals);
     }
 
