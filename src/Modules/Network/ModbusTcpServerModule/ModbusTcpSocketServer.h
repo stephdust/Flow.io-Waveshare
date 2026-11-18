@@ -56,7 +56,9 @@ public:
             if (!configs_[port].enabled) continue;
             WiFiClient incoming = servers_[port].accept();
             if (incoming) {
-                const int8_t slot = sessions_.accept(port);
+                int8_t slot = sessions_.accept(port);
+                if (slot < 0 && reclaimIdleSession_(port, nowMs))
+                    slot = sessions_.accept(port);
                 if (slot < 0) {
                     ++stats_[port].connectionsRejected;
                     incoming.stop();
@@ -254,8 +256,33 @@ private:
     static constexpr size_t kMaxTxBytesPerTick = 128U;
     static constexpr size_t kMaxRxBytesPerTick = 64U;
     static constexpr uint32_t kConnectionCheckMs = 250U;
+    // Wi-Fi/OTA reboot can orphan persistent TCP sockets without a FIN/RST.
+    // Evict an idle slot only under admission pressure, never an in-flight
+    // Modbus transaction. This does not run extra socket polls each tick.
+    static constexpr uint32_t kIdleReclaimMs = 30000U;
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     static constexpr uint32_t kPartialFrameTimeoutMs = 10000U;
+    bool reclaimIdleSession_(uint8_t port, uint32_t nowMs) {
+        int8_t victim = -1;
+        uint32_t oldestIdleMs = 0U;
+        const uint8_t first = port * kClientsPerPort;
+        for (uint8_t slot = first; slot < first + kClientsPerPort; ++slot) {
+            if (!sessions_.occupied(slot) ||
+                bridges_[slot].state() != BridgeSlot::State::Idle ||
+                writing_[slot] || sessions_.hasPartialRequest(slot))
+                continue;
+            const uint32_t idleMs = uint32_t(nowMs - lastReadProgressMs_[slot]);
+            if (idleMs < kIdleReclaimMs) continue;
+            if (victim < 0 || idleMs > oldestIdleMs) {
+                victim = int8_t(slot);
+                oldestIdleMs = idleMs;
+            }
+        }
+        if (victim < 0) return false;
+        close_(uint8_t(victim));
+        ++stats_[port].idleReclaimed;
+        return true;
+    }
     void close_(uint8_t slot) {
         bridges_[slot].reset();
         clients_[slot].stop();
