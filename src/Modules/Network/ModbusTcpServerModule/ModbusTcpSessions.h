@@ -71,6 +71,20 @@ public:
         return FeedResult::Incomplete;
     }
 
+    /** Read transaction ID, unit and function even for an invalid/unsupported PDU. */
+    bool headerRequest(uint8_t slot, ModbusTcpAdu::Request& out) const {
+        if (slot >= kMaxClients) return false;
+        const Session& s = sessions_[slot];
+        if (!s.occupied || !s.requestReady || s.bytesUsed < 8U ||
+            ModbusTcpAdu::expectedSize(s.frame, s.bytesUsed) != s.bytesUsed)
+            return false;
+        out = ModbusTcpAdu::Request{};
+        out.transactionId = ModbusTcpAdu::word(s.frame);
+        out.unitId = s.frame[6];
+        out.function = s.frame[7];
+        return true;
+    }
+
     bool request(uint8_t slot, ModbusTcpAdu::Request& out) const {
         if (slot >= kMaxClients) return false;
         const Session& s = sessions_[slot];
