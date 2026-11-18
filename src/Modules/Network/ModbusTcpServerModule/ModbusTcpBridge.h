@@ -91,19 +91,19 @@ public:
     /** Must be called regularly; never blocks for an RTU response. */
     void poll(uint32_t now) {
         if (state_ != State::Pending || !service_) return;
+        // End-to-end deadline covers scheduler queueing and the RTU response.
+        // Polling a completed scheduler transaction after the deadline must not
+        // silently grant an extra TCP timeout interval.
+        if (uint32_t(now - startedAtMs_) >= timeoutMs_) {
+            if (service_->cancelOwner)
+                service_->cancelOwner(service_->ctx, ownerId_);
+            fail_(MODBUS_RESULT_TIMEOUT);
+            return;
+        }
         ModbusResponse result{};
         const ModbusResultCode pollResult =
             service_->poll(service_->ctx, rtuTransactionId_, &result);
-        if (pollResult == MODBUS_RESULT_NOT_READY) {
-            if (uint32_t(now - startedAtMs_) >= timeoutMs_) {
-                // Do not cancelOwner here: it may cancel unrelated requests if
-                // an owner ID is shared. Each bridge slot MUST own a unique ID.
-                if (service_->cancelOwner)
-                    service_->cancelOwner(service_->ctx, ownerId_);
-                fail_(MODBUS_RESULT_TIMEOUT);
-            }
-            return;
-        }
+        if (pollResult == MODBUS_RESULT_NOT_READY) return;
         if (pollResult != MODBUS_RESULT_OK) { fail_(pollResult); return; }
         if (result.result != MODBUS_RESULT_OK) {
             fail_(static_cast<ModbusResultCode>(result.result), result.exceptionCode);
