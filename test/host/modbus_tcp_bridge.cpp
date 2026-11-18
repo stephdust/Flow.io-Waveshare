@@ -93,4 +93,54 @@ int main() {
     assert(slot.outputSize() == 9);
     assert(slot.output()[0] == 0 && slot.output()[1] == 0x77);
     assert(slot.output()[7] == 0x81 && slot.output()[8] == 0x01);
+    slot.reset();
+
+    // A single 125-register FC03 read must be forwarded without splitting
+    // into 32-register transactions, and return a complete 259-byte TCP ADU.
+    const uint8_t maxRead[] = {0,0x45,0,0,0,6,17,3,0,52,0,125};
+    assert(ModbusTcpAdu::decode(maxRead, sizeof(maxRead), tcp));
+    fake.submitResult = MODBUS_RESULT_OK;
+    fake.pollResult = MODBUS_RESULT_NOT_READY;
+    assert(slot.submit(service, tcp, serial, ErrorMode::ModbusException, 3000, 1000));
+    assert(fake.last.registerAddress == 52 && fake.last.registerCount == 125);
+    fake.reply = ModbusResponse{};
+    fake.reply.result = MODBUS_RESULT_OK;
+    fake.reply.registerCount = 125;
+    for (uint16_t i = 0; i < 125; ++i) fake.reply.values[i] = i;
+    fake.pollResult = MODBUS_RESULT_OK;
+    slot.poll(1001);
+    assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.outputSize() == 259);
+    assert(slot.output()[4] == 0 && slot.output()[5] == 253);
+    assert(slot.output()[7] == 3 && slot.output()[8] == 250);
+    assert(slot.output()[257] == 0 && slot.output()[258] == 124);
+    slot.reset();
+
+    // FC16 can write the maximum 123 registers in one serial transaction.
+    uint8_t writeMax[259]{};
+    writeMax[5] = 253;
+    writeMax[6] = 17;
+    writeMax[7] = 0x10;
+    writeMax[9] = 52;
+    writeMax[11] = 123;
+    writeMax[12] = 246;
+    for (uint16_t i = 0; i < 123; ++i) {
+        writeMax[13 + 2 * i] = uint8_t(i >> 8);
+        writeMax[14 + 2 * i] = uint8_t(i);
+    }
+    assert(ModbusTcpAdu::decode(writeMax, sizeof(writeMax), tcp));
+    fake.pollResult = MODBUS_RESULT_NOT_READY;
+    assert(slot.submit(service, tcp, serial, ErrorMode::ModbusException, 3000, 1100));
+    assert(fake.last.function == 0x10 && fake.last.registerCount == 123);
+    assert(fake.last.values[0] == 0 && fake.last.values[122] == 122);
+    fake.reply = ModbusResponse{};
+    fake.reply.result = MODBUS_RESULT_OK;
+    fake.reply.registerAddress = 52;
+    fake.reply.registerCount = 123;
+    fake.pollResult = MODBUS_RESULT_OK;
+    slot.poll(1101);
+    assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.outputSize() == 12 && slot.output()[7] == 0x10);
+    assert(slot.output()[10] == 0 && slot.output()[11] == 123);
+    slot.reset();
 }
