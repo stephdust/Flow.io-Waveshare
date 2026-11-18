@@ -7,10 +7,10 @@ void ModbusTcpServerModule::setPoolDeviceModule(PoolDeviceModule* devices) {
 }
 
 bool ModbusTcpServerModule::lookupDevice_(void* context, uint16_t deviceId,
-                                          SerialLineProfile& out) {
+                                          SerialLineProfile& out, uint8_t& slaveAddress) {
     const auto* module = static_cast<const ModbusTcpServerModule*>(context);
     return module && module->devices_ &&
-        module->devices_->serialLineForDevice(deviceId, out);
+        module->devices_->serialDeviceInfo(deviceId, out, nullptr, 0U, &slaveAddress);
 }
 
 bool ModbusTcpServerModule::readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const
@@ -33,7 +33,7 @@ bool ModbusTcpServerModule::readPort(uint8_t index, ModbusTcpServer::PortConfig&
 }
 
 bool ModbusTcpServerModule::serialDeviceInfo(uint16_t id, SerialLineProfile& line,
-                                             char* label, size_t labelCapacity) const
+                                             char* label, size_t labelCapacity, uint8_t* slaveAddress) const
 {
-    return devices_ && devices_->serialDeviceInfo(id, line, label, labelCapacity);
+    return devices_ && devices_->serialDeviceInfo(id, line, label, labelCapacity, slaveAddress);
 }
