@@ -44,6 +44,8 @@ struct PortStats {
     uint32_t connectionsRejected = 0U;
     uint32_t txWouldBlock = 0U;
     uint32_t txErrors = 0U;
+    uint32_t rxErrors = 0U;
+    uint32_t tcpBytesReceived = 0U;
     uint32_t tcpBytesSent = 0U;
     uint32_t responseTimeTotalMs = 0U;
     uint32_t responseTimeMaxMs = 0U;
