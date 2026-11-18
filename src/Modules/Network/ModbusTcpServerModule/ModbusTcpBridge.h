@@ -32,6 +32,9 @@ public:
         transactionId_ = tcp.transactionId;
         unitId_ = tcp.unitId;
         function_ = tcp.function;
+        requestedAddress_ = tcp.address;
+        requestedCount_ = tcp.count;
+        requestedValue_ = tcp.value;
         startedAtMs_ = now;
         timeoutMs_ = timeoutMs;
         outputSize_ = 0U;
@@ -92,7 +95,8 @@ public:
         uint8_t pdu[2U + 2U * MODBUS_MAX_REGISTERS_PER_REQUEST]{};
         size_t pduSize = 0U;
         if (function_ == 0x03U || function_ == 0x04U) {
-            if (!result.registerCount || result.registerCount > MODBUS_MAX_REGISTERS_PER_REQUEST) {
+            if (result.registerCount != requestedCount_ ||
+                result.registerCount > MODBUS_MAX_REGISTERS_PER_REQUEST) {
                 fail_(MODBUS_RESULT_PROTOCOL_ERROR); return;
             }
             pdu[0] = function_;
@@ -101,6 +105,11 @@ public:
                 ModbusTcpAdu::putWord(pdu + 2U + i * 2U, result.values[i]);
             pduSize = 2U + result.registerCount * 2U;
         } else if (function_ == 0x06U || function_ == 0x10U) {
+            if (result.registerAddress != requestedAddress_ ||
+                (function_ == 0x06U && result.values[0] != requestedValue_) ||
+                (function_ == 0x10U && result.registerCount != requestedCount_)) {
+                fail_(MODBUS_RESULT_PROTOCOL_ERROR); return;
+            }
             pdu[0] = function_;
             ModbusTcpAdu::putWord(pdu + 1U, result.registerAddress);
             ModbusTcpAdu::putWord(pdu + 3U,
@@ -142,6 +151,9 @@ private:
     uint16_t rtuTransactionId_ = MODBUS_TRANSACTION_INVALID;
     uint8_t unitId_ = 0U;
     uint8_t function_ = 0U;
+    uint16_t requestedAddress_ = 0U;
+    uint16_t requestedCount_ = 0U;
+    uint16_t requestedValue_ = 0U;
     uint32_t startedAtMs_ = 0U;
     uint32_t timeoutMs_ = 0U;
     uint8_t output_[ModbusTcpAdu::kMaxAdu]{};
