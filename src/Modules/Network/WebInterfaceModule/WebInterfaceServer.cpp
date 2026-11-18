@@ -230,16 +230,18 @@ static bool extractSessionCookie_(AsyncWebServerRequest* request, char* out, siz
         // Skip spaces and separators.
         while (start < total && (cookieHeader[start] == ' ' || cookieHeader[start] == ';')) ++start;
         // Compare cookie name.
-        if (start + (int)nameLen <= total && cookieHeader.substring(start, start + nameLen) == kSessionCookieName) {
+        if (start + (int)nameLen <= total &&
+            memcmp(cookieHeader.c_str() + start, kSessionCookieName, nameLen) == 0) {
             int eq = start + nameLen;
             while (eq < total && cookieHeader[eq] == ' ') ++eq;
             if (eq < total && cookieHeader[eq] == '=') {
                 ++eq;
                 int end = eq;
                 while (end < total && cookieHeader[end] != ';') ++end;
-                const String value = cookieHeader.substring(eq, end);
-                if (!value.isEmpty() && (size_t)value.length() < outLen) {
-                    memcpy(out, value.c_str(), value.length() + 1U);
+                const size_t valueLen = (size_t)(end - eq);
+                if (valueLen > 0U && valueLen < outLen) {
+                    memcpy(out, cookieHeader.c_str() + eq, valueLen);
+                    out[valueLen] = '\0';
                     return true;
                 }
             }
@@ -456,7 +458,7 @@ static int32_t requestIntParam_(AsyncWebServerRequest* request,
     if (!request || !name || !request->hasParam(name)) return fallback;
     const AsyncWebParameter* param = request->getParam(name);
     if (!param) return fallback;
-    const String value = param->value();
+    const String& value = param->value();
     const char* raw = value.c_str();
     char* end = nullptr;
     const long parsed = strtol(raw, &end, 10);
