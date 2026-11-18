@@ -50,17 +50,12 @@ void printJsonText_(Print& stream, const char* text)
 
 void sendError_(AsyncWebServerRequest* request, int status, const char* reason)
 {
-    AsyncResponseStream* response = request->beginResponseStream("application/json");
-    if (!response) {
-        request->send(503, "application/json", "{\"ok\":false}");
-        return;
-    }
-    response->print("{\"ok\":false,\"error\":");
-    printJsonText_(*response, reason);
-    response->print('}');
-    response->addHeader("Cache-Control", "no-store");
-    request->send(response, status);
+    char json[150]{};
+    snprintf(json, sizeof(json), "{\"ok\":false,\"error\":\"%s\"}",
+             reason ? reason : "Request failed");
+    request->send(status, "application/json", json);
 }
+
 } // namespace
 
 namespace WebModbusRoutes {
