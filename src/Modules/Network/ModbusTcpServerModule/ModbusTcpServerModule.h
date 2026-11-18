@@ -8,6 +8,7 @@
 #include <Preferences.h>
 #include "Core/NvsKeys.h"
 #include "Core/Services/IModbusMaster.h"
+#include "Core/Services/INetworkAccess.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpLineResolver.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpSocketServer.h"
 
