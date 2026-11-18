@@ -71,7 +71,7 @@ public:
         if (tcp.function == 0x06U) request.values[0] = tcp.value;
         if (tcp.function == 0x10U) {
             if (!tcp.pdu || tcp.pduLength != 6U + tcp.count * 2U ||
-                tcp.count > MODBUS_MAX_REGISTERS_PER_REQUEST) return false;
+                tcp.count > MODBUS_MAX_WRITE_REGISTERS) return false;
             for (uint16_t i = 0; i < tcp.count; ++i)
                 request.values[i] = ModbusTcpAdu::word(tcp.pdu + 6U + i * 2U);
         }
