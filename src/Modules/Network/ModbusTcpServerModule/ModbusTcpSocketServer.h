@@ -52,7 +52,7 @@ public:
         if (!started_ || !service_) return;
         for (uint8_t port = 0; port < kPortCount; ++port) {
             if (!configs_[port].enabled) continue;
-            WiFiClient incoming = servers_[port].available();
+            WiFiClient incoming = servers_[port].accept();
             if (incoming) {
                 const int8_t slot = sessions_.accept(port);
                 if (slot < 0) {
