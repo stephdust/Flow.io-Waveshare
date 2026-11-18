@@ -13,7 +13,7 @@ class PoolDeviceModule;
 
 class ModbusTcpServerModule : public Module {
 public:
-    ModuleId moduleId() const override { return ModuleId::Reserved28; }
+    ModuleId moduleId() const override { return ModuleId::ModbusTcpServer; }
     const char* taskName() const override { return "modbustcp"; }
     uint8_t dependencyCount() const override { return 3; }
     ModuleId dependency(uint8_t i) const override {
