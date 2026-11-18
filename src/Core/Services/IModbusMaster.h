@@ -103,6 +103,8 @@ struct ModbusResponse {
 struct ModbusMasterStats {
     bool ready = false;
     uint8_t queued = 0U;
+    uint8_t queuedPeak = 0U;
+    uint32_t queueRejected = 0U;
     uint32_t submitted = 0U;
     uint32_t completed = 0U;
     uint32_t timeouts = 0U;
