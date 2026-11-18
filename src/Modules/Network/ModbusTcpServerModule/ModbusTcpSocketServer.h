@@ -16,7 +16,8 @@ namespace ModbusTcpServer {
 class SocketServer {
 public:
     using ResolveLine = bool (*)(void* context, uint8_t portIndex,
-                                uint8_t unitId, SerialLineProfile& out);
+                                uint8_t unitId, SerialLineProfile& out,
+                                uint8_t& rtuUnitId);
 
     SocketServer()
         : servers_{WiFiServer(kPorts[0]), WiFiServer(kPorts[1]), WiFiServer(kPorts[2])},
@@ -139,7 +140,9 @@ public:
                 }
                 ++stats_[port].received;
                 SerialLineProfile line{};
-                if (!resolver_ || !resolver_(resolverContext_, port, request.unitId, line)) {
+                uint8_t targetUnitId = request.unitId;
+                if (!resolver_ || !resolver_(resolverContext_, port, request.unitId,
+                                              line, targetUnitId)) {
                     // No matching configured device: reject rather than send
                     // traffic using an arbitrary UART profile.
                     ++stats_[port].queueRejected;
@@ -148,7 +151,7 @@ public:
                     break;
                 }
                 if (!bridge.submit(*service_, request, line, configs_[port].errorMode,
-                                   configs_[port].transactionTimeoutMs, nowMs)) {
+                                   configs_[port].transactionTimeoutMs, nowMs, targetUnitId)) {
                     ++stats_[port].queueRejected;
                     bridge.reject(request, configs_[port].errorMode,
                                   MODBUS_RESULT_INVALID_ARGUMENT, nowMs);
