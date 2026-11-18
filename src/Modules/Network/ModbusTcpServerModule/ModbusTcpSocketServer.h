@@ -9,6 +9,8 @@
  */
 #include <Arduino.h>
 #include <WiFi.h>
+#include <lwip/sockets.h>
+#include <errno.h>
 #include "ModbusTcpBridge.h"
 #include "ModbusTcpSessions.h"
 
@@ -88,12 +90,36 @@ public:
                     lastWriteProgressMs_[slot] = nowMs;
                 }
                 const size_t remaining = bridge.outputSize() - sent_[slot];
-                if (remaining && client.availableForWrite() > 0) {
-                    const size_t writable = size_t(client.availableForWrite());
-                    const size_t count = remaining < writable ? remaining : writable;
-                    const size_t wrote = client.write(bridge.output() + sent_[slot], count);
-                    sent_[slot] += wrote;
-                    if (wrote) lastWriteProgressMs_[slot] = nowMs;
+                if (remaining) {
+                    // Arduino-ESP32 NetworkClient does not override
+                    // Print::availableForWrite(), which always returns zero.
+                    // Using it as a readiness gate prevented *every* Modbus
+                    // response (including exceptions) from being sent.
+                    //
+                    // Use a bounded, nonblocking socket send rather than
+                    // NetworkClient::write(), whose select/retry loop can
+                    // block the Modbus task when a peer stops reading.
+                    const int fd = client.fd();
+                    if (fd < 0) {
+                        ++stats_[port].txErrors;
+                        close_(slot);
+                        continue;
+                    }
+                    const size_t count = remaining < kMaxTxBytesPerTick
+                        ? remaining : kMaxTxBytesPerTick;
+                    const int wrote = ::send(fd, bridge.output() + sent_[slot],
+                                             count, MSG_DONTWAIT);
+                    if (wrote > 0) {
+                        sent_[slot] += size_t(wrote);
+                        lastWriteProgressMs_[slot] = nowMs;
+                    } else if (wrote < 0 && errno != EAGAIN &&
+                               errno != EWOULDBLOCK && errno != EINTR) {
+                        ++stats_[port].txErrors;
+                        close_(slot);
+                        continue;
+                    } else {
+                        ++stats_[port].txWouldBlock;
+                    }
                 }
                 if (sent_[slot] == bridge.outputSize()) {
                     accountOutcome_(port, bridge, true);
@@ -195,6 +221,7 @@ private:
         if (replied && result != MODBUS_RESULT_OK)
             ++stats_[port].exceptionsSent;
     }
+    static constexpr size_t kMaxTxBytesPerTick = 128U;
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     static constexpr uint32_t kPartialFrameTimeoutMs = 10000U;
     void close_(uint8_t slot) {
