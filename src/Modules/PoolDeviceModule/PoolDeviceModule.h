@@ -86,7 +86,8 @@ public:
     bool serialLineForDevice(uint16_t deviceId, SerialLineProfile& out) const;
     /** One locked snapshot of an available RS485 device profile and label. */
     bool serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
-                          char* label, size_t labelCapacity) const;
+                          char* label, size_t labelCapacity,
+                          uint8_t* slaveAddress = nullptr) const;
     uint16_t runtimeSnapshotCount() const override;
     const char* runtimeSnapshotSuffix(uint16_t idx) const override;
     RuntimeRouteClass runtimeSnapshotClass(uint16_t idx) const override;
