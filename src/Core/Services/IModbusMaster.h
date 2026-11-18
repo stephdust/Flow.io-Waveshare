@@ -94,6 +94,9 @@ struct ModbusResponse {
     uint8_t exceptionCode = 0U;
     uint16_t registerAddress = 0U;
     uint16_t registerCount = 0U;
+    /** Scheduler diagnostics for completed RTU transactions (milliseconds). */
+    uint32_t queueWaitMs = 0U;
+    uint32_t rtuResponseMs = 0U;
     uint16_t values[MODBUS_MAX_REGISTERS_PER_REQUEST]{};
 };
 
