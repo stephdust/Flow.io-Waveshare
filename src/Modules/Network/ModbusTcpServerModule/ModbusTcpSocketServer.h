@@ -86,6 +86,7 @@ public:
                     if (wrote) lastWriteProgressMs_[slot] = nowMs;
                 }
                 if (sent_[slot] == bridge.outputSize()) {
+                    accountOutcome_(port, bridge, true);
                     ++stats_[port].completed;
                     const uint32_t elapsed = bridge.elapsedMs(nowMs);
                     stats_[port].responseTimeTotalMs += elapsed;
@@ -101,6 +102,7 @@ public:
                     continue;
                 }
             } else if (bridge.state() == BridgeSlot::State::Silent) {
+                accountOutcome_(port, bridge, false);
                 ++stats_[port].silentFailures;
                 bridge.reset();
                 sessions_.clearRequest(slot);
@@ -147,6 +149,17 @@ public:
 
     const PortStats& stats(uint8_t port) const { return stats_[port < kPortCount ? port : 0U]; }
 private:
+    void accountOutcome_(uint8_t port, const BridgeSlot& bridge, bool replied) {
+        const ModbusResultCode result = bridge.resultCode();
+        if (result == MODBUS_RESULT_TIMEOUT || result == MODBUS_RESULT_EXPIRED)
+            ++stats_[port].timeouts;
+        if (result == MODBUS_RESULT_CRC_ERROR)
+            ++stats_[port].crcErrors;
+        if (result == MODBUS_RESULT_QUEUE_FULL)
+            ++stats_[port].queueRejected;
+        if (replied && result != MODBUS_RESULT_OK)
+            ++stats_[port].exceptionsSent;
+    }
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     void close_(uint8_t slot) {
         bridges_[slot].reset();
