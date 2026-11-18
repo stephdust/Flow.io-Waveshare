@@ -40,14 +40,13 @@ core_version = normalize_config_string(env.GetProjectOption("custom_version", "0
 
 try:
     build_number = git_output("rev-list", "--count", "--first-parent", "HEAD")
-    commit_short = git_output("rev-parse", "--short=8", "HEAD")
-    build_ref = f"{build_number}.g{commit_short}"
+    build_ref = f"Build {build_number}"
 except (OSError, subprocess.SubprocessError) as exc:
     # A source archive without .git still builds with a deterministic version.
-    build_ref = "0.source"
+    build_ref = "Build 0"
     print(f"[build-version] Git metadata unavailable ({exc}); using {build_ref}")
 
-full_version = f"{core_version}+{build_ref}"
+full_version = f"{core_version} {build_ref}"
 env.Append(
     CPPDEFINES=[
         ("FLOW_BUILD_REF", f'\\"{build_ref}\\"'),
