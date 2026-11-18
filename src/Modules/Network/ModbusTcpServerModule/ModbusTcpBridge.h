@@ -50,7 +50,7 @@ public:
             tcp.function == 0x10U ? RegisterOperation::WriteMultiple : RegisterOperation::Read;
         request.priority = request.operation == RegisterOperation::Read ?
             MODBUS_PRIORITY_NORMAL : MODBUS_PRIORITY_COMMAND;
-        request.responseTimeoutMs = timeoutMs;
+        // Scheduler limits individual RTU response waits to 5000 ms.\n        // The per-port timeout remains the overall queue + RTU budget.\n        request.responseTimeoutMs = timeoutMs < 5000U ? timeoutMs : 5000U;\n        if (request.responseTimeoutMs < 10U) request.responseTimeoutMs = 10U;
         request.transactionBudgetMs = timeoutMs;
         request.retries = 0U;
         if (tcp.function == 0x06U) request.values[0] = tcp.value;
