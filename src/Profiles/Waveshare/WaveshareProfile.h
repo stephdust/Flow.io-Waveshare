@@ -61,6 +61,7 @@ struct ModuleInstances {
     ConfigStoreModule configStoreModule{};
     DataStoreModule dataStoreModule{};
     MQTTModule mqttModule{};
+    ModbusTcpServerModule modbusTcpServerModule{};
     HAModule haModule{};
     SystemModule systemModule;
     SystemMonitorModule systemMonitorModule{};
