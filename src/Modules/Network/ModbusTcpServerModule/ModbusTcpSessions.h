@@ -71,6 +71,22 @@ public:
         return FeedResult::Incomplete;
     }
 
+    /** Exact bytes needed to finish the current MBAP header or TCP ADU.
+     * Readers must not consume bytes beyond this boundary: a persistent
+     * connection may pipeline another ADU, which must remain in the socket
+     * until the previous Modbus response has been sent.
+     */
+    size_t bytesNeeded(uint8_t slot) const {
+        if (slot >= kMaxClients) return 0U;
+        const Session& s = sessions_[slot];
+        if (!s.occupied || s.requestReady) return 0U;
+        if (s.bytesUsed < ModbusTcpAdu::kMbapPrefix)
+            return ModbusTcpAdu::kMbapPrefix - s.bytesUsed;
+        const size_t expected = ModbusTcpAdu::expectedSize(s.frame, s.bytesUsed);
+        return expected > s.bytesUsed && expected <= sizeof(s.frame)
+            ? expected - s.bytesUsed : 0U;
+    }
+
     /** Read transaction ID, unit and function even for an invalid/unsupported PDU. */
     bool headerRequest(uint8_t slot, ModbusTcpAdu::Request& out) const {
         if (slot >= kMaxClients) return false;
