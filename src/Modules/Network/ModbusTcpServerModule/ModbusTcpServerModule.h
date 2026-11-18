@@ -95,22 +95,28 @@ public:
         if (master_ && master_->stats) (void)master_->stats(master_->ctx, &queue);
         const uint32_t freeInternal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
         const uint32_t largestInternal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+        const uint32_t minInternal = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+        const uint32_t fragEstimate = freeInternal ?
+            100U - (largestInternal * 100U / freeInternal) : 0U;
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
-        Serial.printf("[MODBUS-TCP] heap_internal=%lu largest_internal=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_crc=%lu rtu_timeouts=%lu\n",
-            (unsigned long)freeInternal, (unsigned long)largestInternal,
+        Serial.printf("[MODBUS-TCP] heap_internal=%lu min_internal=%lu largest_internal=%lu frag_est_percent=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_crc=%lu rtu_timeouts=%lu\n",
+            (unsigned long)freeInternal, (unsigned long)minInternal,
+            (unsigned long)largestInternal, (unsigned long)fragEstimate,
             (unsigned long)freePsram, (unsigned long)largestPsram,
             (unsigned long)stackWatermark, (unsigned)queue.queued,
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
-            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu completed=%lu silent=%lu rejected=%lu response_max_ms=%lu\n",
+            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
                 (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
                 (unsigned)p.maxActiveClients, (unsigned long)p.received,
-                (unsigned long)p.completed, (unsigned long)p.silentFailures,
-                (unsigned long)p.connectionsRejected,
-                (unsigned long)p.responseTimeMaxMs);
+                (unsigned long)p.completed, (unsigned long)p.exceptionsSent,
+                (unsigned long)p.silentFailures, (unsigned long)p.crcErrors,
+                (unsigned long)p.timeouts, (unsigned long)p.connectionsRejected,
+                (unsigned long)p.responseTimeMaxMs, (unsigned long)p.queueWaitMaxMs,
+                (unsigned long)p.rtuResponseMaxMs);
         }
     }
     void setPoolDeviceModule(PoolDeviceModule* devices);
