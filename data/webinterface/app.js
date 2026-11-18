@@ -13398,7 +13398,35 @@
       if (isTftSensorRuntimeUiDoc(doc)) await loadDataValueCatalog();
     }
 
+    let modbusDeviceOptions = null;
+    let modbusDeviceOptionsLoadedAt = 0;
+    async function ensureModbusDeviceOptions() {
+      // Fetch only on opening a Modbus Config Store branch; never while
+      // loading the dashboard. Cache briefly to limit ESP32 HTTP pressure.
+      if (Array.isArray(modbusDeviceOptions) &&
+          Date.now() - modbusDeviceOptionsLoadedAt < 60000) return;
+      try {
+        const res = await fetchWithBusyRetry('/api/modbus/ports', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data || data.ok !== true || !Array.isArray(data.devices)) return;
+        modbusDeviceOptions = data.devices
+          .filter(item => Number.isInteger(Number(item.id)) && Number(item.id) >= 0 && Number(item.id) < 16)
+          .map(item => ({
+            value: Number(item.id),
+            label: String(item.label || ('Equipement ' + (Number(item.id) + 1))).trim()
+              + ' (' + String(item.baud || '-') + ' bauds)'
+          }));
+        modbusDeviceOptionsLoadedAt = Date.now();
+      } catch (err) {
+        // Keep the standard numeric field as fallback when diagnostic
+        // endpoint is temporarily unavailable.
+      }
+    }
+
     function configEnumOptionsForField(moduleName, key, doc) {
+      if (/^modbustcp50[234]$/.test(String(moduleName || '').toLowerCase()) &&
+          key === 'device_id' && Array.isArray(modbusDeviceOptions) &&
+          modbusDeviceOptions.length > 0) return modbusDeviceOptions;
       const options = (doc && Array.isArray(doc._enumOptions)) ? doc._enumOptions : null;
       if (!options) return null;
       if (isWaveshareProfile() && isPoolLogicDeviceSlotField(moduleName, key, doc)) {
@@ -14829,6 +14857,9 @@
           throw new Error('lecture module impossible');
         }
         await ensureCfgDocsForModule(m);
+        if (/^modbustcp50[234]$/.test(m.toLowerCase())) {
+          await ensureModbusDeviceOptions();
+        }
         if (m.startsWith('tft/s3/sensors/slot')) {
           await loadTftSensorDataValueInfo(m);
         }
