@@ -118,12 +118,15 @@ public:
                     // No matching configured device: reject rather than send
                     // traffic using an arbitrary UART profile.
                     ++stats_[port].queueRejected;
-                    close_(slot); break;
+                    bridge.reject(request, configs_[port].errorMode,
+                                  MODBUS_RESULT_NOT_READY, nowMs);
+                    break;
                 }
                 if (!bridge.submit(*service_, request, line, configs_[port].errorMode,
                                    configs_[port].transactionTimeoutMs, nowMs)) {
                     ++stats_[port].queueRejected;
-                    close_(slot);
+                    bridge.reject(request, configs_[port].errorMode,
+                                  MODBUS_RESULT_INVALID_ARGUMENT, nowMs);
                 }
                 break; // one outstanding request per connection
             }
