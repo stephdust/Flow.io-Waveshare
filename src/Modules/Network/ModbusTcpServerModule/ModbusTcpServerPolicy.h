@@ -51,11 +51,18 @@ inline bool validConfig(uint8_t index, const PortConfig& config) {
     return validPortIndex(index) && config.tcpPort == kPorts[index] &&
         config.transactionTimeoutMs >= 100U &&
         config.transactionTimeoutMs <= 120000U &&
+        (config.serialSource == SerialSource::Manual ||
+         config.serialSource == SerialSource::FlowioDevice) &&
+        (config.errorMode == ErrorMode::ModbusException ||
+         config.errorMode == ErrorMode::Silent) &&
         (config.serialSource != SerialSource::Manual ||
          (config.manualLine.busId == 0U &&
           config.manualLine.baud >= 1200U && config.manualLine.baud <= 115200U &&
           config.manualLine.parity <= 2U &&
-          (config.manualLine.stopBits == 1U || config.manualLine.stopBits == 2U)));
+          (config.manualLine.stopBits == 1U || config.manualLine.stopBits == 2U) &&
+          config.manualLine.minimumRequestIntervalMs <= 60000U &&
+          config.manualLine.quietMs <= 1000U &&
+          config.manualLine.lateResponseGuardMs <= 5000U));
 }
 
 /** Returns the gateway exception code for an internal failure.
