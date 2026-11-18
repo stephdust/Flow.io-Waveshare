@@ -69,8 +69,14 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
             return;
         }
         response->addHeader("Cache-Control", "no-store");
-        response->printf("{\"ok\":true,\"running\":%s,\"restart_required\":true,\"ports\":[",
-                         gateway->running() ? "true" : "false");
+        ModbusMasterStats master{};
+        (void)gateway->schedulerStats(master);
+        response->printf(
+            "{\"ok\":true,\"running\":%s,\"restart_required\":true,"
+            "\"scheduler\":{\"queue\":%u,\"peak\":%u,\"rejected\":%lu},\"ports\":[",
+            gateway->running() ? "true" : "false",
+            (unsigned)master.queued, (unsigned)master.queuedPeak,
+            (unsigned long)master.queueRejected);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             ModbusTcpServer::PortConfig cfg{};
             if (!gateway->readPort(i, cfg)) continue;
