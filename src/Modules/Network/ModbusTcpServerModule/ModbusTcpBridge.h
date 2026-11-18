@@ -28,9 +28,11 @@ public:
      */
     bool submit(const ModbusMasterService& service, const ModbusTcpAdu::Request& tcp,
                 const SerialLineProfile& serialLine, ErrorMode mode,
-                uint32_t timeoutMs, uint32_t now) {
+                uint32_t timeoutMs, uint32_t now, uint8_t rtuUnitId = 0U) {
+        const uint8_t targetUnit = rtuUnitId ? rtuUnitId : tcp.unitId;
         if (state_ != State::Idle || !service.submit || !service.poll ||
-            tcp.unitId < 1U || tcp.unitId > 247U || !timeoutMs) return false;
+            tcp.unitId > 247U || targetUnit < 1U || targetUnit > 247U || !timeoutMs)
+            return false;
         service_ = &service;
         mode_ = mode;
         transactionId_ = tcp.transactionId;
@@ -50,7 +52,9 @@ public:
         request.ownerId = ownerId_;
         request.protocol = RegisterWireProtocol::ModbusRtu;
         request.line = serialLine;
-        request.slaveAddress = tcp.unitId;
+        // Dedicated-device ports target the equipment's RTU address;
+        // the TCP response still echoes the client's original MBAP Unit ID.
+        request.slaveAddress = targetUnit;
         request.function = tcp.function;
         request.registerAddress = tcp.address;
         request.registerCount = tcp.count;
