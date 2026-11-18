@@ -14409,6 +14409,17 @@
         flowCfgApplyBtn.hidden = perFieldApply;
       }
       const keys = Object.keys(data).sort();
+      // Put the RS485 mode first; when set to "Aucun" the remainder of
+      // the fields are hidden, making a disabled port a compact single row.
+      if (/^modbustcp50[234]$/.test(String(moduleName || '').toLowerCase())) {
+        const order = ['mode', 'device_id', 'baud', 'parity',
+          'stop_bits', 'timeout_ms', 'error_mode'];
+        keys.sort((left, right) => {
+          const a = order.indexOf(left);
+          const b = order.indexOf(right);
+          return (a < 0 ? 99 : a) - (b < 0 ? 99 : b);
+        });
+      }
       if (sectionTitle && keys.length > 0) {
         const sectionEl = document.createElement('div');
         sectionEl.className = 'control-section-title';
