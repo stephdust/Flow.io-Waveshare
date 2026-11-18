@@ -241,6 +241,20 @@ bool candidateFilesystemIsValid_(const char* label, const char* version, const c
     return valid;
 }
 
+static void otaMonitor_(const char* phase)
+{
+    constexpr uint32_t internal = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
+    constexpr uint32_t external = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
+    LOGI("[OTA] phase=%s ms=%lu ram=%lu ram_largest=%lu ram_min=%lu psram=%lu psram_largest=%lu stack_free_bytes=%lu",
+         phase, (unsigned long)millis(),
+         (unsigned long)heap_caps_get_free_size(internal),
+         (unsigned long)heap_caps_get_largest_free_block(internal),
+         (unsigned long)heap_caps_get_minimum_free_size(internal),
+         (unsigned long)heap_caps_get_free_size(external),
+         (unsigned long)heap_caps_get_largest_free_block(external),
+         (unsigned long)uxTaskGetStackHighWaterMark(nullptr));
+}
+
 bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
 {
     const esp_partition_t* source = esp_partition_find_first(
@@ -254,6 +268,10 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
     if (!source || !destination || source->size != destination->size) {
         return writeSimpleError_(errOut, errOutLen, "release filesystem slots unavailable");
     }
+    LOGI("[OTA] phase=clone_start source=%s destination=%s bytes=%lu",
+         source->label, destination->label, (unsigned long)source->size);
+    otaMonitor_("clone_before");
+    const uint32_t cloneStartMs = millis();
     if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
         return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
     }
@@ -264,9 +282,14 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
                                  : sizeof(buffer);
         if (esp_partition_read(source, offset, buffer, count) != ESP_OK ||
             esp_partition_write(destination, offset, buffer, count) != ESP_OK) {
+            LOGE("[OTA] phase=clone_failed offset=%lu elapsed_ms=%lu",
+                 (unsigned long)offset, (unsigned long)(millis() - cloneStartMs));
+            otaMonitor_("clone_failed");
             return writeSimpleError_(errOut, errOutLen, "inactive filesystem clone failed");
         }
     }
+    LOGI("[OTA] phase=clone_done elapsed_ms=%lu", (unsigned long)(millis() - cloneStartMs));
+    otaMonitor_("clone_done");
     return true;
 }
 
@@ -1018,6 +1041,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
                "downloading",
                job.operationId);
 
+    otaMonitor_("firmware_start");
     HTTPClient http;
     configureDownloadHttp_(http);
     if (!http.begin(url)) {
@@ -1027,6 +1051,8 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
 
     const int code = http.GET();
     const int32_t contentLength = http.getSize();
+    LOGI("[OTA] phase=firmware_http code=%d length=%ld", code, (long)contentLength);
+    otaMonitor_("firmware_http");
     if (code != HTTP_CODE_OK) {
         writeHttpCodeFailedError_("fichier de mise a jour", url, http, code, errOut, errOutLen);
         http.end();
@@ -1075,6 +1101,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
 
     char failMsg[128] = {0};
     const size_t beginSize = (contentLength > 0) ? (size_t)contentLength : (size_t)UPDATE_SIZE_UNKNOWN;
+    otaMonitor_("firmware_write_begin");
     if (!Update.begin(beginSize, U_FLASH)) {
         snprintf(failMsg, sizeof(failMsg), "ota begin failed (%u)", (unsigned)Update.getError());
     } else {
@@ -1137,8 +1164,11 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
     }
 
     http.end();
+    otaMonitor_("firmware_write_end");
 
     if (failMsg[0] != '\0') {
+        LOGE("[OTA] phase=firmware_error reason=%s", failMsg);
+        otaMonitor_("firmware_error");
         writeSimpleError_(errOut, errOutLen, failMsg);
         return false;
     }
@@ -1149,6 +1179,7 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         writeSimpleError_(errOut, errOutLen, "failed to persist update completion");
         return false;
     }
+    otaMonitor_("firmware_reboot");
     setStatus_(UpdateState::Rebooting,
                FirmwareUpdateTarget::Waveshare,
                100,
@@ -1368,6 +1399,7 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
                "downloading",
                job.operationId);
 
+    otaMonitor_("spiffs_start");
     HTTPClient http;
     configureDownloadHttp_(http);
     if (!http.begin(url)) {
@@ -1377,6 +1409,7 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
 
     const int code = http.GET();
     const int32_t contentLength = http.getSize();
+    LOGI("[OTA] phase=spiffs_http code=%d length=%ld", code, (long)contentLength);
     if (code != HTTP_CODE_OK) {
         writeHttpCodeFailedError_("fichier de mise a jour", url, http, code, errOut, errOutLen);
         http.end();
@@ -1423,6 +1456,7 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
                  (int)contentLength,
                  activePartition ? (unsigned)activePartition->size : 0U);
     } else {
+        otaMonitor_("spiffs_erase_before");
         SPIFFS.end();
         if (esp_partition_erase_range(activePartition, 0U, activePartition->size) != ESP_OK) {
             snprintf(failMsg, sizeof(failMsg), "spiffs erase failed");
@@ -1438,6 +1472,7 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
         streamedBytes = http.writeToStream(&partitionStream);
     }
     http.end();
+    otaMonitor_("spiffs_write_end");
 
     if (failMsg[0] == '\0' && partitionStream.overflowed()) {
         snprintf(failMsg, sizeof(failMsg), "spiffs image exceeds active slot");
@@ -1453,6 +1488,8 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
                  (unsigned)activePartition->size);
     }
     if (failMsg[0] != '\0') {
+        LOGE("[OTA] phase=spiffs_error reason=%s", failMsg);
+        otaMonitor_("spiffs_error");
         (void)remountActiveFilesystem();
         writeSimpleError_(errOut, errOutLen, failMsg);
         return false;
