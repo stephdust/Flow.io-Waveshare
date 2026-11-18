@@ -12,3 +12,28 @@ bool ModbusTcpServerModule::lookupDevice_(void* context, uint16_t deviceId,
     return module && module->devices_ &&
         module->devices_->serialLineForDevice(deviceId, out);
 }
+
+bool ModbusTcpServerModule::readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const
+{
+    if (!ModbusTcpServer::validPortIndex(index)) return false;
+    out = ModbusTcpServer::PortConfig{};
+    out.tcpPort = ModbusTcpServer::kPorts[index];
+    Preferences prefs;
+    if (!prefs.begin(NvsKeys::StorageNamespace, true)) return true;
+    char key[12]{};
+    snprintf(key, sizeof(key), "mbtcp%u", (unsigned)index);
+    StoredPort stored{};
+    const bool saved = prefs.getBytesLength(key) == sizeof(stored) &&
+        prefs.getBytes(key, &stored, sizeof(stored)) == sizeof(stored) &&
+        stored.version == kConfigVersion &&
+        ModbusTcpServer::validConfig(index, stored.config);
+    prefs.end();
+    if (saved) out = stored.config;
+    return true;
+}
+
+bool ModbusTcpServerModule::serialDeviceInfo(uint16_t id, SerialLineProfile& line,
+                                             char* label, size_t labelCapacity) const
+{
+    return devices_ && devices_->serialDeviceInfo(id, line, label, labelCapacity);
+}
