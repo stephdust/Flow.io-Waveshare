@@ -4392,6 +4392,7 @@ static const char kWebSerialLogPage[] PROGMEM = R"HTML(
       <button id="runtimelog" type="button">Runtime</button>
       <button id="pause" type="button">Pause</button>
       <button id="clear" type="button">Clear</button>
+      <button id="exporttxt" type="button">Exporter TXT</button>
       <a href="/webinterface">Retour UI</a>
     </div>
   </div>
@@ -4404,6 +4405,7 @@ static const char kWebSerialLogPage[] PROGMEM = R"HTML(
   const runtimeLogBtn = document.getElementById('runtimelog');
   const pauseBtn = document.getElementById('pause');
   const clearBtn = document.getElementById('clear');
+  const exportBtn = document.getElementById('exporttxt');
   let paused = false;
   let ws = null;
 
@@ -4540,6 +4542,26 @@ static const char kWebSerialLogPage[] PROGMEM = R"HTML(
       bootlogBtn.disabled = false;
     }
   };
+
+  exportBtn.addEventListener('click', () => {
+    // Export exactly the lines currently shown, including boot/runtime history.
+    // No extra request or device-side buffer allocation is required.
+    const lines = Array.from(out.querySelectorAll('.line'), (node) => node.textContent || '');
+    if (!lines.length) {
+      status.textContent = "Aucun log à exporter";
+      return;
+    }
+    const blob = new Blob([lines.join('\\n') + '\\n'], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = 'flowio-logs-' + stamp + '.txt';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
 
   pauseBtn.addEventListener('click', () => {
     paused = !paused;
