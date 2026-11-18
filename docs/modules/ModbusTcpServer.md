@@ -73,6 +73,34 @@ Pour identifier rapidement la phase en défaut après quelques requêtes :
 - `tcp_bytes_sent>0` : le code a transmis des octets à lwIP ; vérifier
   ensuite l'application cliente si elle ne les voit pas.
 
+## Diagnostic après redémarrage de la passerelle RTU/TCP
+
+Une passerelle qui redémarre (OTA) peut laisser une ancienne connexion TCP
+persistante sans fermeture FIN/RST visible côté Flow.io. Avec **deux sockets
+maximum par port**, les nouveaux clients peuvent se connecter puis être
+immédiatement rejetés, sans avoir reçu de réponse Modbus.
+
+La récupération automatique s'applique **seulement lorsque le port est plein
+et qu'un nouveau client se présente** : Flow.io libère au plus une session
+complètement inactive depuis **30 secondes**, en excluant les trames
+partielles, transactions RS485 en cours et réponses TCP en cours.
+Une connexion persistante régulièrement utilisée n'est donc pas évincée.
+Le nombre maximal de clients reste **deux par port**.
+
+Contrôler `GET /api/modbus/ports` (session authentifiée), port 502 :
+- `stats.clients` : clients actuellement admis (maximum 2).
+- `stats.connections_rejected` : connexions refusées parce que le port est plein.
+- `stats.idle_reclaimed` : connexions inactives évincées pour admettre un
+  nouveau client.
+- `stats.requests`, `stats.tcp_bytes_received`, `stats.tcp_bytes_sent` :
+  vérifier que les requêtes et réponses traversent réellement la passerelle.
+
+La ligne série `[MODBUS-TCP] port=502` affiche également `idle_reclaimed`.
+Pour isoler rapidement un éventuel problème d'anciennes sessions, redémarrer
+**Flow.io uniquement** : si les réponses reprennent immédiatement, comparer
+les compteurs du port 502 avant/après et examiner les clients persistants.
+Le correctif ne modifie ni les timings du séquenceur RS485 ni le Wi-Fi/HTTP.
+
 ## Périmètre
 
 Le module `ModbusTcpServerModule` expose trois ports TCP fixes **502, 503 et 504**,
