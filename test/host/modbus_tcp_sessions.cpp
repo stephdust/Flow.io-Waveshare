@@ -14,13 +14,17 @@ int main() {
     size_t consumed = 0;
     assert(sessions.feed(0, read24, 4, consumed) == TcpSessions::FeedResult::Incomplete);
     assert(consumed == 4);
+    assert(sessions.hasPartialRequest(0));
+    assert(!sessions.hasPartialRequest(1)); // Open but completely idle: keep it.
     assert(sessions.feed(0, read24 + 4, 8, consumed) == TcpSessions::FeedResult::Complete);
     assert(consumed == 8);
+    assert(!sessions.hasPartialRequest(0)); // Complete frame is waiting for processing.
     ModbusTcpAdu::Request request{};
     assert(sessions.request(0, request));
     assert(request.address == 500 && request.count == 24);
     assert(sessions.feed(0, read24, sizeof(read24), consumed) == TcpSessions::FeedResult::Busy);
     sessions.clearRequest(0);
+    assert(!sessions.hasPartialRequest(0));
     const uint8_t combined[] = {0,1,0,0,0,6,17,3,3,0xE8,0,2,
                                 0,2,0,0,0,6,17,3,1,0xF4,0,24};
     assert(sessions.feed(0, combined, sizeof(combined), consumed) == TcpSessions::FeedResult::Complete);
@@ -33,6 +37,7 @@ int main() {
     assert(sessions.request(0, request) && request.address == 500);
     sessions.release(0);
     assert(!sessions.occupied(0));
+    assert(!sessions.hasPartialRequest(0));
     assert(sessions.occupied(1));
     assert(sessions.active(0) == 1);
     assert(sessions.accept(0) == 0);
