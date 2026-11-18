@@ -8,6 +8,7 @@
  */
 #include <stddef.h>
 #include <stdint.h>
+#include "Core/Services/IModbusMaster.h"
 
 namespace ModbusTcpAdu {
 constexpr size_t kMaxAdu = 260U;
@@ -56,7 +57,7 @@ inline bool decode(const uint8_t* bytes, size_t length, Request& out) {
         if (parsed.pduLength != 5U) return false;
         parsed.address = word(bytes + 8U);
         parsed.count = word(bytes + 10U);
-        if (!parsed.count || parsed.count > 32U) return false;
+        if (!parsed.count || parsed.count > MODBUS_MAX_READ_REGISTERS) return false;
     } else if (parsed.function == 0x06U) {
         if (parsed.pduLength != 5U) return false;
         parsed.address = word(bytes + 8U);
@@ -67,7 +68,7 @@ inline bool decode(const uint8_t* bytes, size_t length, Request& out) {
         parsed.address = word(bytes + 8U);
         parsed.count = word(bytes + 10U);
         const uint8_t byteCount = bytes[12];
-        if (!parsed.count || parsed.count > 32U ||
+        if (!parsed.count || parsed.count > MODBUS_MAX_WRITE_REGISTERS ||
             byteCount != parsed.count * 2U ||
             parsed.pduLength != size_t(6U + byteCount)) return false;
     } else return false;
