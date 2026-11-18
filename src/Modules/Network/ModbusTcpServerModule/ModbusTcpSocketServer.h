@@ -60,6 +60,7 @@ public:
                     incoming.stop();
                 } else {
                     clients_[slot] = incoming;
+                    lastReadProgressMs_[slot] = nowMs;
                     stats_[port].activeClients = sessions_.active(port);
                     if (stats_[port].activeClients > stats_[port].maxActiveClients)
                         stats_[port].maxActiveClients = stats_[port].activeClients;
@@ -71,6 +72,14 @@ public:
             WiFiClient& client = clients_[slot];
             if (!sessions_.occupied(slot)) continue;
             if (!client || !client.connected()) { close_(slot); continue; }
+            // A peer may hold a scarce per-port slot by sending only part
+            // of an MBAP frame. Close incomplete frames with no progress,
+            // but preserve normal long-lived idle Modbus TCP connections.
+            if (sessions_.hasPartialRequest(slot) &&
+                uint32_t(nowMs - lastReadProgressMs_[slot]) >= kPartialFrameTimeoutMs) {
+                close_(slot);
+                continue;
+            }
             BridgeSlot& bridge = bridges_[slot];
             bridge.poll(nowMs);
             if (bridge.state() == BridgeSlot::State::Ready) {
@@ -116,6 +125,7 @@ public:
             for (uint16_t n = 0; n < ModbusTcpAdu::kMaxAdu && client.available() > 0; ++n) {
                 const int byte = client.read();
                 if (byte < 0) break;
+                lastReadProgressMs_[slot] = nowMs;
                 const uint8_t b = uint8_t(byte);
                 size_t consumed = 0U;
                 const auto status = sessions_.feed(slot, &b, 1U, consumed);
@@ -186,6 +196,7 @@ private:
             ++stats_[port].exceptionsSent;
     }
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
+    static constexpr uint32_t kPartialFrameTimeoutMs = 10000U;
     void close_(uint8_t slot) {
         bridges_[slot].reset();
         clients_[slot].stop();
@@ -193,6 +204,7 @@ private:
         sent_[slot] = 0U;
         writing_[slot] = false;
         lastWriteProgressMs_[slot] = 0U;
+        lastReadProgressMs_[slot] = 0U;
         const uint8_t port = slot / kClientsPerPort;
         stats_[port].activeClients = sessions_.active(port);
     }
@@ -204,6 +216,7 @@ private:
     PortStats stats_[kPortCount]{};
     size_t sent_[kMaxClients]{};
     uint32_t lastWriteProgressMs_[kMaxClients]{};
+    uint32_t lastReadProgressMs_[kMaxClients]{};
     bool writing_[kMaxClients]{};
     const ModbusMasterService* service_ = nullptr;
     ResolveLine resolver_ = nullptr;
