@@ -38,6 +38,12 @@ int main() {
     assert(sessions.accept(0) == 0);
     const uint8_t bad[] = {0,1,0,1,0,6};
     assert(sessions.feed(0, bad, sizeof(bad), consumed) == TcpSessions::FeedResult::Invalid);
+    const uint8_t unsupported[] = {0,3,0,0,0,2,17,1};
+    assert(sessions.feed(0, unsupported, sizeof(unsupported), consumed) ==
+           TcpSessions::FeedResult::Complete);
+    assert(!sessions.request(0, request));
+    assert(sessions.headerRequest(0, request));
+    assert(request.transactionId == 3 && request.unitId == 17 && request.function == 1);
     sessions.release(0);
     sessions.release(1);
     assert(sessions.active(0) == 0);
