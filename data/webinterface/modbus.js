@@ -36,6 +36,9 @@
       errors: 'Exceptions',
       delay: 'Latence TCP max',
       queue: 'Attente RS485 max',
+      queued: 'File RTU',
+      peak: 'pic',
+      rejected: 'rejets',
       response: 'Réponse RTU max',
       active: 'Passerelle active',
       inactive: 'Passerelle non active',
@@ -71,6 +74,9 @@
       errors: 'Exceptions',
       delay: 'Max TCP latency',
       queue: 'Max RS485 queue wait',
+      queued: 'RTU queue',
+      peak: 'peak',
+      rejected: 'rejected',
       response: 'Max RTU response',
       active: 'Gateway active',
       inactive: 'Gateway not active',
@@ -238,7 +244,12 @@
     const header = document.createElement('div');
     header.className = 'modbus-toolbar';
     const state = document.createElement('span');
-    state.textContent = latest.running ? t('active') : t('inactive');
+    const sched = latest.scheduler || {};
+    state.textContent =
+      (latest.running ? t('active') : t('inactive')) + ' · ' +
+      t('queued') + ': ' + (sched.queue || 0) + ' (' +
+      t('peak') + ': ' + (sched.peak || 0) + ', ' +
+      t('rejected') + ': ' + (sched.rejected || 0) + ')';
     header.appendChild(state);
     const refresh = document.createElement('button');
     refresh.type = 'button';
