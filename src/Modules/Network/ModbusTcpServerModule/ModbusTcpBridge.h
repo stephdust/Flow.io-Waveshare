@@ -71,6 +71,21 @@ public:
         return true;
     }
 
+    /** Complete a request locally when no serial target can be resolved.
+     * Never submit an arbitrary request to the RS485 bus.
+     */
+    bool reject(const ModbusTcpAdu::Request& tcp, ErrorMode mode,
+                ModbusResultCode reason, uint32_t now) {
+        if (state_ != State::Idle) return false;
+        mode_ = mode;
+        transactionId_ = tcp.transactionId;
+        unitId_ = tcp.unitId;
+        function_ = tcp.function;
+        startedAtMs_ = now;
+        fail_(reason);
+        return true;
+    }
+
     /** Must be called regularly; never blocks for an RTU response. */
     void poll(uint32_t now) {
         if (state_ != State::Pending || !service_) return;
