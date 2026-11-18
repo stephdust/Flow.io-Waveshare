@@ -79,6 +79,8 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
                 "\"requests\":%lu,\"responses\":%lu,\"exceptions\":%lu,"
                 "\"silent\":%lu,\"timeouts\":%lu,\"crc_errors\":%lu,"
                 "\"queue_rejected\":%lu,\"connections_rejected\":%lu,"
+                "\"resolver_failures\":%lu,\"tx_wouldblock\":%lu,"
+                "\"tx_errors\":%lu,\"tcp_bytes_sent\":%lu,"
                 "\"tcp_avg_ms\":%lu,\"tcp_max_ms\":%lu,"
                 "\"queue_avg_ms\":%lu,\"queue_max_ms\":%lu,"
                 "\"rtu_avg_ms\":%lu,\"rtu_max_ms\":%lu}}",
@@ -88,6 +90,10 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
                 (unsigned long)stat.timeouts, (unsigned long)stat.crcErrors,
                 (unsigned long)stat.queueRejected,
                 (unsigned long)stat.connectionsRejected,
+                (unsigned long)stat.resolverFailures,
+                (unsigned long)stat.txWouldBlock,
+                (unsigned long)stat.txErrors,
+                (unsigned long)stat.tcpBytesSent,
                 (unsigned long)averageMs,
                 (unsigned long)stat.responseTimeMaxMs,
                 (unsigned long)queueAverageMs,
