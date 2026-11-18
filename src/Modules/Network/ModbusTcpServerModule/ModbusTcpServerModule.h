@@ -76,7 +76,7 @@ public:
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
-        Serial.printf("[MODBUS-TCP] tick_max_us=%lu tick_slow_5ms=%lu\\n",
+        Serial.printf("[MODBUS-TCP] tick_max_us=%lu tick_slow_5ms=%lu\n",
             (unsigned long)tickMaxUs_, (unsigned long)slowTicks_);
         tickMaxUs_ = 0U;
         slowTicks_ = 0U;
