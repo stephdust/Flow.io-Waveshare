@@ -100,6 +100,12 @@ public:
     void setPoolDeviceModule(PoolDeviceModule* devices);
     /** Read ConfigStore settings (applied to listeners after a restart). */
     bool readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const;
+    /** Listener settings currently applied (may differ from staged ConfigStore values). */
+    bool readActivePort(uint8_t index, ModbusTcpServer::PortConfig& out) const {
+        if (!ModbusTcpServer::validPortIndex(index)) return false;
+        out = configs_[index];
+        return ModbusTcpServer::validConfig(index, out);
+    }
     /** Get a serial device selectable in the web interface. */
     bool serialDeviceInfo(uint16_t id, SerialLineProfile& line,
                           char* label, size_t labelCapacity,
