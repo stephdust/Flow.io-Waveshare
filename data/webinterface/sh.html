@@ -17,6 +17,7 @@
         <button class="menu-item" data-page="page-activity-log" title="Activité" data-i18n-title="menu.activity"><span class="ico icon-activity" aria-hidden="true"></span><span class="label" data-i18n="menu.activity">Activité</span></button>
         <button class="menu-item" data-page="page-system" data-admin-only hidden title="Mises à Jour" data-i18n-title="menu.updates"><span class="ico icon-system" aria-hidden="true"></span><span class="label" data-i18n="menu.updates">Mises à Jour</span></button>
         <button class="menu-item" data-page="page-control" data-admin-only hidden title="Configuration" data-i18n-title="menu.config"><span class="ico icon-flowcfg" aria-hidden="true"></span><span class="label" data-i18n="menu.config">Configuration</span></button>
+        <button class="menu-item" data-page="page-modbus" data-admin-only hidden title="Modbus TCP" data-i18n-title="menu.modbusTcp"><span class="ico icon-flowcfg" aria-hidden="true"></span><span class="label" data-i18n="menu.modbusTcp">Modbus TCP</span></button>
         <button class="menu-item" data-page="page-info" title="Informations" data-i18n-title="menu.info"><span class="ico icon-info" aria-hidden="true"></span><span class="label" data-i18n="menu.info">Informations</span></button>
         <button class="menu-item" data-page="page-users" data-admin-only hidden title="Comptes" data-i18n-title="menu.users"><span class="ico icon-users" aria-hidden="true"></span><span class="label" data-i18n="menu.users">Comptes</span></button>
       </nav>
@@ -523,6 +524,23 @@
                 </div>
               </section>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-modbus" class="page" data-admin-only hidden>
+        <div class="topbar">
+          <h1 class="ui-heading-inline"><span class="ui-msr" aria-hidden="true">settings_ethernet</span><span data-i18n="modbus.title">Passerelle Modbus TCP → RS485</span></h1>
+        </div>
+        <div class="card">
+          <div class="config-section">
+            <div class="config-section-head">
+              <h2 data-i18n="modbus.ports">Ports TCP 502, 503 et 504</h2>
+            </div>
+            <p data-i18n="modbus.description">Deux clients TCP simultanés par port. Chaque requête est transmise au séquenceur RS485 partagé.</p>
+            <p id="modbusStatus" role="status" aria-live="polite"></p>
+            <div id="modbusPortCards" class="modbus-port-grid" aria-live="polite"></div>
+            <p data-i18n="modbus.restartNote">Les changements enregistrés nécessitent un redémarrage de Flow.io.</p>
           </div>
         </div>
       </section>
