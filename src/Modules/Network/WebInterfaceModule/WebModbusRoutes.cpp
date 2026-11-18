@@ -78,7 +78,7 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
             response->printf(
                 "{\"index\":%u,\"port\":%u,\"enabled\":%s,\"source\":%u,"
                 "\"device_id\":%u,\"baud\":%lu,\"data_bits\":8,\"parity\":%u,"
-                "\"stop_bits\":%u,\"timeout_ms\":%lu,\"error_mode\":%u}",
+                "\"stop_bits\":%u,\"timeout_ms\":%lu,\"error_mode\":%u",
                 (unsigned)i, (unsigned)cfg.tcpPort,
                 cfg.enabled ? "true" : "false",
                 (unsigned)cfg.serialSource,
@@ -88,6 +88,23 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
                 (unsigned)cfg.manualLine.stopBits,
                 (unsigned long)cfg.transactionTimeoutMs,
                 (unsigned)cfg.errorMode);
+            const ModbusTcpServer::PortStats& stat = gateway->portStats(i);
+            const uint32_t averageMs = stat.completed ?
+                stat.responseTimeTotalMs / stat.completed : 0U;
+            response->printf(
+                ",\"stats\":{\"clients\":%u,\"peak_clients\":%u,"
+                "\"requests\":%lu,\"responses\":%lu,\"exceptions\":%lu,"
+                "\"silent\":%lu,\"timeouts\":%lu,\"crc_errors\":%lu,"
+                "\"queue_rejected\":%lu,\"connections_rejected\":%lu,"
+                "\"tcp_avg_ms\":%lu,\"tcp_max_ms\":%lu}}",
+                (unsigned)stat.activeClients, (unsigned)stat.maxActiveClients,
+                (unsigned long)stat.received, (unsigned long)stat.completed,
+                (unsigned long)stat.exceptionsSent, (unsigned long)stat.silentFailures,
+                (unsigned long)stat.timeouts, (unsigned long)stat.crcErrors,
+                (unsigned long)stat.queueRejected,
+                (unsigned long)stat.connectionsRejected,
+                (unsigned long)averageMs,
+                (unsigned long)stat.responseTimeMaxMs);
         }
         response->print("],\"devices\":[");
         bool first = true;
