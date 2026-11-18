@@ -16,6 +16,7 @@ public:
     explicit BridgeSlot(uint8_t ownerId) : ownerId_(ownerId) {}
     State state() const { return state_; }
     bool busy() const { return state_ == State::Pending; }
+    ModbusResultCode resultCode() const { return lastResult_; }
     uint32_t elapsedMs(uint32_t now) const { return now - startedAtMs_; }
 
     /** Submit exactly one fresh RTU transaction, never serve cached data.
@@ -38,6 +39,7 @@ public:
         startedAtMs_ = now;
         timeoutMs_ = timeoutMs;
         outputSize_ = 0U;
+        lastResult_ = MODBUS_RESULT_NOT_READY;
         ModbusRequest request{};
         request.ownerId = ownerId_;
         request.protocol = RegisterWireProtocol::ModbusRtu;
@@ -131,6 +133,7 @@ public:
                 function_ == 0x06U ? result.values[0] : result.registerCount);
             pduSize = 5U;
         } else { fail_(MODBUS_RESULT_INVALID_ARGUMENT); return; }
+        lastResult_ = MODBUS_RESULT_OK;
         outputSize_ = ModbusTcpAdu::response(transactionId_, unitId_,
             pdu, pduSize, output_, sizeof(output_));
         state_ = outputSize_ ? State::Ready : State::Silent;
@@ -150,6 +153,7 @@ public:
     }
 private:
     void fail_(ModbusResultCode result, uint8_t slaveException = 0U) {
+        lastResult_ = result;
         outputSize_ = 0U;
         if (mode_ == ErrorMode::ModbusException) {
             const uint8_t code = exceptionCode(result, slaveException);
@@ -162,6 +166,7 @@ private:
     State state_ = State::Idle;
     const ModbusMasterService* service_ = nullptr;
     ErrorMode mode_ = ErrorMode::ModbusException;
+    ModbusResultCode lastResult_ = MODBUS_RESULT_NOT_READY;
     uint16_t transactionId_ = 0U;
     uint16_t rtuTransactionId_ = MODBUS_TRANSACTION_INVALID;
     uint8_t unitId_ = 0U;
