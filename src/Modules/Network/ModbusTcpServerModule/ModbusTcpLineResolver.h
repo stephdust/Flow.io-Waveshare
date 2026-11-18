@@ -29,7 +29,7 @@ public:
         if (config.serialSource == SerialSource::Manual) {
             line = config.manualLine;
         } else if (config.serialSource == SerialSource::FlowioDevice) {
-            if (!lookup_ || !config.deviceId ||
+            if (!lookup_ ||
                 !lookup_(context_, config.deviceId, line)) return false;
         } else return false;
         if (line.busId != 0U || line.baud < 1200U || line.baud > 115200U ||
