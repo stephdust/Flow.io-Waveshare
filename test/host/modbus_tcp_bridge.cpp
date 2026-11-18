@@ -45,10 +45,14 @@ int main() {
     assert(slot.state() == BridgeSlot::State::Pending);
     fake.reply.result = MODBUS_RESULT_OK;
     fake.reply.registerCount = 24;
+    fake.reply.queueWaitMs = 34;
+    fake.reply.rtuResponseMs = 86;
     for (uint16_t i = 0; i < 24; ++i) fake.reply.values[i] = i + 100;
     fake.pollResult = MODBUS_RESULT_OK;
     slot.poll(102);
     assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.hasSerialTiming());
+    assert(slot.queueWaitMs() == 34 && slot.rtuResponseMs() == 86);
     assert(slot.outputSize() == 57);
     assert(slot.output()[0] == 0x12 && slot.output()[1] == 0x34);
     assert(slot.output()[7] == 3 && slot.output()[8] == 48);
