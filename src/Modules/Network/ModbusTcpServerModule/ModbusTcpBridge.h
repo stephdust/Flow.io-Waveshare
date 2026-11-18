@@ -100,6 +100,18 @@ public:
         return true;
     }
 
+    /** Report a Modbus protocol exception without closing the TCP socket. */
+    bool rejectException(const ModbusTcpAdu::Request& tcp, ErrorMode mode,
+                         uint8_t code, uint32_t now) {
+        if (!reject(tcp, mode, MODBUS_RESULT_PROTOCOL_ERROR, now)) return false;
+        if (mode == ErrorMode::ModbusException) {
+            outputSize_ = ModbusTcpAdu::exception(
+                transactionId_, unitId_, function_, code, output_, sizeof(output_));
+            state_ = outputSize_ ? State::Ready : State::Silent;
+        }
+        return true;
+    }
+
     /** Must be called regularly; never blocks for an RTU response. */
     void poll(uint32_t now) {
         if (state_ != State::Pending || !service_) return;
