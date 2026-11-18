@@ -7,6 +7,7 @@
 #include "Core/Values/ValueFormat.h"
 #include "WebInterfaceModule.h"
 #include "WebMemoryDiagnostics.h"
+#include "WebModbusRoutes.h"
 #include "RuntimeActionArguments.h"
 
 #include "Board/BoardSpec.h"
@@ -209,7 +210,8 @@ static bool requiresAdmin_(AsyncWebServerRequest* request, const char* url)
 {
     if (!request || request->method() != HTTP_POST || !url) return false;
     // System update and destructive system actions are reserved to admins.
-    return pathStartsWith_(url, "/api/fwupdate/") ||
+    return pathStartsWith_(url, "/api/modbus/") ||
+           pathStartsWith_(url, "/api/fwupdate/") ||
            pathStartsWith_(url, "/api/upgrade/") ||
            pathStartsWith_(url, "/api/system/") ||
            pathStartsWith_(url, "/api/flow/system/") ||
@@ -8281,6 +8283,11 @@ void WebInterfaceModule::startServer_()
         noteHttpActivity_();
         request->redirect(webInterfaceLandingUrl());
     });
+
+    // Modbus TCP settings are only exposed in the full authenticated UI.
+    if (!provisioningOnly_) {
+        WebModbusRoutes::registerRoutes(server_, modbusTcp_);
+    }
 
     // --- Authentication routes and middleware --------------------------------
 
