@@ -28,6 +28,7 @@ public:
     const ModuleTaskSpec* taskSpecs() const override { return singleLoopTaskSpec(); }
     uint16_t taskStackSize() const override { return 4096; }
     void init(ConfigStore&, ServiceRegistry& services) override {
+        registry_ = &services;
         master_ = services.get<ModbusMasterService>(ServiceId::ModbusMaster);
     }
     void onConfigLoaded(ConfigStore&, ServiceRegistry&) override {
@@ -61,16 +62,31 @@ public:
         return ok;
     }
     void onStart(ConfigStore&, ServiceRegistry&) override {
-        if (!master_ || !master_->submit || !master_->poll) return;
-        bool enabled = false;
-        for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i)
-            enabled = enabled || configs_[i].enabled;
-        if (!enabled) return;
-        server_.begin(*master_, &ModbusTcpServer::LineResolver::resolveStatic, &resolver_);
-        running_ = true;
+        // Wait for an actual station/Ethernet IP before binding sockets.
+        // Never expose the unauthenticated Modbus protocol on provisioning AP.
+        eligible_ = master_ && master_->submit && master_->poll;
     }
     void loop() override {
-        if (!running_) return;
+        if (!eligible_) return;
+        const NetworkAccessService* network =
+            registry_ ? registry_->get<NetworkAccessService>(ServiceId::NetworkAccess) : nullptr;
+        const bool stationConnected = network && network->mode &&
+            network->mode(network->ctx) == NetworkAccessMode::Station;
+        if (!stationConnected) {
+            if (running_) {
+                server_.stop();
+                running_ = false;
+            }
+            return;
+        }
+        if (!running_) {
+            bool enabled = false;
+            for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i)
+                enabled = enabled || configs_[i].enabled;
+            if (!enabled) return;
+            server_.begin(*master_, &ModbusTcpServer::LineResolver::resolveStatic, &resolver_);
+            running_ = true;
+        }
         const uint32_t now = millis();
         server_.tick(now);
         if (uint32_t(now - lastDiagnosticsMs_) < 60000U) return;
@@ -122,10 +138,12 @@ private:
     };
     static bool lookupDevice_(void* context, uint16_t deviceId, SerialLineProfile& out);
     PoolDeviceModule* devices_ = nullptr;
+    ServiceRegistry* registry_ = nullptr;
     const ModbusMasterService* master_ = nullptr;
     ModbusTcpServer::LineResolver resolver_{};
     ModbusTcpServer::SocketServer server_{};
     ModbusTcpServer::PortConfig configs_[ModbusTcpServer::kPortCount]{};
     bool running_ = false;
+    bool eligible_ = false;
     uint32_t lastDiagnosticsMs_ = 0U;
 };
