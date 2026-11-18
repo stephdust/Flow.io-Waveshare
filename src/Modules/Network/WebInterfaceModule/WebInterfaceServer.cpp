@@ -8583,6 +8583,16 @@ void WebInterfaceModule::startServer_()
         LOGI("WebInterface WS handlers disabled in provisioning-only mode");
     }
     WebMemoryDiagnostics::sample("routes_ready");
+    // Calculate the asset fingerprint in the WebInterface task, before HTTP
+    // callbacks can run in AsyncTCP. The first /api/web/meta call must never
+    // synchronously scan several SPIFFS files on the AsyncTCP event task:
+    // under page load it can stall network event handling and increase latency.
+    if (spiffsReady_) {
+        const uint32_t fingerprintStartedMs = millis();
+        const char* assetVersion = webAssetVersion_();
+        LOGI("Web asset fingerprint ready version=%s elapsed_ms=%lu",
+             assetVersion, (unsigned long)(millis() - fingerprintStartedMs));
+    }
     server_.begin();
     WebMemoryDiagnostics::sample("listening");
     started_ = true;
