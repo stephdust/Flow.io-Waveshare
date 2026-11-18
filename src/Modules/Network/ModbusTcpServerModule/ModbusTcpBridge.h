@@ -17,6 +17,9 @@ public:
     State state() const { return state_; }
     bool busy() const { return state_ == State::Pending; }
     ModbusResultCode resultCode() const { return lastResult_; }
+    bool hasSerialTiming() const { return hasSerialTiming_; }
+    uint32_t queueWaitMs() const { return queueWaitMs_; }
+    uint32_t rtuResponseMs() const { return rtuResponseMs_; }
     uint32_t elapsedMs(uint32_t now) const { return now - startedAtMs_; }
 
     /** Submit exactly one fresh RTU transaction, never serve cached data.
@@ -40,6 +43,9 @@ public:
         timeoutMs_ = timeoutMs;
         outputSize_ = 0U;
         lastResult_ = MODBUS_RESULT_NOT_READY;
+        hasSerialTiming_ = false;
+        queueWaitMs_ = 0U;
+        rtuResponseMs_ = 0U;
         ModbusRequest request{};
         request.ownerId = ownerId_;
         request.protocol = RegisterWireProtocol::ModbusRtu;
@@ -87,6 +93,9 @@ public:
         unitId_ = tcp.unitId;
         function_ = tcp.function;
         startedAtMs_ = now;
+        hasSerialTiming_ = false;
+        queueWaitMs_ = 0U;
+        rtuResponseMs_ = 0U;
         fail_(reason);
         return true;
     }
@@ -108,6 +117,9 @@ public:
             service_->poll(service_->ctx, rtuTransactionId_, &result);
         if (pollResult == MODBUS_RESULT_NOT_READY) return;
         if (pollResult != MODBUS_RESULT_OK) { fail_(pollResult); return; }
+        hasSerialTiming_ = true;
+        queueWaitMs_ = result.queueWaitMs;
+        rtuResponseMs_ = result.rtuResponseMs;
         if (result.result != MODBUS_RESULT_OK) {
             fail_(static_cast<ModbusResultCode>(result.result), result.exceptionCode);
             return;
@@ -170,6 +182,9 @@ private:
     const ModbusMasterService* service_ = nullptr;
     ErrorMode mode_ = ErrorMode::ModbusException;
     ModbusResultCode lastResult_ = MODBUS_RESULT_NOT_READY;
+    bool hasSerialTiming_ = false;
+    uint32_t queueWaitMs_ = 0U;
+    uint32_t rtuResponseMs_ = 0U;
     uint16_t transactionId_ = 0U;
     uint16_t rtuTransactionId_ = MODBUS_TRANSACTION_INVALID;
     uint8_t unitId_ = 0U;
