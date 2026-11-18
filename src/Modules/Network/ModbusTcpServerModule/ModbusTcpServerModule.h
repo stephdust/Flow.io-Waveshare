@@ -7,6 +7,8 @@
 #include <esp_heap_caps.h>
 #include "Core/Services/IModbusMaster.h"
 #include "Core/Services/INetworkAccess.h"
+#include "Core/Services/IHA.h"
+#include "Modules/Network/MQTTModule/MqttConfigRouteProducer.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpLineResolver.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpSocketServer.h"
 
@@ -16,11 +18,13 @@ class ModbusTcpServerModule : public Module {
 public:
     ModuleId moduleId() const override { return ModuleId::ModbusTcpServer; }
     const char* taskName() const override { return "modbustcp"; }
-    uint8_t dependencyCount() const override { return 3; }
+    uint8_t dependencyCount() const override { return 5; }
     ModuleId dependency(uint8_t i) const override {
         if (i == 0) return ModuleId::Io;
         if (i == 1) return ModuleId::PoolDevice;
         if (i == 2) return ModuleId::Wifi;
+        if (i == 3) return ModuleId::Mqtt;
+        if (i == 4) return ModuleId::Ha;
         return ModuleId::Unknown;
     }
     uint8_t taskCount() const override { return 1; }
@@ -156,6 +160,8 @@ private:
         {kConfigModules_[2], kConfigKeys_[2]}
     };
     static bool validateConfigCandidate_(void* context, const ConfigCandidate& candidate);
+    ModbusTcpServer::PortConfig fromSettings_(uint8_t index) const;
+    MqttConfigRouteProducer* cfgMqttPub_ = nullptr;
     static bool lookupDevice_(void* context, uint16_t deviceId,
                               SerialLineProfile& out, uint8_t& slaveAddress);
     PoolDeviceModule* devices_ = nullptr;
