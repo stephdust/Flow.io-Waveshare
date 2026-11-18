@@ -67,6 +67,27 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
                 (unsigned)cfg.manualLine.stopBits,
                 (unsigned long)cfg.transactionTimeoutMs,
                 (unsigned)cfg.errorMode);
+            // Report listener settings separately from staged ConfigStore.
+            // A cfg/set command does not reconfigure active sockets until reboot.
+            ModbusTcpServer::PortConfig active{};
+            const bool hasActive = gateway->readActivePort(i, active);
+            const bool pendingRestart = hasActive && (
+                active.enabled != cfg.enabled ||
+                active.serialSource != cfg.serialSource ||
+                active.deviceId != cfg.deviceId ||
+                active.errorMode != cfg.errorMode ||
+                active.transactionTimeoutMs != cfg.transactionTimeoutMs ||
+                (cfg.serialSource == ModbusTcpServer::SerialSource::Manual &&
+                    (active.manualLine.baud != cfg.manualLine.baud ||
+                     active.manualLine.parity != cfg.manualLine.parity ||
+                     active.manualLine.stopBits != cfg.manualLine.stopBits)));
+            response->printf(
+                ",\"active_enabled\":%s,\"active_error_mode\":%u,"
+                "\"active_device_id\":%u,\"pending_restart\":%s",
+                (hasActive && active.enabled) ? "true" : "false",
+                (unsigned)active.errorMode,
+                (unsigned)active.deviceId,
+                pendingRestart ? "true" : "false");
             const ModbusTcpServer::PortStats& stat = gateway->portStats(i);
             const uint32_t averageMs = stat.completed ?
                 stat.responseTimeTotalMs / stat.completed : 0U;
