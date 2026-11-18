@@ -82,6 +82,8 @@ public:
         domainStatusProvider_.configure(domain, bindingPortExists);
     }
     const char* deviceLabel(uint8_t idx) const;
+    /** Snapshot serial settings for an existing enabled RS485 device. */
+    bool serialLineForDevice(uint16_t deviceId, SerialLineProfile& out) const;
     uint16_t runtimeSnapshotCount() const override;
     const char* runtimeSnapshotSuffix(uint16_t idx) const override;
     RuntimeRouteClass runtimeSnapshotClass(uint16_t idx) const override;
