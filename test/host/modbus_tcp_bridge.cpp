@@ -63,4 +63,13 @@ int main() {
     assert(slot.submit(service, tcp, serial, ErrorMode::ModbusException, 300, 600));
     assert(slot.state() == BridgeSlot::State::Ready);
     assert(slot.outputSize() == 9 && slot.output()[7] == 0x83 && slot.output()[8] == 0x06);
+    assert(slot.resultCode() == MODBUS_RESULT_QUEUE_FULL);
+    slot.reset();
+    fake.submitResult = MODBUS_RESULT_OK;
+    fake.pollResult = MODBUS_RESULT_OK;
+    assert(slot.submit(service, tcp, serial, ErrorMode::ModbusException, 100, 700));
+    slot.poll(800);  // Even a ready RTU response is too late after deadline.
+    assert(slot.resultCode() == MODBUS_RESULT_TIMEOUT);
+    assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.output()[7] == 0x83 && slot.output()[8] == 0x0B);
 }
