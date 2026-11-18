@@ -14,7 +14,7 @@
       saved: 'Enregistré dans Flow.io. Redémarrez pour activer les modifications.',
       enabled: 'Activer ce port',
       source: 'Paramètres RS485',
-      device: 'Équipement Flow.io',
+      device: 'Équipement Flow.io (adresse RS485 fixe)',
       manual: 'Configuration série manuelle',
       selectDevice: 'Équipement RS485',
       noDevice: 'Aucun équipement RS485 disponible',
@@ -52,7 +52,7 @@
       saved: 'Saved in Flow.io. Restart to apply the changes.',
       enabled: 'Enable this port',
       source: 'RS485 settings',
-      device: 'Flow.io equipment',
+      device: 'Flow.io equipment (fixed RTU address)',
       manual: 'Manual serial configuration',
       selectDevice: 'RS485 equipment',
       noDevice: 'No RS485 equipment available',
@@ -165,7 +165,7 @@
     const deviceBox = document.createElement('div');
     fields.appendChild(deviceBox);
     const choices = devices.map((d) => ({
-      value: d.id, title: d.label + ' (#' + d.id + ', ' + d.baud + ' baud)'
+      value: d.id, title: d.label + ' (#' + d.id + ', RTU ' + d.rtu_unit_id + ', ' + d.baud + ' baud)'
     }));
     if (!choices.length) {
       choices.push({value: cfg.device_id, title: t('noDevice')});
