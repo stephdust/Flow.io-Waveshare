@@ -160,6 +160,8 @@ private:
         {kConfigModules_[2], kConfigKeys_[2]}
     };
     static bool validateConfigCandidate_(void* context, const ConfigCandidate& candidate);
+    static MqttBuildResult buildConfigMqtt_(void* owner, uint16_t messageId,
+                                           MqttBuildContext& ctx);
     ModbusTcpServer::PortConfig fromSettings_(uint8_t index) const;
     MqttConfigRouteProducer* cfgMqttPub_ = nullptr;
     static bool lookupDevice_(void* context, uint16_t deviceId,
