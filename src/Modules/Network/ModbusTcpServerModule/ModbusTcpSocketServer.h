@@ -124,7 +124,18 @@ public:
                 if (status != TcpSessions::FeedResult::Complete) continue;
                 ModbusTcpAdu::Request request{};
                 if (!sessions_.request(slot, request)) {
-                    close_(slot); break;
+                    ModbusTcpAdu::Request header{};
+                    if (!sessions_.headerRequest(slot, header)) {
+                        close_(slot);
+                        break;
+                    }
+                    ++stats_[port].received;
+                    const bool supported = header.function == 0x03U ||
+                        header.function == 0x04U || header.function == 0x06U ||
+                        header.function == 0x10U;
+                    bridge.rejectException(header, configs_[port].errorMode,
+                                           supported ? 0x03U : 0x01U, nowMs);
+                    break;
                 }
                 ++stats_[port].received;
                 SerialLineProfile line{};
