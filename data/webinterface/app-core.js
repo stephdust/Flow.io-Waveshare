@@ -230,13 +230,6 @@
       root.className = '';
       root.innerHTML = await fetchShellMarkup(assetUrl('/webinterface/sh.html', version));
       await loadScriptOnce(assetUrl('/webinterface/app.js', version), { retries: 3 });
-      // The Modbus configuration page is optional: a missing supplemental
-      // asset must never prevent the main Flow.io interface from booting.
-      try {
-        await loadScriptOnce(assetUrl('/webinterface/modbus.js', version), { retries: 2 });
-      } catch (err) {
-        if (window.console) window.console.warn('Modbus configuration UI unavailable', err);
-      }
     } catch (err) {
       setBootStatus("Chargement de l'interface impossible.", true);
     }
