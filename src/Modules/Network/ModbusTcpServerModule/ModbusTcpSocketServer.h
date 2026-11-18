@@ -68,16 +68,22 @@ public:
         for (uint8_t slot = 0; slot < kMaxClients; ++slot) {
             const uint8_t port = slot / kClientsPerPort;
             WiFiClient& client = clients_[slot];
-            if (!client) continue;
-            if (!client.connected()) { close_(slot); continue; }
+            if (!sessions_.occupied(slot)) continue;
+            if (!client || !client.connected()) { close_(slot); continue; }
             BridgeSlot& bridge = bridges_[slot];
             bridge.poll(nowMs);
             if (bridge.state() == BridgeSlot::State::Ready) {
+                if (!writing_[slot]) {
+                    writing_[slot] = true;
+                    lastWriteProgressMs_[slot] = nowMs;
+                }
                 const size_t remaining = bridge.outputSize() - sent_[slot];
                 if (remaining && client.availableForWrite() > 0) {
                     const size_t writable = size_t(client.availableForWrite());
                     const size_t count = remaining < writable ? remaining : writable;
-                    sent_[slot] += client.write(bridge.output() + sent_[slot], count);
+                    const size_t wrote = client.write(bridge.output() + sent_[slot], count);
+                    sent_[slot] += wrote;
+                    if (wrote) lastWriteProgressMs_[slot] = nowMs;
                 }
                 if (sent_[slot] == bridge.outputSize()) {
                     ++stats_[port].completed;
@@ -88,12 +94,18 @@ public:
                     bridge.reset();
                     sessions_.clearRequest(slot);
                     sent_[slot] = 0U;
+                    writing_[slot] = false;
+                } else if (uint32_t(nowMs - lastWriteProgressMs_[slot]) >= kWriteStallTimeoutMs) {
+                    // Release a slot held by a peer that has stopped reading.
+                    close_(slot);
+                    continue;
                 }
             } else if (bridge.state() == BridgeSlot::State::Silent) {
                 ++stats_[port].silentFailures;
                 bridge.reset();
                 sessions_.clearRequest(slot);
                 sent_[slot] = 0U;
+                writing_[slot] = false;
             }
             if (bridge.state() != BridgeSlot::State::Idle) continue;
             // Read a bounded number of bytes per tick so other Flow.io tasks
@@ -135,11 +147,14 @@ public:
 
     const PortStats& stats(uint8_t port) const { return stats_[port < kPortCount ? port : 0U]; }
 private:
+    static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     void close_(uint8_t slot) {
         bridges_[slot].reset();
         clients_[slot].stop();
         sessions_.release(slot);
         sent_[slot] = 0U;
+        writing_[slot] = false;
+        lastWriteProgressMs_[slot] = 0U;
         const uint8_t port = slot / kClientsPerPort;
         stats_[port].activeClients = sessions_.active(port);
     }
@@ -150,6 +165,8 @@ private:
     PortConfig configs_[kPortCount]{};
     PortStats stats_[kPortCount]{};
     size_t sent_[kMaxClients]{};
+    uint32_t lastWriteProgressMs_[kMaxClients]{};
+    bool writing_[kMaxClients]{};
     const ModbusMasterService* service_ = nullptr;
     ResolveLine resolver_ = nullptr;
     void* resolverContext_ = nullptr;
