@@ -98,6 +98,12 @@ public:
         }
     }
     void setPoolDeviceModule(PoolDeviceModule* devices);
+    /** Read persisted settings (or disabled defaults when not configured). */
+    bool readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const;
+    /** Get a serial device selectable in the web interface. */
+    bool serialDeviceInfo(uint16_t id, SerialLineProfile& line,
+                          char* label, size_t labelCapacity) const;
+    bool running() const { return running_; }
     bool configurePort(uint8_t index, const ModbusTcpServer::PortConfig& config) {
         if (running_ || !ModbusTcpServer::validConfig(index, config)) return false;
         configs_[index] = config;
