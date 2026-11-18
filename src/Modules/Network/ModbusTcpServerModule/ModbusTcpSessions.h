@@ -103,6 +103,14 @@ public:
         return slot < kMaxClients && sessions_[slot].occupied;
     }
 
+    /** True only while a TCP request is fragmented/incomplete. An idle,
+     * persistent connection without buffered bytes is not timed out.
+     */
+    bool hasPartialRequest(uint8_t slot) const {
+        return slot < kMaxClients && sessions_[slot].occupied &&
+               !sessions_[slot].requestReady && sessions_[slot].bytesUsed != 0U;
+    }
+
     uint8_t active(uint8_t portIndex) const {
         if (!validPortIndex(portIndex)) return 0U;
         uint8_t count = 0U;
