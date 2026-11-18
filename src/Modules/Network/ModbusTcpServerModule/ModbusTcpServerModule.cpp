@@ -7,11 +7,11 @@ namespace {
 constexpr uint8_t kModbusConfigProducerId = 91U;
 constexpr MqttConfigRouteProducer::Route kModbusConfigRoutes[] = {
     {1, {(uint8_t)ConfigModuleId::ModbusTcpServer, 1U},
-     "modbustcp502", "modbustcp/502", (uint8_t)MqttPublishPriority::Normal, nullptr},
+     "modbustcp502", "modbustcp/502", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
     {2, {(uint8_t)ConfigModuleId::ModbusTcpServer, 2U},
-     "modbustcp503", "modbustcp/503", (uint8_t)MqttPublishPriority::Normal, nullptr},
+     "modbustcp503", "modbustcp/503", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
     {3, {(uint8_t)ConfigModuleId::ModbusTcpServer, 3U},
-     "modbustcp504", "modbustcp/504", (uint8_t)MqttPublishPriority::Normal, nullptr}
+     "modbustcp504", "modbustcp/504", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_}
 };
 
 // Editable Home Assistant configuration entities on the existing HAService.
@@ -44,6 +44,95 @@ constexpr HANumberEntry kModbusHaNumbers[] = {
     {"modbustcp", "modbus_tcp_504_timeout_ms", "Modbus 504 Timeout Modbus (ms)", "cfg/modbustcp/504", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'modbustcp504': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
 };
 } // namespace
+
+// Human-readable MQTT metadata is appended to the original ConfigStore JSON.
+// All original numeric fields remain unchanged for backwards compatibility
+// with Home Assistant templates and inbound cfg/set commands.
+MqttBuildResult ModbusTcpServerModule::buildConfigMqtt_(
+    void* owner, uint16_t messageId, MqttBuildContext& ctx)
+{
+    auto* module = static_cast<ModbusTcpServerModule*>(owner);
+    if (!module || messageId < 1U || messageId > ModbusTcpServer::kPortCount ||
+        !module->registry_ || !ctx.topic || !ctx.payload ||
+        !ctx.topicCapacity || !ctx.payloadCapacity) return MqttBuildResult::PermanentError;
+
+    const uint8_t portIndex = uint8_t(messageId - 1U);
+    const MqttService* mqtt =
+        module->registry_->get<MqttService>(ServiceId::Mqtt);
+    const ConfigStoreService* cfg =
+        module->registry_->get<ConfigStoreService>(ServiceId::ConfigStore);
+    if (!mqtt || !mqtt->formatTopic || !cfg || !cfg->toJsonModule)
+        return MqttBuildResult::RetryLater;
+
+    char suffix[32]{};
+    snprintf(suffix, sizeof(suffix), "cfg/modbustcp/%u",
+             (unsigned)ModbusTcpServer::kPorts[portIndex]);
+    mqtt->formatTopic(mqtt->ctx, suffix, ctx.topic, ctx.topicCapacity);
+    if (ctx.topic[0] == '\0') return MqttBuildResult::PermanentError;
+
+    bool truncated = false;
+    if (!cfg->toJsonModule(cfg->ctx, kConfigModules_[portIndex],
+                           ctx.payload, ctx.payloadCapacity, &truncated))
+        return MqttBuildResult::NoLongerNeeded;
+    if (truncated) return MqttBuildResult::PermanentError;
+
+    const size_t baseLen = strnlen(ctx.payload, ctx.payloadCapacity);
+    if (baseLen >= 2U && baseLen < ctx.payloadCapacity &&
+        ctx.payload[baseLen - 1U] == '}') {
+        const ConfigPort& p = module->portSettings_[portIndex];
+        const char* modeLabel = p.mode == 0U ? "Aucun" :
+            p.mode == 1U ? "Equipement Flow.io" : "Configuration manuelle";
+        const char* errorLabel =
+            p.errorMode == 1U ? "Silence" : "Exception Modbus";
+        char deviceLabel[64] = "Aucun";
+        uint8_t rtuAddress = 0U;
+        uint32_t effectiveBaud = 0U;
+        if (p.mode == 1U) {
+            SerialLineProfile line{};
+            char rawLabel[48]{};
+            if (module->serialDeviceInfo(p.deviceId, line, rawLabel,
+                                         sizeof(rawLabel), &rtuAddress)) {
+                effectiveBaud = line.baud;
+                // Avoid injecting quotes, backslashes or control characters
+                // from user-defined device labels into the MQTT JSON object.
+                size_t j = 0U;
+                for (size_t i = 0U; rawLabel[i] && j + 1U < sizeof(deviceLabel); ++i) {
+                    const uint8_t ch = uint8_t(rawLabel[i]);
+                    deviceLabel[j++] = ch == '"' || ch == '\\' || ch < 0x20U
+                        ? '_' : char(ch);
+                }
+                deviceLabel[j] = '\0';
+            } else {
+                snprintf(deviceLabel, sizeof(deviceLabel), "Equipement indisponible");
+            }
+        } else if (p.mode == 2U) {
+            snprintf(deviceLabel, sizeof(deviceLabel), "Configuration manuelle");
+            effectiveBaud = (uint32_t)p.baud;
+        }
+
+        char extension[300]{};
+        const int extLen = snprintf(extension, sizeof(extension),
+            ",\"mode_label\":\"%s\","
+            "\"device_label\":\"%s\","
+            "\"rtu_unit_id\":%u,"
+            "\"serial_baud_effective\":%lu,"
+            "\"error_mode_label\":\"%s\","
+            "\"restart_required\":true}",
+            modeLabel, deviceLabel, (unsigned)rtuAddress,
+            (unsigned long)effectiveBaud, errorLabel);
+        // A small MQTT payload buffer must not break the existing config or
+        // HA entities: fall back to the valid original numeric JSON.
+        if (extLen > 0 && size_t(extLen) < sizeof(extension) &&
+            baseLen - 1U + size_t(extLen) < ctx.payloadCapacity) {
+            memcpy(ctx.payload + baseLen - 1U, extension, size_t(extLen) + 1U);
+        }
+    }
+    ctx.topicLen = (uint16_t)strnlen(ctx.topic, ctx.topicCapacity);
+    ctx.payloadLen = (uint16_t)strnlen(ctx.payload, ctx.payloadCapacity);
+    ctx.qos = 1U;
+    ctx.retain = true;
+    return MqttBuildResult::Ready;
+}
 
 void ModbusTcpServerModule::init(ConfigStore& cfg, ServiceRegistry& services)
 {
