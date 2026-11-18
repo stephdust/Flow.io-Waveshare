@@ -34,7 +34,9 @@
       clients: 'Clients',
       requests: 'Requêtes',
       errors: 'Exceptions',
-      delay: 'Latence max',
+      delay: 'Latence TCP max',
+      queue: 'Attente RS485 max',
+      response: 'Réponse RTU max',
       active: 'Passerelle active',
       inactive: 'Passerelle non active',
       restart: 'Redémarrage nécessaire après modification',
@@ -67,7 +69,9 @@
       clients: 'Clients',
       requests: 'Requests',
       errors: 'Exceptions',
-      delay: 'Max latency',
+      delay: 'Max TCP latency',
+      queue: 'Max RS485 queue wait',
+      response: 'Max RTU response',
       active: 'Gateway active',
       inactive: 'Gateway not active',
       restart: 'Restart needed after changing settings',
@@ -140,7 +144,9 @@
       t('clients') + ': ' + (stats.clients || 0) + '/2 · ' +
       t('requests') + ': ' + (stats.requests || 0) + ' · ' +
       t('errors') + ': ' + (stats.exceptions || 0) + ' · ' +
-      t('delay') + ': ' + (stats.tcp_max_ms || 0) + ' ms';
+      t('delay') + ': ' + (stats.tcp_max_ms || 0) + ' ms' + ' · ' +
+      t('queue') + ': ' + (stats.queue_max_ms || 0) + ' ms' + ' · ' +
+      t('response') + ': ' + (stats.rtu_max_ms || 0) + ' ms';
     form.appendChild(summary);
     const fields = document.createElement('div');
     fields.className = 'modbus-fields';
