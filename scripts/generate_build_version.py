@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-Inject build reference macros into the active PlatformIO environment.
+Inject a reproducible build reference without invalidating PlatformIO's object
+cache on every invocation.
 
-Stable product versions stay in platformio.ini (`custom_version` / `FIRMW`),
-while this script appends a build reference generated at compile time.
+The previous wall-clock timestamp changed global CPPDEFINES on every pio run,
+forcing a full recompilation even when no source file had changed.
+The build number is now the Git first-parent commit count, with the short
+commit hash as an unambiguous suffix. It advances on commits, not on pio runs.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
+import subprocess
 import sys
 
 scripts_dir = str(Path.cwd() / "scripts")
@@ -21,10 +24,30 @@ from version_utils import normalize_config_string
 Import("env")  # type: ignore[name-defined]
 
 
-core_version = normalize_config_string(env.GetProjectOption("custom_version", "0.0.0"))
-build_ref = datetime.now().strftime("%Y%m%d.%H%M%S")
-full_version = f"{core_version}+{build_ref}"
+def git_output(*args: str) -> str:
+    project_dir = Path(env.subst("$PROJECT_DIR"))
+    result = subprocess.run(
+        ["git", "-C", str(project_dir), *args],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    )
+    return result.stdout.strip()
 
+
+core_version = normalize_config_string(env.GetProjectOption("custom_version", "0.0.0"))
+
+try:
+    build_number = git_output("rev-list", "--count", "--first-parent", "HEAD")
+    commit_short = git_output("rev-parse", "--short=8", "HEAD")
+    build_ref = f"{build_number}.g{commit_short}"
+except (OSError, subprocess.SubprocessError) as exc:
+    # A source archive without .git still builds with a deterministic version.
+    build_ref = "0.source"
+    print(f"[build-version] Git metadata unavailable ({exc}); using {build_ref}")
+
+full_version = f"{core_version}+{build_ref}"
 env.Append(
     CPPDEFINES=[
         ("FLOW_BUILD_REF", f'\\"{build_ref}\\"'),
