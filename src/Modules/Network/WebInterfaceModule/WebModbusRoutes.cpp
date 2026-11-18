@@ -127,14 +127,15 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
         for (uint16_t id = 0; id < POOL_DEVICE_MAX; ++id) {
             SerialLineProfile line{};
             char label[32]{};
-            if (!gateway->serialDeviceInfo(id, line, label, sizeof(label))) continue;
+            uint8_t slaveAddress = 0U;
+            if (!gateway->serialDeviceInfo(id, line, label, sizeof(label), &slaveAddress)) continue;
             if (!first) response->print(',');
             first = false;
             response->printf("{\"id\":%u,\"label\":", (unsigned)id);
             printJsonText_(*response, label);
-            response->printf(",\"baud\":%lu,\"parity\":%u,\"stop_bits\":%u}",
+            response->printf(",\"baud\":%lu,\"parity\":%u,\"stop_bits\":%u,\"rtu_unit_id\":%u}",
                              (unsigned long)line.baud, (unsigned)line.parity,
-                             (unsigned)line.stopBits);
+                             (unsigned)line.stopBits, (unsigned)slaveAddress);
         }
         response->print("]}");
         request->send(response);
