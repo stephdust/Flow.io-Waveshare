@@ -125,7 +125,8 @@ public:
     bool readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const;
     /** Get a serial device selectable in the web interface. */
     bool serialDeviceInfo(uint16_t id, SerialLineProfile& line,
-                          char* label, size_t labelCapacity) const;
+                          char* label, size_t labelCapacity,
+                          uint8_t* slaveAddress = nullptr) const;
     bool running() const { return running_; }
     bool schedulerStats(ModbusMasterStats& out) const {
         return master_ && master_->stats && master_->stats(master_->ctx, &out);
@@ -146,7 +147,8 @@ private:
         uint32_t version = 0U;
         ModbusTcpServer::PortConfig config{};
     };
-    static bool lookupDevice_(void* context, uint16_t deviceId, SerialLineProfile& out);
+    static bool lookupDevice_(void* context, uint16_t deviceId,
+                              SerialLineProfile& out, uint8_t& slaveAddress);
     PoolDeviceModule* devices_ = nullptr;
     ServiceRegistry* registry_ = nullptr;
     const ModbusMasterService* master_ = nullptr;
