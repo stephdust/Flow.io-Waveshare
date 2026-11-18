@@ -57,6 +57,13 @@ int main() {
     assert(slot.output()[0] == 0x12 && slot.output()[1] == 0x34);
     assert(slot.output()[7] == 3 && slot.output()[8] == 48);
     slot.reset();
+    // A device-bound port redirects the RTU request without modifying TCP MBAP.
+    assert(slot.submit(service, tcp, serial, ErrorMode::ModbusException, 8000, 105, 7));
+    assert(fake.last.slaveAddress == 7 && fake.last.registerAddress == 500);
+    slot.poll(106);
+    assert(slot.state() == BridgeSlot::State::Ready);
+    assert(slot.output()[6] == 17);
+    slot.reset();
     fake.pollResult = MODBUS_RESULT_NOT_READY;
     assert(slot.submit(service, tcp, serial, ErrorMode::Silent, 300, 200));
     slot.poll(501);
