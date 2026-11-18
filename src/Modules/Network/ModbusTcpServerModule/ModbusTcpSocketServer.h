@@ -191,41 +191,39 @@ public:
                 continue;
             }
             if (status != TcpSessions::FeedResult::Complete) continue;
-                ModbusTcpAdu::Request request{};
-                if (!sessions_.request(slot, request)) {
-                    ModbusTcpAdu::Request header{};
-                    if (!sessions_.headerRequest(slot, header)) {
-                        close_(slot);
-                        break;
-                    }
-                    ++stats_[port].received;
-                    const bool supported = header.function == 0x03U ||
-                        header.function == 0x04U || header.function == 0x06U ||
-                        header.function == 0x10U;
-                    bridge.rejectException(header, configs_[port].errorMode,
-                                           supported ? 0x03U : 0x01U, nowMs);
-                    break;
+            ModbusTcpAdu::Request request{};
+            if (!sessions_.request(slot, request)) {
+                ModbusTcpAdu::Request header{};
+                if (!sessions_.headerRequest(slot, header)) {
+                    close_(slot);
+                    continue;
                 }
                 ++stats_[port].received;
-                SerialLineProfile line{};
-                uint8_t targetUnitId = request.unitId;
-                if (!resolver_ || !resolver_(resolverContext_, port, request.unitId,
-                                              line, targetUnitId)) {
-                    // No matching configured device: reject rather than send
-                    // traffic using an arbitrary UART profile.
-                    ++stats_[port].resolverFailures;
-                    bridge.reject(request, configs_[port].errorMode,
-                                  MODBUS_RESULT_NOT_READY, nowMs);
-                    break;
-                }
-                if (!bridge.submit(*service_, request, line, configs_[port].errorMode,
-                                   configs_[port].transactionTimeoutMs, nowMs, targetUnitId)) {
-                    ++stats_[port].queueRejected;
-                    bridge.reject(request, configs_[port].errorMode,
-                                  MODBUS_RESULT_INVALID_ARGUMENT, nowMs);
-                }
-            // Exactly one request outstanding per connection. The next
-            // pipelined ADU remains buffered by lwIP until the reply.
+                const bool supported = header.function == 0x03U ||
+                    header.function == 0x04U || header.function == 0x06U ||
+                    header.function == 0x10U;
+                bridge.rejectException(header, configs_[port].errorMode,
+                                       supported ? 0x03U : 0x01U, nowMs);
+                continue;
+            }
+            ++stats_[port].received;
+            SerialLineProfile line{};
+            uint8_t targetUnitId = request.unitId;
+            if (!resolver_ || !resolver_(resolverContext_, port, request.unitId,
+                                          line, targetUnitId)) {
+                ++stats_[port].resolverFailures;
+                bridge.reject(request, configs_[port].errorMode,
+                              MODBUS_RESULT_NOT_READY, nowMs);
+                continue;
+            }
+            if (!bridge.submit(*service_, request, line, configs_[port].errorMode,
+                               configs_[port].transactionTimeoutMs, nowMs, targetUnitId)) {
+                ++stats_[port].queueRejected;
+                bridge.reject(request, configs_[port].errorMode,
+                              MODBUS_RESULT_INVALID_ARGUMENT, nowMs);
+            }
+            // One outstanding request per connection; the next pipelined
+            // ADU remains buffered by lwIP until its predecessor is answered.
         }
     }
 
