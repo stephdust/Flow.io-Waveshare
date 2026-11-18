@@ -44,6 +44,8 @@ struct PortStats {
     uint32_t connectionsRejected = 0U;
     // Idle sockets reclaimed only when a new client needs a full port.
     uint32_t idleReclaimed = 0U;
+    uint32_t peerClosed = 0U;
+    uint32_t invalidTcpAdus = 0U;
     uint32_t txWouldBlock = 0U;
     uint32_t txErrors = 0U;
     uint32_t rxErrors = 0U;
