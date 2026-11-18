@@ -1558,6 +1558,7 @@ const char* webAssetVersion_()
     hash = webAssetFingerprintFile_(hash, "/webinterface/app-core.css.gz");
     hash = webAssetFingerprintFile_(hash, "/webinterface/sh.html.gz");
     hash = webAssetFingerprintFile_(hash, "/webinterface/app.js.gz");
+    hash = webAssetFingerprintFile_(hash, "/webinterface/modbus.js.gz");
     hash = webAssetFingerprintFile_(hash, "/wc/i.j.gz");
     snprintf(version, sizeof(version), "%s-%08lx", FirmwareVersion::BuildRef, (unsigned long)hash);
     return version;
@@ -5694,6 +5695,23 @@ void WebInterfaceModule::startServer_()
         bool buildBusy = false;
         AsyncWebServerResponse* response =
             beginSpiffsAssetResponse(request, "/webinterface/sh.html", "text/html", true, nullptr, &forensicMeta, &heapRejected, &buildBusy);
+        if (!response) {
+            if (heapRejected || buildBusy) {
+                sendTinyBusyJson_(request, heapRejected ? "low_memory" : "asset_build_busy");
+                return;
+            }
+            request->send(404, "text/plain", "Not found");
+            return;
+        }
+        sendPreparedAssetResponse(request, response, &forensicMeta);
+    });
+    server_.on("/webinterface/modbus.js", HTTP_GET, [this, beginSpiffsAssetResponse, sendPreparedAssetResponse](AsyncWebServerRequest* request) {
+        SpiffsAssetForensicMeta forensicMeta{};
+        bool heapRejected = false;
+        bool buildBusy = false;
+        AsyncWebServerResponse* response =
+            beginSpiffsAssetResponse(request, "/webinterface/modbus.js", "application/javascript", true, nullptr,
+                                    &forensicMeta, &heapRejected, &buildBusy);
         if (!response) {
             if (heapRejected || buildBusy) {
                 sendTinyBusyJson_(request, heapRejected ? "low_memory" : "asset_build_busy");
