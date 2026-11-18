@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Read-only, six-client load probe for the Flow.io Modbus TCP/RTU gateway.
+"""Read-only, one-to-six-client load probe for the Flow.io Modbus TCP/RTU gateway.
 
 Standard-library only. No writes are transmitted; only FC03/FC04 requests.
 Give one real, SAFE register range per enabled TCP listener. This is a hardware
 test, not a simulator or a substitute for an ESP32/RS485 integration test.
 
 Example (replace unit IDs and ranges with those of your devices):
+  # Target only a port that is enabled (here port 502).
   python3 scripts/tests/modbus_tcp_load.py --host 192.168.1.71 \
-    --target 502:11:52:97:3 --target 503:11:500:24:3 \
-    --target 504:11:1000:2:3 --requests 8 --probe-third
+    --target 502:17:500:28:3 --requests 8
+  # Or exercise 502, 503, 504 together if all are enabled.
+  python3 scripts/tests/modbus_tcp_load.py --host 192.168.1.71 \
+    --target 502:17:52:97:3 --target 503:17:500:28:3 \
+    --target 504:17:1000:3:3 --requests 8 --probe-third
 """
 import argparse
 import collections
@@ -166,15 +170,16 @@ def main():
                         help="While 2 clients/port are connected, probe rejection of a third")
     args = parser.parse_args()
     by_port = {target.port: target for target in args.target}
-    if len(by_port) != len(args.target) or set(by_port) != {502, 503, 504}:
-        parser.error("Provide exactly one target for each port 502, 503 and 504")
+    if len(by_port) != len(args.target) or not 1 <= len(by_port) <= 3:
+        parser.error("Provide one to three distinct ports from 502, 503 and 504")
     if not 1 <= args.requests <= 1000 or not 0.2 <= args.timeout <= 120:
         parser.error("--requests must be 1..1000 and --timeout 0.2..120 s")
     if not 0 <= args.pace_ms <= 60000:
         parser.error("--pace-ms must be 0..60000")
 
     print("Read-only FC03/FC04 test (no Modbus writes).")
-    print("Two persistent TCP connections on each port: six clients total.")
+    print(f"Two persistent TCP connections per configured port: "
+          f"{2 * len(by_port)} clients total.")
     print("Use configured register ranges that the actual devices can read.")
     for target in args.target:
         print(f"  Port {target.port}: unit={target.unit}, FC{target.function:02d}, "
@@ -183,7 +188,7 @@ def main():
     ready_queue = queue.Queue()
     release = threading.Event()
     futures = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2 * len(by_port)) as executor:
         for target in args.target:
             for worker_id in range(2):
                 futures.append(executor.submit(worker_task, args.host, target,
@@ -191,24 +196,24 @@ def main():
                     ready_queue, release))
         ready = []
         try:
-            for _ in range(6):
+            for _ in range(2 * len(by_port)):
                 ready.append(ready_queue.get(timeout=args.timeout + 3))
             connected = sum(1 for item in ready if item[2])
-            print(f"Connections established: {connected}/6")
+            print(f"Connections established: {connected}/{2 * len(by_port)}")
             for port, worker_id, ok, reason in ready:
                 if not ok:
                     print(f"  Port {port} client {worker_id + 1}: {reason}")
-            if connected == 6 and args.probe_third:
-                for port in (502, 503, 504):
+            if connected == 2 * len(by_port) and args.probe_third:
+                for port in sorted(by_port):
                     outcome = check_third_connection(args.host, by_port[port], args.timeout)
                     print(f"  Port {port} third-client probe: {outcome}")
         except queue.Empty:
-            print("Timed out waiting for all six initial connections")
+            print("Timed out waiting for all initial connections")
         finally:
             release.set()
         results = [future.result() for future in futures]
 
-    for port in (502, 503, 504):
+    for port in sorted(by_port):
         same_port = [x for x in results if x.port == port]
         latencies = [value for x in same_port for value in x.samples_ms]
         exceptions = sum((x.exceptions for x in same_port), collections.Counter())
