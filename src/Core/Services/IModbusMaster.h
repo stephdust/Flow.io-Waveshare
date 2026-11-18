@@ -6,7 +6,12 @@
 
 #include <stdint.h>
 
-constexpr uint8_t MODBUS_MAX_REGISTERS_PER_REQUEST = 32U;
+// Modbus application protocol limits (FC03/04: 125, FC16: 123).
+// The storage bound also covers the largest read response. Keep these
+// separate so a large read never permits an oversized FC16 write.
+constexpr uint8_t MODBUS_MAX_READ_REGISTERS = 125U;
+constexpr uint8_t MODBUS_MAX_WRITE_REGISTERS = 123U;
+constexpr uint8_t MODBUS_MAX_REGISTERS_PER_REQUEST = MODBUS_MAX_READ_REGISTERS;
 constexpr uint16_t MODBUS_TRANSACTION_INVALID = 0U;
 
 enum ModbusFunction : uint8_t {
