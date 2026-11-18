@@ -31,6 +31,10 @@
       silence: 'Rester muet (connexion conservée)',
       save: 'Enregistrer ce port',
       refresh: 'Actualiser',
+      clients: 'Clients',
+      requests: 'Requêtes',
+      errors: 'Exceptions',
+      delay: 'Latence max',
       active: 'Passerelle active',
       inactive: 'Passerelle non active',
       restart: 'Redémarrage nécessaire après modification',
@@ -60,6 +64,10 @@
       silence: 'Remain silent (keep connection open)',
       save: 'Save this port',
       refresh: 'Refresh',
+      clients: 'Clients',
+      requests: 'Requests',
+      errors: 'Exceptions',
+      delay: 'Max latency',
       active: 'Gateway active',
       inactive: 'Gateway not active',
       restart: 'Restart needed after changing settings',
@@ -74,6 +82,8 @@
   const style = document.createElement('style');
   style.textContent = [
     '#page-modbus .modbus-port-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,325px),1fr));gap:16px}',
+    '#page-modbus .modbus-toolbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}',
+    '#page-modbus .modbus-stat-line{font-size:13px;opacity:.8;margin:0 0 12px}',
     '#page-modbus .modbus-port-card{padding:18px;border:1px solid rgba(120,130,145,.35);border-radius:14px;min-width:0}',
     '#page-modbus .modbus-port-card h3{margin:0 0 14px;font-size:18px}',
     '#page-modbus .modbus-fields{display:grid;gap:12px}',
@@ -123,6 +133,15 @@
     const heading = document.createElement('h3');
     heading.textContent = 'TCP ' + cfg.port;
     form.appendChild(heading);
+    const stats = cfg.stats || {};
+    const summary = document.createElement('p');
+    summary.className = 'modbus-stat-line';
+    summary.textContent =
+      t('clients') + ': ' + (stats.clients || 0) + '/2 · ' +
+      t('requests') + ': ' + (stats.requests || 0) + ' · ' +
+      t('errors') + ': ' + (stats.exceptions || 0) + ' · ' +
+      t('delay') + ': ' + (stats.tcp_max_ms || 0) + ' ms';
+    form.appendChild(summary);
     const fields = document.createElement('div');
     fields.className = 'modbus-fields';
     form.appendChild(fields);
