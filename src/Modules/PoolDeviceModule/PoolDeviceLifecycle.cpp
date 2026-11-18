@@ -488,13 +488,24 @@ void PoolDeviceModule::registerDriverHa_(uint8_t slot)
 
 bool PoolDeviceModule::serialLineForDevice(uint16_t deviceId, SerialLineProfile& out) const
 {
+    return serialDeviceInfo(deviceId, out, nullptr, 0U);
+}
+
+bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
+                                         char* label, size_t labelCapacity) const
+{
     if (deviceId >= POOL_DEVICE_MAX || !slots_) return false;
     if (!lockState_(pdMS_TO_TICKS(10))) return false;
     const PoolDeviceSlot& slot = slots_[deviceId];
     const bool valid = slot.used && slot.def.enabled &&
         slot.driverReady &&
         slot.driverConfig.capabilities.kind == PoolControlKind::Rs485;
-    if (valid) out = slot.driverConfig.serial.line;
+    if (valid) {
+        out = slot.driverConfig.serial.line;
+        if (label && labelCapacity) {
+            snprintf(label, labelCapacity, "%s", slot.def.label);
+        }
+    }
     unlockState_();
     return valid;
 }
