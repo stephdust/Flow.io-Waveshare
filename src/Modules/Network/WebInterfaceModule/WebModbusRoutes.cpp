@@ -91,12 +91,18 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
             const ModbusTcpServer::PortStats& stat = gateway->portStats(i);
             const uint32_t averageMs = stat.completed ?
                 stat.responseTimeTotalMs / stat.completed : 0U;
+            const uint32_t queueAverageMs = stat.rtuSamples ?
+                stat.queueWaitTotalMs / stat.rtuSamples : 0U;
+            const uint32_t rtuAverageMs = stat.rtuSamples ?
+                stat.rtuResponseTotalMs / stat.rtuSamples : 0U;
             response->printf(
                 ",\"stats\":{\"clients\":%u,\"peak_clients\":%u,"
                 "\"requests\":%lu,\"responses\":%lu,\"exceptions\":%lu,"
                 "\"silent\":%lu,\"timeouts\":%lu,\"crc_errors\":%lu,"
                 "\"queue_rejected\":%lu,\"connections_rejected\":%lu,"
-                "\"tcp_avg_ms\":%lu,\"tcp_max_ms\":%lu}}",
+                "\"tcp_avg_ms\":%lu,\"tcp_max_ms\":%lu,"
+                "\"queue_avg_ms\":%lu,\"queue_max_ms\":%lu,"
+                "\"rtu_avg_ms\":%lu,\"rtu_max_ms\":%lu}}",
                 (unsigned)stat.activeClients, (unsigned)stat.maxActiveClients,
                 (unsigned long)stat.received, (unsigned long)stat.completed,
                 (unsigned long)stat.exceptionsSent, (unsigned long)stat.silentFailures,
@@ -104,7 +110,11 @@ void registerRoutes(PsramWebServer& server, ModbusTcpServerModule* gateway)
                 (unsigned long)stat.queueRejected,
                 (unsigned long)stat.connectionsRejected,
                 (unsigned long)averageMs,
-                (unsigned long)stat.responseTimeMaxMs);
+                (unsigned long)stat.responseTimeMaxMs,
+                (unsigned long)queueAverageMs,
+                (unsigned long)stat.queueWaitMaxMs,
+                (unsigned long)rtuAverageMs,
+                (unsigned long)stat.rtuResponseMaxMs);
         }
         response->print("],\"devices\":[");
         bool first = true;
