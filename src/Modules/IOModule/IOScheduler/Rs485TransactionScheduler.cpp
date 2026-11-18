@@ -148,6 +148,7 @@ ModbusResultCode Rs485TransactionScheduler::submit_(const ModbusRequest& request
     const unsigned reserved = request.priority == MODBUS_PRIORITY_SAFETY ? 0 :
         request.operation == RegisterOperation::Read ? 1 : 2;
     if (!freeSlot || freeCount <= reserved) {
+        ++statsData_.queueRejected;
         LOGD("Modbus submit rejected owner=%u slave=%u reason=queue_full",
              request.ownerId, request.slaveAddress);
         unlock_();
@@ -156,6 +157,7 @@ ModbusResultCode Rs485TransactionScheduler::submit_(const ModbusRequest& request
 
     const uint16_t id = allocateTransactionId_();
     if (id == MODBUS_TRANSACTION_INVALID) {
+        ++statsData_.queueRejected;
         unlock_();
         return MODBUS_RESULT_QUEUE_FULL;
     }
@@ -169,6 +171,12 @@ ModbusResultCode Rs485TransactionScheduler::submit_(const ModbusRequest& request
     freeSlot->response.transactionId = id;
     outTransactionId = id;
     ++statsData_.submitted;
+    uint8_t currentlyQueued = 0U;
+    for (const Slot& slot : storage_->slots)
+        if (slot.state == SlotState::Queued || slot.state == SlotState::Active)
+            ++currentlyQueued;
+    if (currentlyQueued > statsData_.queuedPeak)
+        statsData_.queuedPeak = currentlyQueued;
     LOGD("Modbus queued id=%u owner=%u slave=%u fc=0x%02X reg=0x%04X count=%u priority=%u",
          id, request.ownerId, request.slaveAddress, request.function,
          request.registerAddress, request.registerCount, request.priority);
