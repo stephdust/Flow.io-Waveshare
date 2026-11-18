@@ -5,6 +5,8 @@
  */
 #include "Core/Module.h"
 #include <esp_heap_caps.h>
+#include <Preferences.h>
+#include "Core/NvsKeys.h"
 #include "Core/Services/IModbusMaster.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpLineResolver.h"
 #include "Modules/Network/ModbusTcpServerModule/ModbusTcpSocketServer.h"
@@ -27,6 +29,36 @@ public:
     uint16_t taskStackSize() const override { return 4096; }
     void init(ConfigStore&, ServiceRegistry& services) override {
         master_ = services.get<ModbusMasterService>(ServiceId::ModbusMaster);
+    }
+    void onConfigLoaded(ConfigStore&, ServiceRegistry&) override {
+        Preferences prefs;
+        if (!prefs.begin(NvsKeys::StorageNamespace, true)) return;
+        for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
+            char key[12]{};
+            snprintf(key, sizeof(key), "mbtcp%u", unsigned(i));
+            StoredPort stored{};
+            if (prefs.getBytesLength(key) != sizeof(stored) ||
+                prefs.getBytes(key, &stored, sizeof(stored)) != sizeof(stored) ||
+                stored.version != kConfigVersion) continue;
+            const auto& cfg = stored.config;
+            if (ModbusTcpServer::validConfig(i, cfg)) configurePort(i, cfg);
+        }
+        prefs.end();
+    }
+    /** Persist one port atomically; changes take effect on next restart. */
+    bool savePort(uint8_t index, const ModbusTcpServer::PortConfig& config) {
+        if (!ModbusTcpServer::validConfig(index, config)) return false;
+        Preferences prefs;
+        if (!prefs.begin(NvsKeys::StorageNamespace, false)) return false;
+        char key[12]{};
+        snprintf(key, sizeof(key), "mbtcp%u", unsigned(index));
+        StoredPort stored{};
+        stored.version = kConfigVersion;
+        stored.config = config;
+        const bool ok = prefs.putBytes(key, &stored, sizeof(stored)) == sizeof(stored);
+        prefs.end();
+        if (ok && !running_) configurePort(index, config);
+        return ok;
     }
     void onStart(ConfigStore&, ServiceRegistry&) override {
         if (!master_ || !master_->submit || !master_->poll) return;
@@ -77,6 +109,11 @@ public:
         return server_.stats(index);
     }
 private:
+    static constexpr uint32_t kConfigVersion = 1U;
+    struct StoredPort {
+        uint32_t version = 0U;
+        ModbusTcpServer::PortConfig config{};
+    };
     static bool lookupDevice_(void* context, uint16_t deviceId, SerialLineProfile& out);
     PoolDeviceModule* devices_ = nullptr;
     const ModbusMasterService* master_ = nullptr;
