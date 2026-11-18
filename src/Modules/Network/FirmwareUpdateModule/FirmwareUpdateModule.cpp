@@ -272,10 +272,19 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
          source->label, destination->label, (unsigned long)source->size);
     otaMonitor_("clone_before");
     const uint32_t cloneStartMs = millis();
+    const uint32_t eraseStartMs = millis();
     if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
+        LOGE("[OTA] phase=clone_erase_failed elapsed_ms=%lu",
+             (unsigned long)(millis() - eraseStartMs));
+        otaMonitor_("clone_erase_failed");
         return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
     }
+    LOGI("[OTA] phase=clone_erase_done elapsed_ms=%lu",
+         (unsigned long)(millis() - eraseStartMs));
+    otaMonitor_("clone_erase_done");
     uint8_t buffer[1024]{};
+    const uint32_t copyStartMs = millis();
+    size_t nextProgress = 256U * 1024U;
     for (size_t offset = 0U; offset < source->size; offset += sizeof(buffer)) {
         const size_t count = ((source->size - offset) < sizeof(buffer))
                                  ? (source->size - offset)
@@ -286,6 +295,14 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
                  (unsigned long)offset, (unsigned long)(millis() - cloneStartMs));
             otaMonitor_("clone_failed");
             return writeSimpleError_(errOut, errOutLen, "inactive filesystem clone failed");
+        }
+        const size_t copied = offset + count;
+        if (copied >= nextProgress) {
+            LOGI("[OTA] phase=clone_progress copied=%lu total=%lu elapsed_ms=%lu",
+                 (unsigned long)copied, (unsigned long)source->size,
+                 (unsigned long)(millis() - copyStartMs));
+            otaMonitor_("clone_progress");
+            nextProgress += 256U * 1024U;
         }
     }
     LOGI("[OTA] phase=clone_done elapsed_ms=%lu", (unsigned long)(millis() - cloneStartMs));
@@ -1109,6 +1126,9 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
         int32_t remaining = contentLength;
         uint8_t buf[Limits::FirmwareUpdate::Http::StreamChunkBytes];
         uint32_t lastReadMs = millis();
+        const uint32_t writeStartMs = millis();
+        size_t writtenTotal = 0U;
+        size_t nextWriteProgress = 256U * 1024U;
 
         while (http.connected() && (contentLength <= 0 || remaining > 0)) {
             const size_t avail = stream ? stream->available() : 0;
@@ -1139,6 +1159,14 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
             }
 
             onProgressChunk_((uint32_t)wr);
+            writtenTotal += wr;
+            if (writtenTotal >= nextWriteProgress) {
+                LOGI("[OTA] phase=firmware_write_progress bytes=%lu expected=%ld elapsed_ms=%lu",
+                     (unsigned long)writtenTotal, (long)contentLength,
+                     (unsigned long)(millis() - writeStartMs));
+                otaMonitor_("firmware_write_progress");
+                nextWriteProgress += 256U * 1024U;
+            }
 
             if (contentLength > 0) {
                 remaining -= rd;
@@ -1148,6 +1176,10 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
             }
         }
 
+        LOGI("[OTA] phase=firmware_stream_end bytes=%lu expected=%ld elapsed_ms=%lu",
+             (unsigned long)writtenTotal, (long)contentLength,
+             (unsigned long)(millis() - writeStartMs));
+        otaMonitor_("firmware_stream_end");
         if (failMsg[0] == '\0' && contentLength > 0 && remaining > 0) {
             snprintf(failMsg, sizeof(failMsg), "incomplete download");
         }
