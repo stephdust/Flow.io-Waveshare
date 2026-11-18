@@ -492,7 +492,7 @@ bool PoolDeviceModule::serialLineForDevice(uint16_t deviceId, SerialLineProfile&
 }
 
 bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
-                                         char* label, size_t labelCapacity) const
+                                         char* label, size_t labelCapacity, uint8_t* slaveAddress) const
 {
     if (deviceId >= POOL_DEVICE_MAX || !slots_) return false;
     if (!lockState_(pdMS_TO_TICKS(10))) return false;
@@ -502,6 +502,7 @@ bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& ou
         slot.driverConfig.capabilities.kind == PoolControlKind::Rs485;
     if (valid) {
         out = slot.driverConfig.serial.line;
+        if (slaveAddress) *slaveAddress = slot.driverConfig.serial.address;
         if (label && labelCapacity) {
             snprintf(label, labelCapacity, "%s", slot.def.label);
         }
