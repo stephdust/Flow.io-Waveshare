@@ -59,7 +59,11 @@ public:
             running_ = true;
         }
         const uint32_t now = millis();
+        const uint32_t tickStartedUs = micros();
         server_.tick(now);
+        const uint32_t elapsedUs = uint32_t(micros() - tickStartedUs);
+        if (elapsedUs > tickMaxUs_) tickMaxUs_ = elapsedUs;
+        if (elapsedUs >= 5000U) ++slowTicks_;
         if (uint32_t(now - lastDiagnosticsMs_) < 60000U) return;
         lastDiagnosticsMs_ = now;
         ModbusMasterStats queue{};
@@ -72,6 +76,10 @@ public:
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
+        Serial.printf("[MODBUS-TCP] tick_max_us=%lu tick_slow_5ms=%lu\\n",
+            (unsigned long)tickMaxUs_, (unsigned long)slowTicks_);
+        tickMaxUs_ = 0U;
+        slowTicks_ = 0U;
         Serial.printf("[MODBUS-TCP] heap_internal=%lu min_internal=%lu largest_internal=%lu frag_est_percent=%lu psram=%lu largest_psram=%lu stack_hwm=%lu rtu_queue=%u rtu_peak=%u rtu_rejected=%lu rtu_crc=%lu rtu_timeouts=%lu\n",
             (unsigned long)freeInternal, (unsigned long)minInternal,
             (unsigned long)largestInternal, (unsigned long)fragEstimate,
@@ -81,14 +89,15 @@ public:
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
-            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu resolver_fail=%lu tx_bytes=%lu tx_retry=%lu tx_errors=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
+            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu resolver_fail=%lu rx_bytes=%lu rx_errors=%lu tx_bytes=%lu tx_retry=%lu tx_errors=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
                 (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
                 (unsigned)p.maxActiveClients, (unsigned long)p.received,
                 (unsigned long)p.completed, (unsigned long)p.exceptionsSent,
                 (unsigned long)p.silentFailures, (unsigned long)p.crcErrors,
                 (unsigned long)p.timeouts, (unsigned long)p.connectionsRejected,
-                (unsigned long)p.resolverFailures, (unsigned long)p.tcpBytesSent,
-                (unsigned long)p.txWouldBlock, (unsigned long)p.txErrors,
+                (unsigned long)p.resolverFailures,
+                (unsigned long)p.tcpBytesReceived, (unsigned long)p.rxErrors,
+                (unsigned long)p.tcpBytesSent, (unsigned long)p.txWouldBlock, (unsigned long)p.txErrors,
                 (unsigned long)p.responseTimeMaxMs, (unsigned long)p.queueWaitMaxMs,
                 (unsigned long)p.rtuResponseMaxMs);
         }
@@ -185,4 +194,6 @@ private:
     bool running_ = false;
     bool eligible_ = false;
     uint32_t lastDiagnosticsMs_ = 0U;
+    uint32_t tickMaxUs_ = 0U;
+    uint32_t slowTicks_ = 0U;
 };
