@@ -150,6 +150,17 @@ public:
     const PortStats& stats(uint8_t port) const { return stats_[port < kPortCount ? port : 0U]; }
 private:
     void accountOutcome_(uint8_t port, const BridgeSlot& bridge, bool replied) {
+        if (bridge.hasSerialTiming()) {
+            const uint32_t queueMs = bridge.queueWaitMs();
+            const uint32_t responseMs = bridge.rtuResponseMs();
+            ++stats_[port].rtuSamples;
+            stats_[port].queueWaitTotalMs += queueMs;
+            stats_[port].rtuResponseTotalMs += responseMs;
+            if (queueMs > stats_[port].queueWaitMaxMs)
+                stats_[port].queueWaitMaxMs = queueMs;
+            if (responseMs > stats_[port].rtuResponseMaxMs)
+                stats_[port].rtuResponseMaxMs = responseMs;
+        }
         const ModbusResultCode result = bridge.resultCode();
         if (result == MODBUS_RESULT_TIMEOUT || result == MODBUS_RESULT_EXPIRED)
             ++stats_[port].timeouts;
