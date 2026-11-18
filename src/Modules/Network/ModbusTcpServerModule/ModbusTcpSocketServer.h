@@ -63,6 +63,7 @@ public:
                 } else {
                     clients_[slot] = incoming;
                     lastReadProgressMs_[slot] = nowMs;
+                    lastConnectionCheckMs_[slot] = nowMs;
                     stats_[port].activeClients = sessions_.active(port);
                     if (stats_[port].activeClients > stats_[port].maxActiveClients)
                         stats_[port].maxActiveClients = stats_[port].activeClients;
@@ -73,7 +74,15 @@ public:
             const uint8_t port = slot / kClientsPerPort;
             WiFiClient& client = clients_[slot];
             if (!sessions_.occupied(slot)) continue;
-            if (!client || !client.connected()) { close_(slot); continue; }
+            // Polling connected() for every slot every 10 ms invokes a
+            // MSG_PEEK socket read even when clients are completely idle.
+            // The actual reads/sends below detect disconnects immediately;
+            // check persistent sessions at a lower rate to save lwIP work.
+            if (client.fd() < 0) { close_(slot); continue; }
+            if (uint32_t(nowMs - lastConnectionCheckMs_[slot]) >= kConnectionCheckMs) {
+                lastConnectionCheckMs_[slot] = nowMs;
+                if (!client.connected()) { close_(slot); continue; }
+            }
             // A peer may hold a scarce per-port slot by sending only part
             // of an MBAP frame. Close incomplete frames with no progress,
             // but preserve normal long-lived idle Modbus TCP connections.
@@ -147,19 +156,41 @@ public:
                 writing_[slot] = false;
             }
             if (bridge.state() != BridgeSlot::State::Idle) continue;
-            // Read a bounded number of bytes per tick so other Flow.io tasks
-            // and connections are not starved by a chatty TCP client.
-            for (uint16_t n = 0; n < ModbusTcpAdu::kMaxAdu && client.available() > 0; ++n) {
-                const int byte = client.read();
-                if (byte < 0) break;
-                lastReadProgressMs_[slot] = nowMs;
-                const uint8_t b = uint8_t(byte);
-                size_t consumed = 0U;
-                const auto status = sessions_.feed(slot, &b, 1U, consumed);
-                if (status == TcpSessions::FeedResult::Invalid) {
-                    close_(slot); break;
+            // One bounded, nonblocking recv per active socket per tick.
+            // Previously, available() performed a lwIP FIONREAD ioctl for
+            // EVERY byte of the Modbus ADU (up to 260 calls/connection),
+            // starving HTTP and ICMP handling under sustained traffic.
+            //
+            // Read only up to the exact current MBAP/ADU boundary: bytes
+            // from the next pipelined TCP request stay in the socket until
+            // this request is answered through the shared RS485 scheduler.
+            const size_t needed = sessions_.bytesNeeded(slot);
+            if (!needed) continue;
+            uint8_t input[kMaxRxBytesPerTick]{};
+            const size_t readLength = needed < sizeof(input) ? needed : sizeof(input);
+            const int received = ::recv(client.fd(), input, readLength, MSG_DONTWAIT);
+            if (received == 0) {
+                // Peer orderly shutdown.
+                close_(slot);
+                continue;
+            }
+            if (received < 0) {
+                if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                    ++stats_[port].rxErrors;
+                    close_(slot);
                 }
-                if (status != TcpSessions::FeedResult::Complete) continue;
+                continue;
+            }
+            lastReadProgressMs_[slot] = nowMs;
+            stats_[port].tcpBytesReceived += uint32_t(received);
+            size_t consumed = 0U;
+            const auto status = sessions_.feed(slot, input, size_t(received), consumed);
+            if (status == TcpSessions::FeedResult::Invalid ||
+                consumed != size_t(received)) {
+                close_(slot);
+                continue;
+            }
+            if (status != TcpSessions::FeedResult::Complete) continue;
                 ModbusTcpAdu::Request request{};
                 if (!sessions_.request(slot, request)) {
                     ModbusTcpAdu::Request header{};
@@ -193,8 +224,8 @@ public:
                     bridge.reject(request, configs_[port].errorMode,
                                   MODBUS_RESULT_INVALID_ARGUMENT, nowMs);
                 }
-                break; // one outstanding request per connection
-            }
+            // Exactly one request outstanding per connection. The next
+            // pipelined ADU remains buffered by lwIP until the reply.
         }
     }
 
@@ -223,6 +254,8 @@ private:
             ++stats_[port].exceptionsSent;
     }
     static constexpr size_t kMaxTxBytesPerTick = 128U;
+    static constexpr size_t kMaxRxBytesPerTick = 64U;
+    static constexpr uint32_t kConnectionCheckMs = 250U;
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     static constexpr uint32_t kPartialFrameTimeoutMs = 10000U;
     void close_(uint8_t slot) {
@@ -233,6 +266,7 @@ private:
         writing_[slot] = false;
         lastWriteProgressMs_[slot] = 0U;
         lastReadProgressMs_[slot] = 0U;
+        lastConnectionCheckMs_[slot] = 0U;
         const uint8_t port = slot / kClientsPerPort;
         stats_[port].activeClients = sessions_.active(port);
     }
@@ -245,6 +279,7 @@ private:
     size_t sent_[kMaxClients]{};
     uint32_t lastWriteProgressMs_[kMaxClients]{};
     uint32_t lastReadProgressMs_[kMaxClients]{};
+    uint32_t lastConnectionCheckMs_[kMaxClients]{};
     bool writing_[kMaxClients]{};
     const ModbusMasterService* service_ = nullptr;
     ResolveLine resolver_ = nullptr;
