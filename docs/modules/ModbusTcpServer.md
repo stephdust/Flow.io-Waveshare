@@ -34,6 +34,45 @@ manuellement** pour appliquer une modification aux listeners actifs. Ne pas
 confondre l'état configuré publié sur MQTT avec l'état de fonctionnement actif
 avant redémarrage.
 
+## Correction du retour TCP et contrôle après flash
+
+Le serveur répond via une écriture `send(..., MSG_DONTWAIT)` limitée à
+128 octets par tour. Ne jamais utiliser `WiFiClient::availableForWrite()`
+comme condition : la classe `NetworkClient` du framework Arduino-ESP32
+n'implémente pas cette méthode, qui retourne toujours zéro par défaut.
+
+Tester **le port 502 uniquement** tant que 503 et 504 sont désactivés :
+
+```sh
+python3 scripts/tests/modbus_tcp_load.py --host 192.168.1.71 \
+  --target 502:17:500:28:3 --requests 5 --timeout 10
+```
+
+Remplacer `17`, `500`, `28` si l'équipement sélectionné n'accepte pas
+ce bloc. En mode « Équipement Flow.io », le serveur conserve dans la
+réponse TCP l'Unit ID demandé mais utilise sur RS485 l'adresse **fixe**
+de l'équipement sélectionné, visible dans le message MQTT enrichi
+(`rtu_unit_id`, `device_label`, `serial_baud_effective`).
+En mode manuel, `rtu_unit_id=0` dans ces métadonnées signifie que
+l'Unit ID du client TCP est utilisé pour les requêtes.
+
+Dans **Network → Modbus TCP → TCP 502**, choisir « Exception Modbus »
+pour faciliter le diagnostic et **redémarrer Flow.io** avant de tester :
+les changements Config Store ne sont pas appliqués aux listeners existants.
+Le JSON `GET /api/modbus/ports` précise désormais `active_error_mode`,
+`pending_restart` et, dans `stats`, `resolver_failures`,
+`tx_wouldblock`, `tx_errors`, `tcp_bytes_sent`, `requests`,
+`responses`, `exceptions` et `timeouts`.
+
+Pour identifier rapidement la phase en défaut après quelques requêtes :
+- `requests=0` : requêtes TCP non décodées ou non reçues.
+- `resolver_failures>0` : équipement Flow.io introuvable / profil série
+  invalide (vérifier `device_label`, `device_id`, `rtu_unit_id`).
+- `requests>0` et `tcp_bytes_sent=0` : aucune réponse envoyée.
+- `tx_errors>0` : erreur d'écriture socket.
+- `tcp_bytes_sent>0` : le code a transmis des octets à lwIP ; vérifier
+  ensuite l'application cliente si elle ne les voit pas.
+
 ## Périmètre
 
 Le module `ModbusTcpServerModule` expose trois ports TCP fixes **502, 503 et 504**,
@@ -127,5 +166,5 @@ du timeout configuré pour chaque port et des fonctions d'écriture FC06/FC16
 - `test/host/modbus_tcp_sessions.cpp` : six sessions, trames partielles,
   admission de deux clients maximum par port.
 
-Le script `scripts/tests/modbus_tcp_load.py` utilise uniquement la bibliothèque
+Le script `scripts/tests/modbus_tcp_load.py` accepte désormais de 1 à 3 ports activés et utilise uniquement la bibliothèque
 standard de Python 3 ; il ne nécessite ni pymodbus ni Home Assistant.
