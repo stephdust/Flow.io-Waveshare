@@ -489,6 +489,46 @@ void communicationRecoveryBackoff() {
     driver.tick(now + 1000, true); assert(bus.requests.size() == recovered + 1);
 }
 
+
+void aquaGemWarmupAndNearSpeedReadback() {
+    PoolDriverConfig config;
+    assert(applyPoolSerialProfile(PoolSerialModel::AquaGem, config));
+    Bus bus; SerialDeviceDriver driver;
+    assert(driver.begin(config, nullptr, &bus.service, 1));
+
+    // The physical pump is at 1650 RPM. Flow.io asks for 1670 RPM, a
+    // difference smaller than the measured-speed tolerance. Nothing may
+    // time out before the 60-second power-on hold has ended.
+    driver.applyTarget({true, 1670}, 1);
+    size_t handled = 0;
+    unsigned writes = 0;
+    uint16_t lastWritten = 0;
+    for (uint32_t now = 100; now <= 63000; now += 100) {
+        if (handled < bus.requests.size()) {
+            const ModbusRequest& request = bus.requests[handled++];
+            if (request.operation == RegisterOperation::WriteSingle) {
+                ++writes;
+                lastWritten = request.values[0];
+                bus.reply();
+            } else {
+                bus.reply(1650);
+                bus.response.aquaGem = {true, 0, 1, 1650};
+            }
+        }
+        driver.tick(now, true);
+        if (now < 60200) {
+            assert(writes == 0);
+            assert(driver.readState().phase != PoolCommandPhase::Expired);
+        }
+    }
+    assert(writes == 1 && lastWritten == 1670);
+    assert(driver.readState().phase == PoolCommandPhase::Applied);
+    assert(driver.readState().applied.setpoint == 1670);
+    assert(driver.readState().observed.setpoint == 1650);
+    // The physical measurement is not incorrectly substituted for the
+    // accepted requested speed.
+}
+
 void delayedPumpApplication() {
     PoolDriverConfig config;
     assert(applyPoolSerialProfile(PoolSerialModel::AquaGem, config));
@@ -689,6 +729,7 @@ int main() {
     wrongHeatModeNotConfirmed();
     heatPumpEcoRestartAndElectricalTelemetry();
     delayedPumpApplication();
+    aquaGemWarmupAndNearSpeedReadback();
     stoppedSeparateSetpointMustConverge();
     communicationRecoveryBackoff();
     confirmationFailureAndReplacement();

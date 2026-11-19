@@ -37,10 +37,15 @@ interverrouillages de Flow.io restent prioritaires sur les commandes externes.
   matériel indépendant de power-on n'est disponible ici.
 - Pendant cette garde, les lectures sont permises ; les commandes Flow.io
   restent en attente. Si deux commandes arrivent, la plus récente remplace
-  la précédente.
+  la précédente. Le timeout de livraison de 15 s ne démarre **qu'après**
+  la garde de 60 s, jamais pendant celle-ci.
 - Le protocole remonte des RPM **mesurés**, non une consigne distincte.
   Le logiciel ne peut donc pas connaître avec certitude la consigne exacte
-  saisie sur l'afficheur. L'adoption de la vitesse est une estimation :
+  saisie sur l'afficheur. Après ACK et retour d'état marche confirmé, une
+  tolérance de 75 RPM permet de confirmer approximativement l'application
+  d'une petite correction (par exemple 1650 RPM lus pour 1670 RPM demandés).
+  L'écran continue d'afficher la vitesse mesurée réelle et non une fausse
+  valeur de 1670 RPM. L'adoption de la vitesse est une estimation :
   quantification par 50 RPM et stabilité continue de 15 s, avec un écart
   minimal de 75 RPM. Aucune adoption de la vitesse pendant la rampe.
 - L'état marche/arrêt provient du statut AquaGem et peut être synchronisé

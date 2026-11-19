@@ -72,6 +72,9 @@ private:
     static constexpr uint32_t DeliveryBudgetMs = 15000;
     // AquaGem accepts RS485 setpoints only after its power-on warmup.
     static constexpr uint32_t AquaGemPowerOnDelayMs = 60000;
+    // AquaGem exposes measured speed only; do not require 1-RPM convergence
+    // to acknowledge a command when the running state and write ACK match.
+    static constexpr float AquaGemFeedbackToleranceRpm = 75.0f;
     bool runVerified_ = false;
     bool commandConfirmed_ = false;
     bool aquaGemFirstRead_ = false;

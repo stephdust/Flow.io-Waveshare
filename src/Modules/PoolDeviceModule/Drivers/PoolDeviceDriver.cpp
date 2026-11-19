@@ -468,8 +468,14 @@ bool SerialDeviceDriver::observedTargetReached_() const
     if (!state_.applied.running && serial.control == PoolSerialControl::SetpointOrStop) return true;
     // Compare with the normalized wire target, within the feedback register's
     // resolution. An acknowledgement or an old startup RPM is not convergence.
-    return std::fabs(double(state_.observed.setpoint) - state_.applied.setpoint) <=
-        double(serial.feedbackUnitsPerRaw) * 0.5;
+    // AquaGem reports the physical RPM, not a separate register containing
+    // the requested speed. Small deviations (e.g. 1650 measured for a 1670
+    // request) must not create a false command timeout after an acknowledged
+    // write. Keep exact wire-resolution matching for other devices.
+    const double tolerance = serial.model == PoolSerialModel::AquaGem
+        ? double(AquaGemFeedbackToleranceRpm)
+        : double(serial.feedbackUnitsPerRaw) * 0.5;
+    return std::fabs(double(state_.observed.setpoint) - state_.applied.setpoint) <= tolerance;
 }
 
 void SerialDeviceDriver::reconcileWrite_(uint32_t now)
@@ -680,8 +686,11 @@ void SerialDeviceDriver::tick(uint32_t now, bool enabled)
         deliveryStarted_ = true;
         deliveryAt_ = now;
     }
-    if (enabled && target_.running && !runVerified_ &&
-        now - deliveryAt_ >= DeliveryBudgetMs && !deliveryExpired_) {
+    // The delivery clock starts only when the device is permitted to accept
+    // a write. In particular, AquaGem's 60-second power-on hold must never
+    // consume the ordinary 15-second command timeout before any RS485 write.
+    if (enabled && deliveryStarted_ && target_.running && !runVerified_ &&
+        uint32_t(now - deliveryAt_) >= DeliveryBudgetMs && !deliveryExpired_) {
         if (transaction_ != MODBUS_TRANSACTION_INVALID) bus_->cancelOwner(bus_->ctx, owner_);
         transaction_ = MODBUS_TRANSACTION_INVALID;
         operation_ = confirmation_ = uncertainWrite_ = reconnectRead_ = Operation::None;
