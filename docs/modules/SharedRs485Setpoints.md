@@ -5,8 +5,14 @@ interverrouillages de Flow.io restent prioritaires sur les commandes externes.
 
 ## Politique de commande
 
-- Au démarrage, Flow.io transmet une fois sa consigne configurée. Un état de
-  commande non confirmé ne doit pas être remplacé par un ancien feedback.
+- Au démarrage, Flow.io applique la consigne configurée. Tant que cette
+  demande initiale n'a pas été **confirmée par lecture**, elle reste
+  prioritaire et peut être retentée à cadence limitée si la dépendance
+  RS485/interverrouillage devient disponible. Une demande rejetée par le
+  service est également retentée. Aucune écriture ne doit contourner les
+  interverrouillages de sécurité.
+- Après confirmation, Flow.io ne cherche plus à réimposer son ancienne
+  consigne lorsqu'un afficheur externe prend la main.
 - Après confirmation, une modification physique constatée dans des lectures
   **fraîches et valides** est adoptée comme état désiré, sans écriture de
   correction. Une nouvelle demande Flow.io reprend la main.

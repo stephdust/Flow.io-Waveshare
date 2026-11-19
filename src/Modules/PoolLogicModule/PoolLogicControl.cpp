@@ -949,7 +949,7 @@ void PoolLogicModule::applyDeviceControl_(uint8_t deviceSlot,
         info.available && info.guidedOn != desired;
     const bool retryDue = (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U;
     const bool startupRetry = info.sharedRs485 && info.serialStartupPending &&
-        !forced && fsm.known && fsm.on != desired && retryDue;
+        !forced && (!fsm.known || fsm.on != desired) && retryDue;
     const bool rejectedRetry = info.sharedRs485 &&
         fsm.rejectedSubmissionPending && retryDue && (!forced || !desired);
     const bool safetyRetry = info.sharedRs485 && info.blockReason != 0 &&
