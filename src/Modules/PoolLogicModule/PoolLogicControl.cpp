@@ -944,8 +944,12 @@ void PoolLogicModule::applyDeviceControl_(uint8_t deviceSlot,
     // reassert it over a later local device action.
     const bool guidedMismatch = !info.sharedRs485 && info.available && info.guidedOn != desired;
     const bool forced = info.available && info.forced;
-    const bool needRetry = !info.sharedRs485 && !forced && fsm.known &&
-        fsm.on != desired && (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U;
+    const bool safetyRetry = info.sharedRs485 && info.blockReason != 0 &&
+        !desired && fsm.known && fsm.on &&
+        (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U;
+    const bool needRetry = safetyRetry ||
+        (!info.sharedRs485 && !forced && fsm.known &&
+         fsm.on != desired && (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U);
 
     if (desiredChanged || guidedMismatch || needRetry) {
         if (writeDeviceDesired_(deviceSlot, desired)) {

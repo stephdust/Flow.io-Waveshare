@@ -154,7 +154,8 @@ void PoolDeviceModule::adoptSerialFeedback_(uint8_t slot, uint32_t nowMs)
         !s.driverConfig.serial.hasFeedback || !s.feedback.observedValid ||
         !s.feedback.hasObservation || !s.revision ||
         s.feedback.appliedRevision != s.revision ||
-        s.feedback.phase != PoolCommandPhase::Applied ||
+        (s.feedback.phase != PoolCommandPhase::Applied &&
+         s.feedback.phase != PoolCommandPhase::Expired) ||
         s.bootResumePending || s.blockReason != POOL_DEVICE_BLOCK_NONE ||
         poolFeedbackInhibitsRun(s.driverConfig.capabilities.kind, s.feedback)) return;
 

@@ -604,9 +604,13 @@ void SerialDeviceDriver::consume_(const ModbusResponse& r, uint32_t now)
             lastStatusWord_ = r.values[0];
             state_.observed.running = (r.values[0] & config_.serial.runningMask) != 0;
             if (config_.serial.model == PoolSerialModel::Polytropic) {
+                // A stopped PAC reports no meaningful mode bits; retain the
+                // last configured mode instead of silently selecting index 0.
+                state_.observed.mode = target_.mode;
                 const uint16_t modeBits = uint16_t(lastStatusWord_ & 0x0FU);
                 for (uint8_t mode = 0; mode < config_.serial.modes.count; ++mode) {
-                    if ((config_.serial.modes.options[mode].value & 0x0FU) == modeBits) {
+                    if (state_.observed.running &&
+                        (config_.serial.modes.options[mode].value & 0x0FU) == modeBits) {
                         state_.observed.mode = mode;
                         break;
                     }
