@@ -11061,6 +11061,9 @@
     function cfgPathLabel(pathValue) {
       const cleanPath = nettoyerNomFlowCfg(pathValue);
       if (!cleanPath) return 'Racine';
+      // Display-only label: keep the original Config Store paths for all API calls.
+      const modbusPort = cleanPath.match(/^network\/modbus-tcp\/(502|503|504)$/i);
+      if (modbusPort) return 'Port ' + modbusPort[1];
       const meta = configPathMeta(cleanPath);
       if (meta && typeof meta.label === 'string' && meta.label.length > 0) {
         return meta.label;
