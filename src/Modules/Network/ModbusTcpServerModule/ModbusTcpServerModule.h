@@ -89,13 +89,14 @@ public:
             (unsigned long)queue.crcErrors, (unsigned long)queue.timeouts);
         for (uint8_t i = 0; i < ModbusTcpServer::kPortCount; ++i) {
             const auto& p = server_.stats(i);
-            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu idle_reclaimed=%lu resolver_fail=%lu rx_bytes=%lu rx_errors=%lu tx_bytes=%lu tx_retry=%lu tx_errors=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
+            Serial.printf("[MODBUS-TCP] port=%u clients=%u peak_clients=%u requests=%lu replies=%lu exceptions=%lu silent=%lu crc=%lu timeouts=%lu rejected=%lu idle_reclaimed=%lu peer_closed=%lu ka_setup_errors=%lu resolver_fail=%lu rx_bytes=%lu rx_errors=%lu tx_bytes=%lu tx_retry=%lu tx_errors=%lu tcp_max_ms=%lu rtu_queue_max_ms=%lu rtu_response_max_ms=%lu\n",
                 (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
                 (unsigned)p.maxActiveClients, (unsigned long)p.received,
                 (unsigned long)p.completed, (unsigned long)p.exceptionsSent,
                 (unsigned long)p.silentFailures, (unsigned long)p.crcErrors,
                 (unsigned long)p.timeouts, (unsigned long)p.connectionsRejected,
-                (unsigned long)p.idleReclaimed, (unsigned long)p.resolverFailures,
+                (unsigned long)p.idleReclaimed, (unsigned long)p.peerClosed,
+                (unsigned long)p.keepaliveSetupFailures, (unsigned long)p.resolverFailures,
                 (unsigned long)p.tcpBytesReceived, (unsigned long)p.rxErrors,
                 (unsigned long)p.tcpBytesSent, (unsigned long)p.txWouldBlock, (unsigned long)p.txErrors,
                 (unsigned long)p.responseTimeMaxMs, (unsigned long)p.queueWaitMaxMs,

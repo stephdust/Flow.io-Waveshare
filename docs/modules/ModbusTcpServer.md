@@ -196,3 +196,48 @@ du timeout configuré pour chaque port et des fonctions d'écriture FC06/FC16
 
 Le script `scripts/tests/modbus_tcp_load.py` accepte désormais de 1 à 3 ports activés et utilise uniquement la bibliothèque
 standard de Python 3 ; il ne nécessite ni pymodbus ni Home Assistant.
+
+
+## Libération des sessions TCP et clients fantômes
+
+Flow.io distingue désormais les fermetures reçues et les disparitions
+brutales de clients :
+
+- **FIN/RST explicite** : contrôle non bloquant `recv(MSG_PEEK |
+  MSG_DONTWAIT)` toutes les **250 ms**, **avant** d'accepter une nouvelle
+  connexion. Un FIN d'une session libre libère immédiatement le slot.
+  Si une transaction Modbus est encore en cours lors d'une demi-fermeture
+  TCP, Flow.io termine sa réponse en cours avant de libérer le slot.
+- **Client disparu sans FIN/RST** (câble réseau retiré, redémarrage
+  brutal d'une passerelle) : les nouveaux sockets activent le keepalive
+  lwIP avec **10 s d'inactivité**, **5 s entre sondes** et **3 sondes**.
+  La détection n'est donc **pas instantanée** : elle dépend des délais
+  et du comportement TCP de lwIP et du réseau. Une connexion persistante
+  en bonne santé n'est pas fermée pour simple inactivité.
+- **Port saturé** : le mécanisme existant de récupération d'une session
+  inactive depuis 30 s reste un dernier recours, au maximum une session
+  récupérée par nouvelle connexion, jamais pendant une transaction en cours.
+
+Diagnostics ajoutés dans `GET /api/modbus/ports` et dans la ligne
+`[MODBUS-TCP]` : `peer_closed` compte les sessions libérées après
+détection de déconnexion TCP ; `keepalive_setup_failures` compte les
+échecs d'activation des options keepalive. Les compteurs préexistants
+`clients`, `idle_reclaimed` et `connections_rejected` restent disponibles.
+
+**Tests matériels :**
+1. Ouvrir deux clients persistants sur le port 502. Vérifier `clients=2`.
+2. Fermer proprement un client, vérifier `clients=1` et l'augmentation
+   de `peer_closed`, puis ouvrir un nouveau client sans attendre 30 s.
+3. Fermer les deux, vérifier `clients=0`. Refaire sur 503 et 504.
+4. Couper brutalement l'alimentation d'une passerelle cliente de test
+   sans fermeture FIN/RST. Surveiller la décroissance du nombre de clients
+   lorsque les sondes keepalive échouent ; distinguer la latence normale
+   d'expiration TCP d'une fuite définitive.
+5. Pendant une transaction RS485 valide, vérifier qu'une demi-fermeture TCP
+   ne coupe pas le travail du séquenceur avant la réponse.
+6. Comparer les compteurs réseau, les files d'attente RS485, la pile et
+   la RAM sous charge. Un `keepalive_setup_failures > 0` indique que les
+   délais précis de keepalive ne sont pas garantis.
+
+Ce correctif ne modifie ni les 2 connexions entrantes autorisées par port,
+ni le protocole RS485, ni les mécanismes de sécurité Polytropic/AquaGem.

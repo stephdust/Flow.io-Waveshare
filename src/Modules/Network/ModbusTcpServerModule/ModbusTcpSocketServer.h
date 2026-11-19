@@ -12,6 +12,7 @@
 #include <lwip/sockets.h>
 #include <errno.h>
 #include "ModbusTcpBridge.h"
+#include "ModbusTcpSocketHealth.h"
 #include "ModbusTcpSessions.h"
 
 namespace ModbusTcpServer {
@@ -52,6 +53,9 @@ public:
      */
     void tick(uint32_t nowMs) {
         if (!started_ || !service_) return;
+        // Reap closed sockets BEFORE admitting new clients: otherwise the
+        // first reconnection can be rejected despite a released peer.
+        probeClosedPeers_(nowMs);
         for (uint8_t port = 0; port < kPortCount; ++port) {
             if (!configs_[port].enabled) continue;
             WiFiClient incoming = servers_[port].accept();
@@ -64,6 +68,8 @@ public:
                     incoming.stop();
                 } else {
                     clients_[slot] = incoming;
+                    peerReadClosed_[slot] = false;
+                    configureKeepAlive_(slot);
                     lastReadProgressMs_[slot] = nowMs;
                     lastConnectionCheckMs_[slot] = nowMs;
                     stats_[port].activeClients = sessions_.active(port);
@@ -76,15 +82,10 @@ public:
             const uint8_t port = slot / kClientsPerPort;
             WiFiClient& client = clients_[slot];
             if (!sessions_.occupied(slot)) continue;
-            // Polling connected() for every slot every 10 ms invokes a
-            // MSG_PEEK socket read even when clients are completely idle.
-            // The actual reads/sends below detect disconnects immediately;
-            // check persistent sessions at a lower rate to save lwIP work.
-            if (client.fd() < 0) { close_(slot); continue; }
-            if (uint32_t(nowMs - lastConnectionCheckMs_[slot]) >= kConnectionCheckMs) {
-                lastConnectionCheckMs_[slot] = nowMs;
-                if (!client.connected()) { close_(slot); continue; }
-            }
+            // Peer liveness is tested by a bounded raw recv(MSG_PEEK)
+            // before admission. Avoid NetworkClient::connected(), which
+            // may not reliably mark orderly FIN as disconnected.
+            if (client.fd() < 0) { closePeer_(slot); continue; }
             // A peer may hold a scarce per-port slot by sending only part
             // of an MBAP frame. Close incomplete frames with no progress,
             // but preserve normal long-lived idle Modbus TCP connections.
@@ -158,6 +159,12 @@ public:
                 writing_[slot] = false;
             }
             if (bridge.state() != BridgeSlot::State::Idle) continue;
+            // Preserve the reply for a half-closed TCP peer, then release
+            // immediately after the in-flight Modbus transaction finishes.
+            if (canReleaseAfterReadClose(peerReadClosed_[slot], true, writing_[slot])) {
+                closePeer_(slot);
+                continue;
+            }
             // One bounded, nonblocking recv per active socket per tick.
             // Previously, available() performed a lwIP FIONREAD ioctl for
             // EVERY byte of the Modbus ADU (up to 260 calls/connection),
@@ -172,14 +179,14 @@ public:
             const size_t readLength = needed < sizeof(input) ? needed : sizeof(input);
             const int received = ::recv(client.fd(), input, readLength, MSG_DONTWAIT);
             if (received == 0) {
-                // Peer orderly shutdown.
-                close_(slot);
+                // FIN even if Arduino NetworkClient still reports connected.
+                closePeer_(slot);
                 continue;
             }
             if (received < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
                     ++stats_[port].rxErrors;
-                    close_(slot);
+                    closePeer_(slot);
                 }
                 continue;
             }
@@ -256,12 +263,73 @@ private:
     static constexpr size_t kMaxTxBytesPerTick = 128U;
     static constexpr size_t kMaxRxBytesPerTick = 64U;
     static constexpr uint32_t kConnectionCheckMs = 250U;
+    // A dead peer which never sent FIN/RST is detected by lwIP keepalive.
+    // Active clients are never evicted merely for being idle.
+    static constexpr int kKeepAliveIdleSec = 10;
+    static constexpr int kKeepAliveIntervalSec = 5;
+    static constexpr int kKeepAliveProbes = 3;
     // Wi-Fi/OTA reboot can orphan persistent TCP sockets without a FIN/RST.
     // Evict an idle slot only under admission pressure, never an in-flight
     // Modbus transaction. This does not run extra socket polls each tick.
     static constexpr uint32_t kIdleReclaimMs = 30000U;
     static constexpr uint32_t kWriteStallTimeoutMs = 5000U;
     static constexpr uint32_t kPartialFrameTimeoutMs = 10000U;
+    void configureKeepAlive_(uint8_t slot) {
+        const int fd = clients_[slot].fd();
+        if (fd < 0) return;
+        const int enable = 1;
+        // The socket options are supported by ESP-IDF's lwIP. Keep a
+        // diagnostic counter if the target framework rejects them.
+        bool configured = ::setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE,
+                                       &enable, sizeof(enable)) == 0;
+#if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL) && defined(TCP_KEEPCNT)
+        const int idle = kKeepAliveIdleSec;
+        const int interval = kKeepAliveIntervalSec;
+        const int probes = kKeepAliveProbes;
+        configured = (::setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE,
+                                   &idle, sizeof(idle)) == 0) && configured;
+        configured = (::setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL,
+                                   &interval, sizeof(interval)) == 0) && configured;
+        configured = (::setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT,
+                                   &probes, sizeof(probes)) == 0) && configured;
+#else
+        configured = false; // SO_KEEPALIVE still active with system defaults.
+#endif
+        if (!configured) ++stats_[slot / kClientsPerPort].keepaliveSetupFailures;
+    }
+
+    void closePeer_(uint8_t slot) {
+        ++stats_[slot / kClientsPerPort].peerClosed;
+        close_(slot);
+    }
+
+    void probeClosedPeers_(uint32_t nowMs) {
+        for (uint8_t slot = 0; slot < kMaxClients; ++slot) {
+            if (!sessions_.occupied(slot)) continue;
+            const uint8_t port = slot / kClientsPerPort;
+            const int fd = clients_[slot].fd();
+            if (fd < 0) { closePeer_(slot); continue; }
+            if (uint32_t(nowMs - lastConnectionCheckMs_[slot]) < kConnectionCheckMs)
+                continue;
+            lastConnectionCheckMs_[slot] = nowMs;
+            uint8_t byte = 0U;
+            // MSG_PEEK does not consume an MBAP byte from a pipelined frame.
+            // A nonblocking EOF (recv==0) means FIN, not an idle socket.
+            const int result = ::recv(fd, &byte, 1U, MSG_PEEK | MSG_DONTWAIT);
+            const auto state = classifySocketPeerProbe(result, errno);
+            if (state == SocketPeerHealth::Error) {
+                ++stats_[port].rxErrors;
+                closePeer_(slot);
+            } else if (state == SocketPeerHealth::ReadClosed) {
+                peerReadClosed_[slot] = true;
+                if (canReleaseAfterReadClose(peerReadClosed_[slot],
+                        bridges_[slot].state() == BridgeSlot::State::Idle,
+                        writing_[slot]))
+                    closePeer_(slot);
+            }
+        }
+    }
+
     bool reclaimIdleSession_(uint8_t port, uint32_t nowMs) {
         int8_t victim = -1;
         uint32_t oldestIdleMs = 0U;
@@ -292,6 +360,7 @@ private:
         lastWriteProgressMs_[slot] = 0U;
         lastReadProgressMs_[slot] = 0U;
         lastConnectionCheckMs_[slot] = 0U;
+        peerReadClosed_[slot] = false;
         const uint8_t port = slot / kClientsPerPort;
         stats_[port].activeClients = sessions_.active(port);
     }
@@ -305,6 +374,7 @@ private:
     uint32_t lastWriteProgressMs_[kMaxClients]{};
     uint32_t lastReadProgressMs_[kMaxClients]{};
     uint32_t lastConnectionCheckMs_[kMaxClients]{};
+    bool peerReadClosed_[kMaxClients]{};
     bool writing_[kMaxClients]{};
     const ModbusMasterService* service_ = nullptr;
     ResolveLine resolver_ = nullptr;
