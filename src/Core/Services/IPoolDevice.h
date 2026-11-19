@@ -36,6 +36,7 @@ struct PoolDeviceSvcMeta {
     IoId ioId = IO_ID_INVALID;
     PoolDeviceCapabilities capabilities{};
     bool driverReady = false;
+    bool serialHasReadback = false;
     bool guidedOn = false;
     PoolDeviceTarget guidedTarget{};
     PoolRunModes runModes{};

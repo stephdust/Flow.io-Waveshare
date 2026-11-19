@@ -147,6 +147,10 @@ private:
         PoolDeviceTarget effective{};
         PoolDeviceFeedback feedback{};
         uint32_t revision = 0;
+        uint32_t rs485LastObservationMs = 0;
+        uint32_t aquaStableSinceMs = 0;
+        float aquaStableRpm = 0.0f;
+        bool aquaStableValid = false;
         ActuatorControlState control{};
         ActuatorOverridePolicy overridePolicy{};
         TimedActuatorOverride overrideTimer;
@@ -351,6 +355,7 @@ private:
     DataStore* dataStore_ = nullptr;
     bool configurationSetpoint_(uint8_t slot, float& out) const;
     void syncConfigurationSetpoint_(uint8_t slot);
+    void adoptSerialFeedback_(uint8_t slot, uint32_t nowMs);
     const PoolConfigurationService* poolConfigurationSvc_ = nullptr;
     ConfigStore* cfgStore_ = nullptr;
     const ConfigStoreService* cfgSvc_ = nullptr;

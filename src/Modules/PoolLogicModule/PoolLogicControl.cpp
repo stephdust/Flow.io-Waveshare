@@ -671,6 +671,7 @@ PoolLogicModule::DeviceControlInfo PoolLogicModule::readDeviceControlInfo_(uint8
         poolSvc_->meta(poolSvc_->ctx, deviceSlot, &metadata) != POOLDEV_SVC_OK) return info;
     info.available = true;
     info.guidedOn = metadata.guidedOn;
+    info.sharedRs485 = metadata.serialHasReadback;
     info.forced = metadata.control.mode != ActuatorControlMode::Guided;
     info.enabled = metadata.enabled != 0;
     info.unit = metadata.capabilities.unit;
@@ -938,9 +939,13 @@ void PoolLogicModule::applyDeviceControl_(uint8_t deviceSlot,
     // When the actual state does not follow the requested state, retry at a
     // bounded cadence instead of spamming the downstream pool-device service.
     const auto info = readDeviceControlInfo_(deviceSlot);
-    const bool guidedMismatch = info.available && info.guidedOn != desired;
+    // RS485 devices with confirmed readback are shared with their physical
+    // display. An unchanged automation decision is NOT a new command; do not
+    // reassert it over a later local device action.
+    const bool guidedMismatch = !info.sharedRs485 && info.available && info.guidedOn != desired;
     const bool forced = info.available && info.forced;
-    const bool needRetry = !forced && fsm.known && fsm.on != desired && (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U;
+    const bool needRetry = !info.sharedRs485 && !forced && fsm.known &&
+        fsm.on != desired && (uint32_t)(nowMs - fsm.lastCmdMs) >= 5000U;
 
     if (desiredChanged || guidedMismatch || needRetry) {
         if (writeDeviceDesired_(deviceSlot, desired)) {

@@ -516,6 +516,7 @@ private:
     bool readDeviceActualOn_(uint8_t deviceSlot, bool& onOut) const;
     struct DeviceControlInfo {
         bool available = false;
+        bool sharedRs485 = false;
         bool guidedOn = false;
         bool forced = false;
         bool enabled = false;
