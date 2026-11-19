@@ -13,7 +13,7 @@ class PoolDeviceMetaSnapshotTests(unittest.TestCase):
     def test_snapshot_is_equivalent_to_individual_metadata(self):
         production = (ROOT / "src/Modules/PoolDeviceModule/PoolDeviceControl.cpp").read_text()
         harness = (ROOT / "test/host/pool_device_meta_snapshot.cpp").read_text()
-        definitions = "\\n".join(
+        definitions = "\n".join(
             function(production, signature) for signature in (
                 "void PoolDeviceModule::fillMetaLocked_",
                 "PoolDeviceSvcStatus PoolDeviceModule::svcMetaImpl_",
