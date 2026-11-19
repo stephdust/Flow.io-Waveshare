@@ -104,6 +104,9 @@ private:
         bool lastDesired = false;
         uint32_t stateSinceMs = 0;
         uint32_t lastCmdMs = 0;
+        // The service can reject ON while dependencies initialize. Retry
+        // rejected (never accepted) commands, not confirmed RS485 targets.
+        bool rejectedSubmissionPending = false;
     };
 
     // Edge-oriented trace of a boolean mode: records when the value last
@@ -517,6 +520,7 @@ private:
     struct DeviceControlInfo {
         bool available = false;
         bool sharedRs485 = false;
+        bool serialStartupPending = false;
         bool guidedOn = false;
         bool forced = false;
         bool enabled = false;

@@ -84,6 +84,8 @@ PoolDeviceSvcStatus PoolDeviceModule::svcMetaImpl_(uint8_t slot, PoolDeviceSvcMe
     outMeta->driverReady = s.driverReady;
     outMeta->serialHasReadback = s.driverConfig.capabilities.kind == PoolControlKind::Rs485 &&
         s.driverConfig.serial.hasFeedback;
+    outMeta->serialStartupPending =
+        outMeta->serialHasReadback && !s.rs485BootCommandConfirmed;
     outMeta->guidedOn = s.desiredOn;
     outMeta->guidedTarget = s.desired;
     outMeta->runModes = s.driverConfig.serial.modes;
@@ -153,6 +155,7 @@ void PoolDeviceModule::adoptSerialFeedback_(uint8_t slot, uint32_t nowMs)
     if (s.driverConfig.capabilities.kind != PoolControlKind::Rs485 ||
         !s.driverConfig.serial.hasFeedback || !s.feedback.observedValid ||
         !s.feedback.hasObservation || !s.revision ||
+        !s.rs485BootCommandConfirmed ||
         (s.feedback.phase != PoolCommandPhase::Expired &&
          (s.feedback.phase != PoolCommandPhase::Applied ||
           s.feedback.appliedRevision != s.revision)) ||
@@ -819,6 +822,18 @@ void PoolDeviceModule::tickDevices_(uint32_t nowMs, bool allowPersist)
             }
             s.driver.get().tick(nowMs, writesEnabled_);
             s.feedback = s.driver.get().readState();
+            if (serial && !s.rs485BootCommandConfirmed &&
+                s.driverConfig.serial.hasFeedback && s.feedback.observedValid &&
+                s.feedback.phase == PoolCommandPhase::Applied &&
+                s.feedback.appliedRevision == s.revision &&
+                s.effective.running == s.desired.running &&
+                s.effective.setpoint == s.desired.setpoint &&
+                s.effective.mode == s.desired.mode) {
+                s.rs485BootCommandConfirmed = true;
+                LOGI("RS485 startup command confirmed slot=%u revision=%lu run=%u",
+                     (unsigned)i, (unsigned long)s.revision,
+                     s.desired.running ? 1U : 0U);
+            }
             adoptSerialFeedback_(i, nowMs);
             if (s.feedback.error && !s.feedback.communicationDegraded && s.blockReason == POOL_DEVICE_BLOCK_NONE) s.blockReason = POOL_DEVICE_BLOCK_IO_ERROR;
         }

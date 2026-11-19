@@ -148,6 +148,9 @@ private:
         PoolDeviceFeedback feedback{};
         uint32_t revision = 0;
         uint32_t rs485LastObservationMs = 0;
+        // A verified initial request is required before adopting local-panel
+        // updates. Safety-blocked OFF readbacks must never cancel a boot ON.
+        bool rs485BootCommandConfirmed = false;
         uint32_t aquaStableSinceMs = 0;
         float aquaStableRpm = 0.0f;
         bool aquaStableValid = false;
