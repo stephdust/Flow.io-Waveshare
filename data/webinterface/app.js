@@ -7383,6 +7383,8 @@
       return { element: cell, update };
     }
 
+    let runtimeEquipmentOptionsCache = null;
+
     async function openRuntimeActionDialog(entry, config, trigger) {
       if (runtimeActionDialog || runtimeActionBusyKey) return;
       const actions = Array.isArray(entry.actions) ? entry.actions : [];
@@ -7490,6 +7492,7 @@
       let tableRefreshPromise = null;
       let tableReadFailed = false;
       let commandCompletion = Promise.resolve();
+      const equipmentCacheKey = equipmentLayout && config.optionsUrl === '/api/runtime/pooldevice_options';
       const eligible = (target) => !config.eligibleKey || runtimeCounterValue(target, config.eligibleKey) === true;
       const automatic = (target) => !!config.automaticKey && runtimeCounterValue(target, config.automaticKey) === true;
       runtimeActionDialogRefresh = {
@@ -8272,6 +8275,9 @@
             throw new Error(config.errorText || tr('dashboard.action.targetsError', 'Liste des équipements indisponible'));
           }
           targets = data.options;
+          if (equipmentCacheKey) runtimeEquipmentOptionsCache = {
+            options: data.options, time: Date.now()
+          };
           if (interaction) interaction.selection = selection;
           renderTable(updatedSlots, interaction);
           if (tableReadFailed) {
@@ -8362,6 +8368,14 @@
       dialog.showModal();
       close.focus();
       feedback.textContent = config.loadingText || tr('dashboard.action.loadingTargets', 'Chargement des équipements…');
+      if (equipmentCacheKey && runtimeEquipmentOptionsCache &&
+          Date.now() - runtimeEquipmentOptionsCache.time < 60000) {
+        // Render the last successful snapshot immediately when reopening.
+        // A fresh GET is still required before user controls are enabled.
+        targets = runtimeEquipmentOptionsCache.options.map(item => ({ ...item }));
+        renderTable();
+        feedback.textContent = tr('equipment.refreshing', 'Actualisation des équipements…');
+      }
       if (await refreshTable() && targets.length) feedback.textContent = '';
     }
 

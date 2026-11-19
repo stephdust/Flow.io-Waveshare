@@ -85,4 +85,8 @@ struct PoolDeviceService {
     PoolDeviceSvcStatus (*setManualRunning)(void* ctx, uint8_t slot, uint8_t on) = nullptr;
     /** Atomically change running/setpoint while preserving the currently selected operating mode. */
     PoolDeviceSvcStatus (*setRunningAtSetpoint)(void* ctx, uint8_t slot, uint8_t on, float setpoint) = nullptr;
+    /** Read all registered metadata with a single lock acquisition.
+     *  The caller supplies capacity entries; count is set to zero on failure. */
+    PoolDeviceSvcStatus (*snapshotMeta)(void* ctx, PoolDeviceSvcMeta* out,
+                                        uint8_t capacity, uint8_t* count) = nullptr;
 };

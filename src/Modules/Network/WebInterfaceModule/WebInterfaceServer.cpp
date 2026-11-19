@@ -7622,17 +7622,33 @@ void WebInterfaceModule::startServer_()
         }
         auto& devices = *deviceStorage;
         uint8_t count = 0;
-        for (uint8_t slot = 0; slot < POOL_DEVICE_MAX; ++slot) {
-            PoolDeviceSvcMeta meta{};
-            const PoolDeviceSvcStatus status = poolSvc->meta(poolSvc->ctx, slot, &meta);
-            if (status == POOLDEV_SVC_ERR_UNKNOWN_SLOT) continue;
-            if (status != POOLDEV_SVC_OK) {
+        if (poolSvc->snapshotMeta) {
+            // A single bounded mutex acquisition instead of 16 calls from
+            // the network task, each of which could wait for the RS485 loop.
+            if (poolSvc->snapshotMeta(poolSvc->ctx, devices.data(), POOL_DEVICE_MAX, &count)
+                    != POOLDEV_SVC_OK) {
                 request->send(503, "application/json",
-                              "{\"ok\":false,\"err\":{\"code\":\"NotReady\",\"where\":\"runtime.pooldevice_options.meta\"}}");
+                              "{\"ok\":false,\"err\":{\"code\":\"NotReady\",\"where\":\"runtime.pooldevice_options.snapshot\"}}");
                 return;
             }
-            if (meta.used) devices[count++] = meta;
+        } else {
+            // Compatibility with other PoolDeviceService implementations.
+            for (uint8_t slot = 0; slot < POOL_DEVICE_MAX; ++slot) {
+                PoolDeviceSvcMeta meta{};
+                const PoolDeviceSvcStatus status = poolSvc->meta(poolSvc->ctx, slot, &meta);
+                if (status == POOLDEV_SVC_ERR_UNKNOWN_SLOT) continue;
+                if (status != POOLDEV_SVC_OK) {
+                    request->send(503, "application/json",
+                                  "{\"ok\":false,\"err\":{\"code\":\"NotReady\",\"where\":\"runtime.pooldevice_options.meta\"}}");
+                    return;
+                }
+                if (meta.used) devices[count++] = meta;
+            }
         }
+        // The write permission is the same for the whole response and must
+        // not trigger an extra locked service call for each displayed slot.
+        const bool writesEnabled = poolSvc->writesEnabled &&
+            poolSvc->writesEnabled(poolSvc->ctx);
 
         SpiRamJsonDocument deviceDoc(4096);
         if (deviceDoc.capacity() < 4096U) {
@@ -7653,8 +7669,8 @@ void WebInterfaceModule::startServer_()
             deviceDoc["domainSlot"] = devices[idx].commandSlot;
             PoolDeviceRuntimeStateEntry state{};
             const bool stateAvailable = dataStore_ && poolDeviceRuntimeState(*dataStore_, devices[idx].slot, state);
-            deviceDoc["controllable"] = stateAvailable && devices[idx].enabled && devices[idx].driverReady &&
-                poolSvc->writesEnabled && poolSvc->writesEnabled(poolSvc->ctx);
+            deviceDoc["controllable"] = stateAvailable && devices[idx].enabled &&
+                devices[idx].driverReady && writesEnabled;
             auto outputs = deviceDoc.createNestedArray("outputs");
             for (uint8_t n = 0; n < devices[idx].outputCount; ++n) outputs.add(devices[idx].outputs[n]);
             deviceDoc["kind"] = uint8_t(devices[idx].capabilities.kind);

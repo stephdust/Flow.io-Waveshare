@@ -58,20 +58,10 @@ uint8_t PoolDeviceModule::activeCount_() const
     return count;
 }
 
-PoolDeviceSvcStatus PoolDeviceModule::svcMetaImpl_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const
+void PoolDeviceModule::fillMetaLocked_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const
 {
-    if (!outMeta) return POOLDEV_SVC_ERR_INVALID_ARG;
-    if (!lockState_()) return POOLDEV_SVC_ERR_NOT_READY;
-    if (slot >= POOL_DEVICE_MAX) {
-        unlockState_();
-        return POOLDEV_SVC_ERR_UNKNOWN_SLOT;
-    }
+    // Caller holds stateMutex_. This helper never waits or allocates.
     const PoolDeviceSlot& s = slots_[slot];
-    if (!s.used) {
-        unlockState_();
-        return POOLDEV_SVC_ERR_UNKNOWN_SLOT;
-    }
-
     *outMeta = PoolDeviceSvcMeta{};
     outMeta->slot = slot;
     outMeta->used = 1;
@@ -100,7 +90,35 @@ PoolDeviceSvcStatus PoolDeviceModule::svcMetaImpl_(uint8_t slot, PoolDeviceSvcMe
     outMeta->runtimeId[sizeof(outMeta->runtimeId) - 1] = '\0';
     strncpy(outMeta->label, s.def.label, sizeof(outMeta->label) - 1);
     outMeta->label[sizeof(outMeta->label) - 1] = '\0';
+}
+
+PoolDeviceSvcStatus PoolDeviceModule::svcMetaImpl_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const
+{
+    if (!outMeta) return POOLDEV_SVC_ERR_INVALID_ARG;
+    if (!lockState_()) return POOLDEV_SVC_ERR_NOT_READY;
+    if (slot >= POOL_DEVICE_MAX || !slots_[slot].used) {
+        unlockState_();
+        return POOLDEV_SVC_ERR_UNKNOWN_SLOT;
+    }
+    fillMetaLocked_(slot, outMeta);
     unlockState_();
+    return POOLDEV_SVC_OK;
+}
+
+PoolDeviceSvcStatus PoolDeviceModule::svcSnapshotMetaImpl_(PoolDeviceSvcMeta* out,
+                                                               uint8_t capacity,
+                                                               uint8_t* count) const
+{
+    if (count) *count = 0;
+    if (!out || !count || capacity < POOL_DEVICE_MAX) return POOLDEV_SVC_ERR_INVALID_ARG;
+    if (!lockState_()) return POOLDEV_SVC_ERR_NOT_READY;
+    uint8_t used = 0;
+    for (uint8_t slot = 0; slot < POOL_DEVICE_MAX; ++slot) {
+        if (!slots_[slot].used) continue;
+        fillMetaLocked_(slot, &out[used++]);
+    }
+    unlockState_();
+    *count = used;
     return POOLDEV_SVC_OK;
 }
 

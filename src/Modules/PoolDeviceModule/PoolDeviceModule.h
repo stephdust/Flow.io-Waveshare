@@ -214,6 +214,9 @@ private:
     // Control
     uint8_t activeCount_() const;
     PoolDeviceSvcStatus svcMetaImpl_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const;
+    PoolDeviceSvcStatus svcSnapshotMetaImpl_(PoolDeviceSvcMeta* out,
+                                               uint8_t capacity, uint8_t* count) const;
+    void fillMetaLocked_(uint8_t slot, PoolDeviceSvcMeta* outMeta) const;
     PoolDeviceSvcStatus svcReadActualOnImpl_(uint8_t slot, uint8_t* outOn, uint32_t* outTsMs) const;
     PoolDeviceSvcStatus svcSetOverridePoliciesImpl_(const ActuatorOverridePolicy* policies, uint8_t count);
     PoolDeviceSvcStatus svcReleaseOverrideImpl_(uint8_t slot, ActuatorOverrideReason reason);
@@ -351,7 +354,8 @@ private:
         ServiceBinding::bind<&PoolDeviceModule::svcOverrideCommandImpl_>,
         ServiceBinding::bind<&PoolDeviceModule::svcOverrideDurationImpl_>,
         ServiceBinding::bind<&PoolDeviceModule::svcSetManualRunningImpl_>,
-        ServiceBinding::bind<&PoolDeviceModule::svcSetRunningAtSetpointImpl_>
+        ServiceBinding::bind<&PoolDeviceModule::svcSetRunningAtSetpointImpl_>,
+        ServiceBinding::bind<&PoolDeviceModule::svcSnapshotMetaImpl_>
     };
     DomainStatusServiceProvider domainStatusProvider_{};
     EventBus* eventBus_ = nullptr;
