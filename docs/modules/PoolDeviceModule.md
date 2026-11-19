@@ -32,3 +32,11 @@ interlock diagnostic, including when no start was requested.
 ## Capacités pour 16 appareils
 
 Le registre de commandes réserve 80 entrées, afin de conserver les commandes des autres modules après l’enregistrement des 16 appareils. Le registre de configuration réserve 896 entrées (métadonnées en PSRAM lorsque disponible). Les avertissements de saturation restent actifs.
+
+
+### Chargement de la fenêtre « Équipements du bassin »
+
+- La route `/api/runtime/pooldevice_options` prélève désormais une **copie groupée** des métadonnées de tous les équipements sous une seule prise de verrou PoolDevice (au lieu d'une lecture verrouillée par emplacement), puis lit la permission d'écriture une seule fois.
+- La réponse garde le même schéma, les métriques et les contrôles de sécurité; l'accès aux `DataStore` ne change pas. L'ancienne méthode reste disponible pour les fournisseurs sans opération groupée.
+- Lors de la réouverture de la fenêtre, le navigateur peut présenter une copie récente (60 s maximum) pendant la nouvelle lecture réseau. **Les commandes sont désactivées** jusqu'à la confirmation de la réponse fraîche.
+- Vérification : `python -m unittest scripts.tests.test_pooldevice_meta_snapshot`; observer `HttpLatencyScope` pour `/api/runtime/pooldevice_options` sous charge RS485/WebSocket et mesurer les délais avant et après.
