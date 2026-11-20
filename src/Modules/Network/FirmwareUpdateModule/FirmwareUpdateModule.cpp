@@ -283,11 +283,19 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
     otaMonitor_("clone_before");
     const uint32_t cloneStartMs = millis();
     const uint32_t eraseStartMs = millis();
-    if (esp_partition_erase_range(destination, 0U, destination->size) != ESP_OK) {
-        LOGE("[OTA] phase=clone_erase_failed elapsed_ms=%lu",
-             (unsigned long)(millis() - eraseStartMs));
-        otaMonitor_("clone_erase_failed");
-        return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
+    // Partition erase can be lengthy; split it into aligned chunks so
+    // networking, RS485 and watchdog tasks retain scheduling opportunities.
+    constexpr size_t kEraseChunkBytes = 64U * 1024U;
+    for (size_t offset = 0U; offset < destination->size; offset += kEraseChunkBytes) {
+        const size_t count = destination->size - offset < kEraseChunkBytes
+                                 ? destination->size - offset : kEraseChunkBytes;
+        if (esp_partition_erase_range(destination, offset, count) != ESP_OK) {
+            LOGE("[OTA] phase=clone_erase_failed offset=%lu elapsed_ms=%lu",
+                 (unsigned long)offset, (unsigned long)(millis() - eraseStartMs));
+            otaMonitor_("clone_erase_failed");
+            return writeSimpleError_(errOut, errOutLen, "inactive filesystem erase failed");
+        }
+        vTaskDelay(1);
     }
     LOGI("[OTA] phase=clone_erase_done elapsed_ms=%lu",
          (unsigned long)(millis() - eraseStartMs));
