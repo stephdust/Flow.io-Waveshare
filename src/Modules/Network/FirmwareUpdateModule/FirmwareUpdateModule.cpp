@@ -253,6 +253,16 @@ static void otaMonitor_(const char* phase)
          (unsigned long)heap_caps_get_free_size(external),
          (unsigned long)heap_caps_get_largest_free_block(external),
          (unsigned long)uxTaskGetStackHighWaterMark(nullptr));
+    TaskHandle_t asyncTask = xTaskGetHandle("async_tcp");
+    if (asyncTask) {
+        const UBaseType_t asyncFree = uxTaskGetStackHighWaterMark(asyncTask);
+        LOGI("[OTA] phase=%s async_tcp_stack_free_bytes=%lu",
+             phase, (unsigned long)asyncFree);
+        if (asyncFree < 1024U) {
+            LOGW("[OTA] phase=%s async_tcp_stack_low_free_bytes=%lu",
+                 phase, (unsigned long)asyncFree);
+        }
+    }
 }
 
 bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
@@ -303,6 +313,11 @@ bool cloneActiveReleaseFilesystem_(char* errOut, size_t errOutLen)
                  (unsigned long)(millis() - copyStartMs));
             otaMonitor_("clone_progress");
             nextProgress += 256U * 1024U;
+        }
+        // Keep the OTA worker cooperative during the multi-megabyte flash copy.
+        // In particular, do not starve the system/network tasks for the entire copy.
+        if (((offset / sizeof(buffer)) & 0x0FU) == 0x0FU) {
+            vTaskDelay(1);
         }
     }
     LOGI("[OTA] phase=clone_done elapsed_ms=%lu", (unsigned long)(millis() - cloneStartMs));
@@ -1059,6 +1074,14 @@ bool FirmwareUpdateModule::runWaveshareUpdate_(const UpdateJob& job, char* errOu
                job.operationId);
 
     otaMonitor_("firmware_start");
+    // Both the firmware writer and HTTP transport need a minimum stack reserve.
+    // Refuse to erase a target slot when the OTA task has already exhausted it.
+    const UBaseType_t otaStackFree = uxTaskGetStackHighWaterMark(nullptr);
+    if (otaStackFree < 1536U) {
+        LOGE("[OTA] refusing firmware OTA: fwupdate stack_free_bytes=%lu",
+             (unsigned long)otaStackFree);
+        return writeSimpleError_(errOut, errOutLen, "ota task stack reserve too low");
+    }
     HTTPClient http;
     configureDownloadHttp_(http);
     if (!http.begin(url)) {
@@ -1436,6 +1459,19 @@ bool FirmwareUpdateModule::runNextionReboot_(char* errOut, size_t errOutLen)
 
 bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, size_t errOutLen)
 {
+    // Legacy server-side SPIFFS OTA targets the mounted/active filesystem.
+    // Interrupting its erase/write can make the running Web UI unrecoverable.
+    // Require the already implemented transactional release uploader instead:
+    // /api/upgrade/manifest -> filesystem -> firmware -> commit (inactive slots).
+    (void)job;
+    LOGE("[OTA] direct active-SPIFFS update refused; use paired A/B release upload");
+    return writeSimpleError_(errOut, errOutLen,
+                             "direct SPIFFS OTA disabled: use A/B release upload");
+}
+
+#if 0 // Retained as reference; unsafe legacy direct-to-active SPIFFS implementation.
+bool FirmwareUpdateModule::runSpiffsUpdateLegacyUnsafe_(const UpdateJob& job, char* errOut, size_t errOutLen)
+{
     const char* url = job.url;
     setStatus_(UpdateState::Downloading,
                FirmwareUpdateTarget::Spiffs,
@@ -1556,6 +1592,8 @@ bool FirmwareUpdateModule::runSpiffsUpdate_(const UpdateJob& job, char* errOut, 
     ESP.restart();
     return true;
 }
+
+#endif // unsafe legacy SPIFFS updater
 
 bool FirmwareUpdateModule::localTransactionMatches_(uint32_t transactionId) const
 {
