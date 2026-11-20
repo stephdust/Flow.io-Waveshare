@@ -8610,6 +8610,31 @@ void WebInterfaceModule::startServer_()
     server_.addMiddleware([this](AsyncWebServerRequest* request, ArMiddlewareNext next) {
         this->authGate_(request, next);
     });
+    // During flash operations, reject unrelated new HTTP requests before route
+    // handlers allocate/serialize large responses. Keep OTA transaction endpoints
+    // and its status available. This does not close existing TCP connections.
+    server_.addMiddleware([this](AsyncWebServerRequest* request, ArMiddlewareNext next) {
+        if (!request) return;
+        if (!fwUpdateSvc_ && services_) {
+            fwUpdateSvc_ = services_->get<FirmwareUpdateService>(ServiceId::FirmwareUpdate);
+        }
+        if (!fwUpdateSvc_ || !fwUpdateSvc_->isBusy ||
+            !fwUpdateSvc_->isBusy(fwUpdateSvc_->ctx)) {
+            next();
+            return;
+        }
+        const String url = request->url();
+        const char* path = url.c_str();
+        if (pathStartsWith_(path, "/api/upgrade/") ||
+            pathStartsWith_(path, "/api/fwupdate/") ||
+            pathEquals_(path, "/webinterface/health") ||
+            pathEquals_(path, "/webserial/health")) {
+            next();
+            return;
+        }
+        request->send(503, "application/json",
+                      "{\"ok\":false,\"err\":{\"code\":\"OtaBusy\",\"where\":\"http\"}}");
+    });
 
     if (!provisioningOnly_) {
         configureRuntimeEvents_();
