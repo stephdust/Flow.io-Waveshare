@@ -268,6 +268,19 @@ void WebInterfaceModule::loop()
              (unsigned long)largestInternalAfterStart);
     }
 
+    // Firmware and filesystem writes compete with AsyncTCP for internal RAM
+    // and CPU. Avoid Web task snapshots, SSE broadcasts and UART-log fanout
+    // while a release is being uploaded, even for local A/B upgrades.
+    if (!fwUpdateSvc_ && services_) {
+        fwUpdateSvc_ = services_->get<FirmwareUpdateService>(ServiceId::FirmwareUpdate);
+    }
+    if (fwUpdateSvc_ && fwUpdateSvc_->isBusy &&
+        fwUpdateSvc_->isBusy(fwUpdateSvc_->ctx)) {
+        if (started_) wsLog_.cleanupClients();
+        delayNextCycle(pdMS_TO_TICKS(40));
+        return;
+    }
+
     if (started_ && !provisioningOnly_) flushRuntimeEvents_();
 
     if (uartPaused_) {
