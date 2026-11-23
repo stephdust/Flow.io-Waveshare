@@ -3137,7 +3137,8 @@ bool IOModule::configureRuntime_()
                     s.inDef.mode != IO_DIGITAL_INPUT_STATE,
                     s.inDef.edgeMode,
                     s.inDef.counterDebounceUs,
-                    s.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE
+                    s.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE ||
+                    (s.inDef.mode == IO_DIGITAL_INPUT_COUNTER && s.logicalIdx == 1U)
                 );
                 driver = counterDriver;
             }
@@ -3617,12 +3618,12 @@ IDigitalCounterDriver* IOModule::allocGpioDriver_(const char* driverId,
                                                   bool counterEnabled,
                                                   uint8_t edgeMode,
                                                   uint32_t counterDebounceUs,
-                                                  bool rateOnly)
+                                                  bool hardwareFilterOnly)
 {
     if (counterEnabled && !output) {
         if (gpioCounterDriverPoolUsed_ >= MAX_DIGITAL_INPUTS) return nullptr;
         void* mem = gpioCounterDriverPool_[gpioCounterDriverPoolUsed_++];
-        return new (mem) PcntCounterDriver(driverId, pin, activeHigh, inputPullMode, edgeMode, counterDebounceUs, rateOnly);
+        return new (mem) PcntCounterDriver(driverId, pin, activeHigh, inputPullMode, edgeMode, counterDebounceUs, hardwareFilterOnly);
     }
 
     if (gpioDriverPoolUsed_ >= MAX_DIGITAL_SLOTS) return nullptr;
