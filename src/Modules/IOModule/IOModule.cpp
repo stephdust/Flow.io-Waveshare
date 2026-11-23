@@ -1743,9 +1743,14 @@ bool IOModule::processDigitalInputDefinition_(uint8_t slotIdx, uint32_t nowMs)
 
 void IOModule::traceDigitalCounters_(uint32_t nowMs)
 {
-    if (!cfgData_.traceEnabled || !runtimeReady_) return;
-    if (counterTraceLastMs_ != 0U && (uint32_t)(nowMs - counterTraceLastMs_) < 1000U) return;
-    counterTraceLastMs_ = nowMs;
+    if (!runtimeReady_) return;
+    const bool counterTraceDue = cfgData_.traceEnabled &&
+        (counterTraceLastMs_ == 0U || (uint32_t)(nowMs - counterTraceLastMs_) >= 1000U);
+    const bool flowTraceDue = flowTraceLastMs_ == 0U ||
+        (uint32_t)(nowMs - flowTraceLastMs_) >= 5000U;
+    if (!counterTraceDue && !flowTraceDue) return;
+    if (counterTraceDue) counterTraceLastMs_ = nowMs;
+    if (flowTraceDue) flowTraceLastMs_ = nowMs;
 
     for (uint8_t i = 0; i < MAX_DIGITAL_SLOTS; ++i) {
         DigitalSlot& slot = digitalSlots_[i];
@@ -1753,6 +1758,7 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
         const bool isCounter = slot.inDef.mode == IO_DIGITAL_INPUT_COUNTER;
         const bool isFlowMeter = slot.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE;
         if (!isCounter && !isFlowMeter) continue;
+        if ((isCounter && !counterTraceDue) || (isFlowMeter && !flowTraceDue)) continue;
         if (!slot.provider.isBound()) continue;
 
         IDigitalCounterDriver* counterDriver = static_cast<IDigitalCounterDriver*>(slot.provider.ctx);
@@ -1760,7 +1766,7 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
 
         IODigitalCounterDebugStats stats{};
         if (!counterDriver->readDebugStats(stats)) continue;
-        LOGD("Counter dbg i%02u pin=%u accepted=%llu raw_hw=%llu polls=%lu dropped_db=%lu active_high=%u edge_mode=%u",
+        if (isCounter) LOGD("Counter dbg i%02u pin=%u accepted=%llu raw_hw=%llu polls=%lu dropped_db=%lu active_high=%u edge_mode=%u",
              (unsigned)slot.logicalIdx,
              (unsigned)stats.pin,
              (unsigned long long)stats.pulseCount,
@@ -1776,7 +1782,7 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
             const float c0 = digitalInCfg_[slot.logicalIdx].c0;
             const double m3h = pulseFlowConvert((double)flow.pulsesPerMinute,
                                                 (double)c0, IO_FLOW_CUBIC_METERS_PER_HOUR);
-            LOGD("Flow dbg i%02u pin=%u raw_hw=%llu accepted=%llu dropped_db=%lu polls=%lu ppm=%.2f k_imp_per_l=%.3f flow_m3h=%.3f valid=%u edge_mode=%u",
+            LOGI("[FLOW-PCNT] i%02u pin=%u raw_hw=%llu accepted=%llu dropped_db=%lu polls=%lu ppm=%.2f k_imp_per_l=%.3f flow_m3h=%.3f valid=%u edge_mode=%u",
                  (unsigned)slot.logicalIdx, (unsigned)stats.pin,
                  (unsigned long long)stats.irqCalls,
                  (unsigned long long)stats.pulseCount,
