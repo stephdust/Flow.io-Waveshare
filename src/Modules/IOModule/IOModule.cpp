@@ -1756,13 +1756,10 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
         DigitalSlot& slot = digitalSlots_[i];
         if (!slot.used || slot.kind != DIGITAL_SLOT_INPUT) continue;
         const bool isCounter = slot.inDef.mode == IO_DIGITAL_INPUT_COUNTER;
-        const bool isFlowMeter = slot.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE;
-        // The I01 water meter diagnostic is intentionally visible in Web logs
-        // without enabling global I/O DEBUG tracing.
+        // Retain cumulative counter diagnostics, especially I01 water meter,
+        // but do not poll rate-only flow-meter debug stats unnecessarily.
         const bool waterMeterDiagnosticDue = isCounter && slot.logicalIdx == 1U && flowTraceDue;
-        if (!isCounter && !isFlowMeter) continue;
-        if ((isCounter && !counterTraceDue && !waterMeterDiagnosticDue) ||
-            (isFlowMeter && !flowTraceDue)) continue;
+        if (!isCounter || (!counterTraceDue && !waterMeterDiagnosticDue)) continue;
         if (!slot.provider.isBound()) continue;
 
         IDigitalCounterDriver* counterDriver = static_cast<IDigitalCounterDriver*>(slot.provider.ctx);
@@ -1789,7 +1786,6 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
              (unsigned long)stats.ignoredDebounce,
              (unsigned)stats.activeHigh,
              (unsigned)stats.edgeMode);
-        if (isFlowMeter) continue; // Flow-meter diagnostic retired; sampling unchanged.
         LOGD("Pulse i%02u logical=%llu rate=%.4f checkpoint=%llu writes=%lu failures=%lu values=%u",
              unsigned(slot.logicalIdx), (unsigned long long)slot.pulse.count, double(slot.pulse.rate),
              (unsigned long long)pulsePersisted_.count[slot.logicalIdx],
