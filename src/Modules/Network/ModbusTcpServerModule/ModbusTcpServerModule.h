@@ -113,13 +113,6 @@ public:
             return;
         }
 
-        // A 60-second baseline remains visible with all three ports disabled.
-        // The first snapshot is published immediately after task startup.
-        if (!otaBusy && (lastWebDiagnosticsMs_ == 0U ||
-                         uint32_t(now - lastWebDiagnosticsMs_) >= 60000U)) {
-            lastWebDiagnosticsMs_ = now;
-            logWebSnapshot_(now, stationConnected, false);
-        }
         if (!eligible_) return;
         if (!stationConnected) {
             if (running_) {
@@ -334,7 +327,6 @@ private:
     bool eligible_ = false;
     uint32_t lastPsramStartFailureMs_ = 0U;
     uint32_t lastDiagnosticsMs_ = 0U;
-    uint32_t lastWebDiagnosticsMs_ = 0U;
     uint32_t lastPsramFailureWebMs_ = 0U;
     bool psramFailureReported_ = false;
     uint32_t tickMaxUs_ = 0U;
