@@ -518,7 +518,10 @@ void refreshIoHomeAssistantIfNeeded(ModuleInstances& modules)
 #endif
     if (!modules.haService) return;
     const uint32_t dirtyMask = modules.ioModule.takeAnalogConfigDirtyMask();
-    if (dirtyMask == 0) return;
+    const uint16_t flowUnitDirty = modules.ioModule.takeFlowUnitDirtyMask();
+    // A running flow unit change requires HA discovery to re-announce the
+    // new unit_of_measurement, otherwise HA labels a converted number wrongly.
+    if (dirtyMask == 0 && flowUnitDirty == 0) return;
 
     syncDataSensors(modules);
     if (modules.haService->requestRefresh) {
