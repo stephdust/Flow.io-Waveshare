@@ -211,7 +211,9 @@ void MqttConfigRouteProducer::reportMetrics_(uint32_t nowMs)
         return;
     }
 
-    const bool cfgCritical = (metricsTimeoutTotal_ > 0U);
+    // Historical timeouts remain visible in tto but do not turn every
+    // subsequent healthy five-second status snapshot into a warning.
+    const bool cfgCritical = (metricsTimeoutWin_ > 0U);
     if (cfgCritical) {
         LOGW("cfgq p=%u e=%u rf=%lu rt=%lu ok=%lu to=%lu tf=%lu tt=%lu tk=%lu tto=%lu",
              (unsigned)pendingAny,
