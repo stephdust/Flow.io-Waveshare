@@ -102,6 +102,16 @@ public:
             result, (unsigned)sent_[slot]);
     }
 
+    void recordSocketError_(uint8_t port, uint8_t slot, uint8_t stage,
+                            int fd, int error, uint32_t nowMs) {
+        PortStats& stats = stats_[port];
+        stats.lastSocketErrno = error;
+        stats.lastSocketFd = (int16_t)fd;
+        stats.lastSocketSlot = slot;
+        stats.lastSocketStage = stage;
+        stats.lastSocketErrorMs = nowMs;
+    }
+
     void tick(uint32_t nowMs) {
         if (!started_ || !service_) return;
         // Reap closed sockets BEFORE admitting new clients: otherwise the
@@ -165,6 +175,7 @@ public:
                     const int fd = client.fd();
                     if (fd < 0) {
                         ++stats_[port].txErrors;
+                        recordSocketError_(port, slot, 4U, fd, EBADF, nowMs);
                         close_(slot);
                         continue;
                     }
@@ -178,7 +189,9 @@ public:
                         lastWriteProgressMs_[slot] = nowMs;
                     } else if (wrote < 0 && errno != EAGAIN &&
                                errno != EWOULDBLOCK && errno != EINTR) {
+                        const int socketError = errno;
                         ++stats_[port].txErrors;
+                        recordSocketError_(port, slot, 2U, fd, socketError, nowMs);
                         close_(slot);
                         continue;
                     } else {
@@ -243,7 +256,9 @@ public:
             }
             if (received < 0) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                    const int socketError = errno;
                     ++stats_[port].rxErrors;
+                    recordSocketError_(port, slot, 1U, client.fd(), socketError, nowMs);
                     closePeer_(slot);
                 }
                 continue;
@@ -389,9 +404,11 @@ private:
             // MSG_PEEK does not consume an MBAP byte from a pipelined frame.
             // A nonblocking EOF (recv==0) means FIN, not an idle socket.
             const int result = ::recv(fd, &byte, 1U, MSG_PEEK | MSG_DONTWAIT);
-            const auto state = classifySocketPeerProbe(result, errno);
+            const int probeError = errno;
+            const auto state = classifySocketPeerProbe(result, probeError);
             if (state == SocketPeerHealth::Error) {
                 ++stats_[port].rxErrors;
+                recordSocketError_(port, slot, 3U, fd, probeError, nowMs);
                 closePeer_(slot);
             } else if (state == SocketPeerHealth::ReadClosed) {
                 peerReadClosed_[slot] = true;
