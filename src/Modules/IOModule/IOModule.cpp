@@ -1789,24 +1789,7 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
              (unsigned long)stats.ignoredDebounce,
              (unsigned)stats.activeHigh,
              (unsigned)stats.edgeMode);
-        if (isFlowMeter) {
-            // Diagnostic-only: PCNT totals and the currently published rate
-            // are observed without resetting the counter or changing the sample.
-            const auto& flow = slot.pulseRateOnly;
-            const float c0 = digitalInCfg_[slot.logicalIdx].c0;
-            const double m3h = pulseFlowConvert((double)flow.pulsesPerMinute,
-                                                (double)c0, IO_FLOW_CUBIC_METERS_PER_HOUR);
-            LOGI("[FLOW-PCNT] i%02u pin=%u raw_hw=%llu accepted=%llu dropped_db=%lu polls=%lu ppm=%.2f k_imp_per_l=%.3f flow_m3h=%.3f valid=%u edge_mode=%u",
-                 (unsigned)slot.logicalIdx, (unsigned)stats.pin,
-                 (unsigned long long)stats.irqCalls,
-                 (unsigned long long)stats.pulseCount,
-                 (unsigned long)stats.ignoredDebounce,
-                 (unsigned long)stats.transitions,
-                 (double)flow.pulsesPerMinute, (double)c0,
-                 m3h, flow.valid && isfinite(m3h) ? 1U : 0U,
-                 (unsigned)stats.edgeMode);
-            continue;
-        }
+        if (isFlowMeter) continue; // Flow-meter diagnostic retired; sampling unchanged.
         LOGD("Pulse i%02u logical=%llu rate=%.4f checkpoint=%llu writes=%lu failures=%lu values=%u",
              unsigned(slot.logicalIdx), (unsigned long long)slot.pulse.count, double(slot.pulse.rate),
              (unsigned long long)pulsePersisted_.count[slot.logicalIdx],
