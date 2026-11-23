@@ -14983,9 +14983,9 @@
         const id = digitalInputMatch[1];
         const order = [
           id + '_name',
-          id + '_active_high',
           'binding_port',
           'secondary_binding_port',
+          id + '_active_high',
           id + '_pull_mode',
           'mode',
           'flow_unit'
@@ -15033,10 +15033,15 @@
         labelWrap.className = 'control-label-wrap';
         const label = document.createElement('span');
         label.className = 'control-label';
-        label.textContent = (doc && typeof doc.label === 'string' && doc.label.length > 0) ? doc.label : key;
+        const inputPolarity = !!digitalInputMatch && key === digitalInputMatch[1] + '_active_high';
+        label.textContent = inputPolarity
+          ? tr('cfg.digitalInput.polarityHigh', 'Signal actif à l’état haut') + ' ' + digitalInputMatch[1].toUpperCase()
+          : ((doc && typeof doc.label === 'string' && doc.label.length > 0) ? doc.label : key);
         labelWrap.appendChild(label);
 
-        const helpTxt = (doc && typeof doc.help === 'string') ? doc.help : '';
+        const helpTxt = inputPolarity
+          ? tr('cfg.digitalInput.polarityHelp', 'Activé : état haut (1). Désactivé : état bas (0). Ce réglage ne désactive pas l’entrée.')
+          : ((doc && typeof doc.help === 'string') ? doc.help : '');
         if (helpTxt.length > 0) {
           const help = document.createElement('span');
           help.className = 'control-help';
