@@ -1672,7 +1672,7 @@ bool IOModule::processDigitalInputDefinition_(uint8_t slotIdx, uint32_t nowMs)
         // HA discovery is one-shot in production; applying the new config unit
         // to the numeric result before re-announcing it would mislabel the flow.
         const uint8_t activeUnit = slot.appliedFlowUnit;
-        const bool validK = isfinite(cfg.c0) && cfg.c0 >= 0.0f;
+        const bool validK = isfinite(cfg.c0) && cfg.c0 > 0.0f;
         const bool validUnit = pulseFlowUnitValid(activeUnit);
         const double converted = pulseFlowConvert((double)measurement.pulsesPerMinute,
                                                   (double)cfg.c0, activeUnit);
