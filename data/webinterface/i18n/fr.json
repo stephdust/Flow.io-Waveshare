@@ -768,5 +768,7 @@
     "cfg.counter.value.saved": "Valeur enregistrée et sauvegardée.",
     "cfg.counter.value.saveFailed": "Échec de l’enregistrement. Vérifiez la valeur avant de réessayer.",
     "cfg.counter.value.loadFailed": "Compteur indisponible. Rechargez la page après son activation."
-  }
+  },
+  "cfg.digitalInput.polarityHigh": "Signal actif à l’état haut",
+  "cfg.digitalInput.polarityHelp": "Activé : état haut (1). Désactivé : état bas (0). Ce réglage ne désactive pas l’entrée."
 }
