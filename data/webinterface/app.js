@@ -7088,7 +7088,7 @@
           };
         })
         .sort((a, b) => a.slot - b.slot)
-        .slice(0, 8);
+        .slice(0, 10);
     }
 
     function poolSondeRangeFromEntry(entry) {
@@ -7181,17 +7181,17 @@
     }
 
     function buildPoolSondeSlotsGrid(slots) {
-      const cleanSlots = Array(8).fill(null);
+      const cleanSlots = Array(10).fill(null);
       if (Array.isArray(slots)) {
         slots.forEach((slot) => {
           const idx = Number(slot && slot.slot);
-          if (Number.isInteger(idx) && idx >= 0 && idx < 8) cleanSlots[idx] = slot;
+          if (Number.isInteger(idx) && idx >= 0 && idx < 10) cleanSlots[idx] = slot;
         });
       }
       const grid = document.createElement('div');
       grid.className = 'status-sonde-slot-grid';
 
-      for (let i = 0; i < 8; i += 1) {
+      for (let i = 0; i < 10; i += 1) {
         const slot = cleanSlots[i] || null;
         const tile = document.createElement('div');
         tile.className = 'status-sonde-slot';
