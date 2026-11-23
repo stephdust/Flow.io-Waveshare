@@ -833,11 +833,6 @@ uint32_t IOModule::takeAnalogConfigDirtyMask()
     return mask;
 }
 
-uint16_t IOModule::takeFlowUnitDirtyMask()
-{
-    return flowUnitHaDirtyMask_.exchange(0U);
-}
-
 const char* IOModule::endpointLabel(IoId id) const
 {
     if (id >= IO_ID_AI_BASE && id < IO_ID_AI_BASE + ANALOG_CFG_SLOTS)
@@ -1670,26 +1665,17 @@ bool IOModule::processDigitalInputDefinition_(uint8_t slotIdx, uint32_t nowMs)
         uint64_t raw = 0;
         if (!driver || !driver->readCount(raw)) return false;
         const auto& cfg = digitalInCfg_[slot.logicalIdx];
-        const bool unitChanged = cfg.flowUnit != slot.appliedFlowUnit;
-        if (unitChanged) {
-            // ConfigStore applies this value immediately; update ValueRegistry's
-            // presentation metadata in the same I/O cycle as the flow conversion.
-            // Otherwise l/min values could still be advertised as m3/h until reboot.
-            if (!dataStore_->values.setDisplayUnit(ValueIds::ConvertedRate + slot.logicalIdx,
-                                                    pulseFlowUnitText(cfg.flowUnit)))
-                return false;
-            slot.appliedFlowUnit = cfg.flowUnit;
-            flowUnitHaDirtyMask_.fetch_or(uint16_t(1U << slot.logicalIdx));
-        }
         auto& measurement = slot.pulseRateOnly;
         const bool validRate = measurement.sample(raw, nowMs);
-        if (!measurement.refreshed && !unitChanged) return validRate;
-        // Evaluate immediately after an engineering-unit switch, even if the
-        // next one-second frequency sample is not due yet.
+        if (!measurement.refreshed) return validRate; // One evaluation per second.
+        // Preserve the runtime engineering unit captured at startup until reboot.
+        // HA discovery is one-shot in production; applying the new config unit
+        // to the numeric result before re-announcing it would mislabel the flow.
+        const uint8_t activeUnit = slot.appliedFlowUnit;
         const bool validK = isfinite(cfg.c0) && cfg.c0 >= 0.0f;
-        const bool validUnit = pulseFlowUnitValid(cfg.flowUnit);
+        const bool validUnit = pulseFlowUnitValid(activeUnit);
         const double converted = pulseFlowConvert((double)measurement.pulsesPerMinute,
-                                                  (double)cfg.c0, cfg.flowUnit);
+                                                  (double)cfg.c0, activeUnit);
         // ioRoundToPrecision receives a float and must not overflow to Inf.
         const bool valid = validRate && validK && validUnit && isfinite(converted) &&
                            converted <= 3.402823466e38;
