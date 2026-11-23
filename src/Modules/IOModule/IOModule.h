@@ -515,6 +515,7 @@ private:
     int32_t boardDefaultI2cScl_ = FLOW_WIRDEF_IO_SCL;
     const char* boardProfileName_ = "unknown";
     uint32_t counterTraceLastMs_ = 0;
+    uint32_t flowTraceLastMs_ = 0;
     uint32_t analogCalcLogLastMs_[3]{0, 0, 0};
     int32_t* analogPrecisionLast_ = nullptr;
     bool analogPrecisionLastInit_ = false;
