@@ -82,7 +82,6 @@ private:
         bool pendingFlags_[MaxRoutes]{};
         bool needsEnqueueFlags_[MaxRoutes]{};
         uint32_t retryFirstRefusedMs_[MaxRoutes]{};
-        bool retryOverdueReported_[MaxRoutes]{}; // Once per refusal episode; no dropped cfg routes.
         bool building_[MaxRoutes]{};
         bool republishAfterPublish_[MaxRoutes]{};
     };
@@ -92,7 +91,6 @@ private:
     uint16_t retryBackoffMs_ = 0;
     uint8_t retryCursor_ = 0;
     uint32_t metricsWinStartMs_ = 0;
-    uint32_t lastInitialSyncAdmissionMs_ = 0;
     uint32_t metricsRefusedWin_ = 0;
     uint32_t metricsRetryTryWin_ = 0;
     uint32_t metricsRetryOkWin_ = 0;
