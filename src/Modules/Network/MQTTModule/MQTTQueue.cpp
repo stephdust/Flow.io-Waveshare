@@ -275,13 +275,6 @@ void MQTTModule::logEnqueueIssue_(uint8_t producerId, uint16_t messageId, uint8_
          accepted ? "deferred" : "reject", reason, (unsigned)producerId, (unsigned)messageId,
          (unsigned)source.messageTypeId, source.name, (unsigned)priority, (unsigned long)snapshot.atMs);
     logQueueSnapshot_(snapshot);
-    LOGW("[MQTT-DIAG] slots=%u/%u waiting=%u qh=%u/%u qn=%u/%u ql=%u/%u valid=%u",
-         (unsigned)snapshot.used, (unsigned)MaxJobs,
-         (unsigned)snapshot.states.waiting,
-         (unsigned)snapshot.physical[2], (unsigned)HighQueueCap,
-         (unsigned)snapshot.physical[1], (unsigned)NormalQueueCap,
-         (unsigned)snapshot.physical[0], (unsigned)LowQueueCap,
-         (unsigned)snapshot.invariant);
 }
 
 bool MQTTModule::enqueueJob_(uint8_t producerId, uint16_t messageId, uint8_t priority, uint8_t flags)
@@ -336,11 +329,7 @@ bool MQTTModule::enqueueJob_(uint8_t producerId, uint16_t messageId, uint8_t pri
     }
     if (!accepted) ++txStorage_->counters.rejected[MqttDiagnostics::sourceIndex(producerId, messageId)][priority];
     // Rate limiting and the snapshot use the same lock as every job transition.
-    // Config I/O silences admission errors by default. Permit one
-    // diagnostic per second to reveal queue pressure during startup.
-    const bool diagnoseConfigIo = producerId == 47U && !accepted;
-    if (issue && (!silent || diagnoseConfigIo) &&
-        (lastEnqueueIssueLogMs_ == 0U || (uint32_t)(nowMs - lastEnqueueIssueLogMs_) >= 1000U)) {
+    if (issue && !silent && (lastEnqueueIssueLogMs_ == 0U || (uint32_t)(nowMs - lastEnqueueIssueLogMs_) >= 1000U)) {
         lastEnqueueIssueLogMs_ = nowMs;
         snapshotQueueStatsNoLock_(snapshot, nowMs);
         report = true;
