@@ -314,6 +314,16 @@ private:
     MqttConfigRouteProducer* cfgMqttPub_ = nullptr;
     static bool lookupDevice_(void* context, uint16_t deviceId,
                               SerialLineProfile& out, uint8_t& slaveAddress);
+    struct SerialProfileCache {
+        uint16_t deviceId = 0U;
+        SerialLineProfile line{};
+        uint8_t slaveAddress = 0U;
+        bool valid = false;
+    };
+    SerialProfileCache serialProfileCache_[ModbusTcpServer::kPortCount]{};
+    uint32_t lookupLockBusy_ = 0U;
+    uint32_t lookupUnavailable_ = 0U;
+    uint32_t lookupCacheUsed_ = 0U;
     PoolDeviceModule* devices_ = nullptr;
     ServiceRegistry* registry_ = nullptr;
     const ModbusMasterService* master_ = nullptr;
