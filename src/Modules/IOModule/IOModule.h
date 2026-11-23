@@ -46,6 +46,7 @@
 #include "Modules/IOModule/IOBus/Rs485Bus.h"
 #include "Modules/IOModule/IOScheduler/Rs485TransactionScheduler.h"
 #include <stdio.h>
+#include <atomic>
 
 class DataStore;
 class OneWireBus;
@@ -109,6 +110,7 @@ public:
     bool digitalOutputSlotWritable(uint8_t logicalIdx) const;
     int32_t analogPrecision(uint8_t idx) const;
     uint32_t takeAnalogConfigDirtyMask();
+    uint16_t takeFlowUnitDirtyMask();
     bool derivedValuePublished(uint8_t slot) const;
     const char* derivedValueName(uint8_t slot) const;
     const char* endpointLabel(IoId id) const;
@@ -385,6 +387,7 @@ private:
         bool lastValue = false;
         PulseRuntime pulse{}; // Cumulative mode 1 only.
         PulseRateOnly pulseRateOnly{}; // Volatile rate mode 2 only.
+        uint8_t appliedFlowUnit = IO_FLOW_LITERS_PER_MINUTE; // Runtime metadata unit.
         uint16_t counterResetSeen = 0;
     };
 
@@ -518,6 +521,7 @@ private:
     int32_t* analogPrecisionLast_ = nullptr;
     bool analogPrecisionLastInit_ = false;
     uint32_t analogConfigDirtyMask_ = 0;
+    std::atomic<uint16_t> flowUnitHaDirtyMask_{0U};
     IOConfigDescriptorStorage* configDescriptors_ = nullptr;
 
     ConfigVariable<bool,0> enabledVar_ { NVS_KEY(NvsKeys::Io::IO_EN),"enabled","io",ConfigType::Bool,&cfgData_.enabled,ConfigPersistence::Persistent,0 };
