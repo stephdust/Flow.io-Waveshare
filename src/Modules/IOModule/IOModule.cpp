@@ -1757,8 +1757,12 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
         if (!slot.used || slot.kind != DIGITAL_SLOT_INPUT) continue;
         const bool isCounter = slot.inDef.mode == IO_DIGITAL_INPUT_COUNTER;
         const bool isFlowMeter = slot.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE;
+        // The I01 water meter diagnostic is intentionally visible in Web logs
+        // without enabling global I/O DEBUG tracing.
+        const bool waterMeterDiagnosticDue = isCounter && slot.logicalIdx == 1U && flowTraceDue;
         if (!isCounter && !isFlowMeter) continue;
-        if ((isCounter && !counterTraceDue) || (isFlowMeter && !flowTraceDue)) continue;
+        if ((isCounter && !counterTraceDue && !waterMeterDiagnosticDue) ||
+            (isFlowMeter && !flowTraceDue)) continue;
         if (!slot.provider.isBound()) continue;
 
         IDigitalCounterDriver* counterDriver = static_cast<IDigitalCounterDriver*>(slot.provider.ctx);
@@ -1766,7 +1770,17 @@ void IOModule::traceDigitalCounters_(uint32_t nowMs)
 
         IODigitalCounterDebugStats stats{};
         if (!counterDriver->readDebugStats(stats)) continue;
-        if (isCounter) LOGD("Counter dbg i%02u pin=%u accepted=%llu raw_hw=%llu polls=%lu dropped_db=%lu active_high=%u edge_mode=%u",
+        if (waterMeterDiagnosticDue) {
+            LOGI("[WATER-PCNT] i%02u pin=%u raw_hw=%llu accepted=%llu dropped_db=%lu polls=%lu edge_mode=%u",
+                 (unsigned)slot.logicalIdx,
+                 (unsigned)stats.pin,
+                 (unsigned long long)stats.irqCalls,
+                 (unsigned long long)stats.pulseCount,
+                 (unsigned long)stats.ignoredDebounce,
+                 (unsigned long)stats.transitions,
+                 (unsigned)stats.edgeMode);
+        }
+        if (isCounter && counterTraceDue) LOGD("Counter dbg i%02u pin=%u accepted=%llu raw_hw=%llu polls=%lu dropped_db=%lu active_high=%u edge_mode=%u",
              (unsigned)slot.logicalIdx,
              (unsigned)stats.pin,
              (unsigned long long)stats.pulseCount,
