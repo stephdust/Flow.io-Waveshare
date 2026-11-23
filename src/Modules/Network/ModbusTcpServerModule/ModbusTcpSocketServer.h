@@ -129,6 +129,7 @@ public:
                     incoming.stop();
                 } else {
                     clients_[slot] = incoming;
+                    ++stats_[port].acceptedClients;
                     peerReadClosed_[slot] = false;
                     configureKeepAlive_(slot);
                     lastReadProgressMs_[slot] = nowMs;
@@ -146,13 +147,14 @@ public:
             // Peer liveness is tested by a bounded raw recv(MSG_PEEK)
             // before admission. Avoid NetworkClient::connected(), which
             // may not reliably mark orderly FIN as disconnected.
-            if (client.fd() < 0) { closePeer_(slot); continue; }
+            if (client.fd() < 0) { closePeer_(slot, 10U); continue; }
             // A peer may hold a scarce per-port slot by sending only part
             // of an MBAP frame. Close incomplete frames with no progress,
             // but preserve normal long-lived idle Modbus TCP connections.
             if (sessions_.hasPartialRequest(slot) &&
                 uint32_t(nowMs - lastReadProgressMs_[slot]) >= kPartialFrameTimeoutMs) {
-                close_(slot);
+                ++stats_[port].partialFrameTimeouts;
+                close_(slot, 5U);
                 continue;
             }
             BridgeSlot& bridge = bridges_[slot];
@@ -176,7 +178,7 @@ public:
                     if (fd < 0) {
                         ++stats_[port].txErrors;
                         recordSocketError_(port, slot, 4U, fd, EBADF, nowMs);
-                        close_(slot);
+                        close_(slot, 10U);
                         continue;
                     }
                     const size_t count = remaining < kMaxTxBytesPerTick
@@ -192,7 +194,7 @@ public:
                         const int socketError = errno;
                         ++stats_[port].txErrors;
                         recordSocketError_(port, slot, 2U, fd, socketError, nowMs);
-                        close_(slot);
+                        close_(slot, 4U);
                         continue;
                     } else {
                         ++stats_[port].txWouldBlock;
@@ -216,7 +218,8 @@ public:
                 } else if (uint32_t(nowMs - lastWriteProgressMs_[slot]) >= kWriteStallTimeoutMs) {
                     // Release a slot held by a peer that has stopped reading.
                     trace_(slot, "tcp_tx_stall", nowMs);
-                    close_(slot);
+                    ++stats_[port].writeStallCloses;
+                    close_(slot, 6U);
                     continue;
                 }
             } else if (bridge.state() == BridgeSlot::State::Silent) {
@@ -233,7 +236,7 @@ public:
             // Preserve the reply for a half-closed TCP peer, then release
             // immediately after the in-flight Modbus transaction finishes.
             if (canReleaseAfterReadClose(peerReadClosed_[slot], true, writing_[slot])) {
-                closePeer_(slot);
+                closePeer_(slot, 1U);
                 continue;
             }
             // One bounded, nonblocking recv per active socket per tick.
@@ -251,7 +254,7 @@ public:
             const int received = ::recv(client.fd(), input, readLength, MSG_DONTWAIT);
             if (received == 0) {
                 // FIN even if Arduino NetworkClient still reports connected.
-                closePeer_(slot);
+                closePeer_(slot, 1U);
                 continue;
             }
             if (received < 0) {
@@ -259,7 +262,7 @@ public:
                     const int socketError = errno;
                     ++stats_[port].rxErrors;
                     recordSocketError_(port, slot, 1U, client.fd(), socketError, nowMs);
-                    closePeer_(slot);
+                    closePeer_(slot, 3U);
                 }
                 continue;
             }
@@ -269,7 +272,8 @@ public:
             const auto status = sessions_.feed(slot, input, size_t(received), consumed);
             if (status == TcpSessions::FeedResult::Invalid ||
                 consumed != size_t(received)) {
-                close_(slot);
+                ++stats_[port].invalidFrameCloses;
+                close_(slot, 7U);
                 continue;
             }
             if (status != TcpSessions::FeedResult::Complete) continue;
@@ -277,7 +281,8 @@ public:
             if (!sessions_.request(slot, request)) {
                 ModbusTcpAdu::Request header{};
                 if (!sessions_.headerRequest(slot, header)) {
-                    close_(slot);
+                    ++stats_[port].invalidFrameCloses;
+                    close_(slot, 7U);
                     continue;
                 }
                 ++stats_[port].received;
@@ -386,9 +391,9 @@ private:
         if (!configured) ++stats_[slot / kClientsPerPort].keepaliveSetupFailures;
     }
 
-    void closePeer_(uint8_t slot) {
+    void closePeer_(uint8_t slot, uint8_t reason = 1U) {
         ++stats_[slot / kClientsPerPort].peerClosed;
-        close_(slot);
+        close_(slot, reason);
     }
 
     void probeClosedPeers_(uint32_t nowMs) {
@@ -396,7 +401,7 @@ private:
             if (!sessions_.occupied(slot)) continue;
             const uint8_t port = slot / kClientsPerPort;
             const int fd = clients_[slot].fd();
-            if (fd < 0) { closePeer_(slot); continue; }
+            if (fd < 0) { closePeer_(slot, 10U); continue; }
             if (uint32_t(nowMs - lastConnectionCheckMs_[slot]) < kConnectionCheckMs)
                 continue;
             lastConnectionCheckMs_[slot] = nowMs;
@@ -409,13 +414,13 @@ private:
             if (state == SocketPeerHealth::Error) {
                 ++stats_[port].rxErrors;
                 recordSocketError_(port, slot, 3U, fd, probeError, nowMs);
-                closePeer_(slot);
+                closePeer_(slot, 3U);
             } else if (state == SocketPeerHealth::ReadClosed) {
                 peerReadClosed_[slot] = true;
                 if (canReleaseAfterReadClose(peerReadClosed_[slot],
                         bridges_[slot].state() == BridgeSlot::State::Idle,
                         writing_[slot]))
-                    closePeer_(slot);
+                    closePeer_(slot, 1U);
             }
         }
     }
@@ -437,12 +442,25 @@ private:
             }
         }
         if (victim < 0) return false;
-        close_(uint8_t(victim));
+        close_(uint8_t(victim), 8U);
         ++stats_[port].idleReclaimed;
         return true;
     }
-    void close_(uint8_t slot) {
-        if (traceActive_[slot]) trace_(slot, "socket_closed", millis());
+    void close_(uint8_t slot, uint8_t reason = 9U) {
+        if (!sessions_.occupied(slot)) return;
+        const uint8_t port = slot / kClientsPerPort;
+        PortStats& diag = stats_[port];
+        const uint32_t nowMs = millis();
+        ++diag.closedClients;
+        if (reason == 1U) ++diag.peerFinCloses;
+        if (reason == 2U) ++diag.peerResetCloses;
+        diag.lastCloseAtMs = nowMs;
+        diag.lastCloseIdleMs = nowMs - lastReadProgressMs_[slot];
+        diag.lastCloseReason = reason;
+        diag.lastCloseSlot = slot;
+        diag.lastCloseTid = traceTid_[slot];
+        diag.lastCloseFc = traceFc_[slot];
+        if (traceActive_[slot]) trace_(slot, "socket_closed", nowMs, (int)reason);
         traceActive_[slot] = false;
         bridges_[slot].reset();
         clients_[slot].stop();
@@ -453,7 +471,6 @@ private:
         lastReadProgressMs_[slot] = 0U;
         lastConnectionCheckMs_[slot] = 0U;
         peerReadClosed_[slot] = false;
-        const uint8_t port = slot / kClientsPerPort;
         stats_[port].activeClients = sessions_.active(port);
     }
     WiFiServer servers_[kPortCount];
