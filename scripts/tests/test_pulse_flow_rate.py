@@ -23,6 +23,10 @@ class PulseFlowRateTests(unittest.TestCase):
         assert 'IO_DIGITAL_INPUT_PULSES_PER_MINUTE' in module
         assert 'pulseFlowConvert(' in module
         assert 'pulseFlowUnitText(' in module
+        assert 'const bool isFlowMeter = slot.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE;' in module
+        assert 'Flow dbg i%02u' in module
+        assert 'raw_hw=%llu accepted=%llu dropped_db=%lu' in module
+        assert 'k_imp_per_l=%.3f flow_m3h=%.3f' in module
         assert 'if (!measurement.refreshed) return validRate;' in module
         assert 'ValueIds::ConvertedRate + slot.logicalIdx' in module
         assert "modeValue === 2 && isCountControl" in ui
