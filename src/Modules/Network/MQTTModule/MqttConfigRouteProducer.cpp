@@ -17,7 +17,6 @@ namespace {
 static constexpr uint16_t kRetryMinMs = 200U;
 static constexpr uint16_t kRetryMaxMs = 2000U;
 static constexpr uint32_t kRetryTimeoutMs = 10000U;
-static constexpr uint32_t kInitialSyncAdmissionGapMs = 200U;
 }
 
 MqttConfigRouteProducer::~MqttConfigRouteProducer()
@@ -177,13 +176,12 @@ void MqttConfigRouteProducer::expireTimedOutRoutes_(uint32_t nowMs)
         if (firstRefusedMs == 0U) continue;
         if ((uint32_t)(nowMs - firstRefusedMs) < kRetryTimeoutMs) continue;
 
-        // Report prolonged saturation ONCE, but do not discard the cfg route.
-        // It must remain eligible for retry when queue capacity returns.
-        if (!state_->retryOverdueReported_[i]) {
-            state_->retryOverdueReported_[i] = true;
-            ++metricsTimeoutWin_;
-            ++metricsTimeoutTotal_;
-        }
+        // Timeout reached: this logical cfg publication is considered lost.
+        setNeedsEnqueue_(i, false);
+        setPending_(i, false);
+        state_->retryFirstRefusedMs_[i] = 0U;
+        ++metricsTimeoutWin_;
+        ++metricsTimeoutTotal_;
     }
 }
 
@@ -213,9 +211,7 @@ void MqttConfigRouteProducer::reportMetrics_(uint32_t nowMs)
         return;
     }
 
-    // Historical timeouts remain visible in tto but do not turn every
-    // subsequent healthy five-second status snapshot into a warning.
-    const bool cfgCritical = (metricsTimeoutWin_ > 0U);
+    const bool cfgCritical = (metricsTimeoutTotal_ > 0U);
     if (cfgCritical) {
         LOGW("cfgq p=%u e=%u rf=%lu rt=%lu ok=%lu to=%lu tf=%lu tt=%lu tk=%lu tto=%lu",
              (unsigned)pendingAny,
@@ -300,7 +296,6 @@ bool MqttConfigRouteProducer::enqueueByRoute_(uint8_t idx, MqttPublishPriority p
     if (accepted) {
         setNeedsEnqueue_(idx, false);
         state_->retryFirstRefusedMs_[idx] = 0U;
-        state_->retryOverdueReported_[idx] = false;
         if (!hasNeedsEnqueue_()) {
             resetRetry_();
         } else if (retryDueMs_ == 0U || (int32_t)(nowMs - retryDueMs_) >= 0) {
@@ -455,7 +450,6 @@ void MqttConfigRouteProducer::onMessagePublished_(uint16_t messageId)
     setPending_(idx, false);
     setNeedsEnqueue_(idx, false);
     state_->retryFirstRefusedMs_[idx] = 0U;
-    state_->retryOverdueReported_[idx] = false;
     if (!hasNeedsEnqueue_()) {
         resetRetry_();
     }
@@ -469,7 +463,6 @@ void MqttConfigRouteProducer::onMessageDropped_(uint16_t messageId)
     setPending_(idx, false);
     setNeedsEnqueue_(idx, false);
     state_->retryFirstRefusedMs_[idx] = 0U;
-    state_->retryOverdueReported_[idx] = false;
     if (idx < MaxRoutes) {
         state_->building_[idx] = false;
         state_->republishAfterPublish_[idx] = false;
@@ -488,14 +481,9 @@ void MqttConfigRouteProducer::tickStatic_(void* ctx, uint32_t nowMs)
 void MqttConfigRouteProducer::onTransportTick_(uint32_t nowMs)
 {
     refreshReadyGateAndMaybeSync_();
-    if (mqttReadyLatched_ && producerRegistered_ && configLoaded_ &&
-        (lastInitialSyncAdmissionMs_ == 0U ||
-         (uint32_t)(nowMs - lastInitialSyncAdmissionMs_) >= kInitialSyncAdmissionGapMs)) {
-        // Stage at most one cfg route per producer every 200 ms. Runtime
-        // snapshots and commands keep their higher-priority queue access.
-        requestedRoutes_.drain(1, [this, nowMs](uint8_t idx, MqttPublishPriority priority) {
-            lastInitialSyncAdmissionMs_ = nowMs;
-            // Refused cfg publications stay in the durable retry state.
+    if (mqttReadyLatched_ && producerRegistered_ && configLoaded_) {
+        requestedRoutes_.drain(2, [this](uint8_t idx, MqttPublishPriority priority) {
+            // Refused jobs are retained by the existing transport retry mechanism.
             (void)enqueueByRoute_(idx, priority);
         });
     }
