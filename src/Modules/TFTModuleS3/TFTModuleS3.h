@@ -257,6 +257,8 @@ private:
     bool motionReadErrorLogged_ = false;
     uint32_t lastMotionMs_ = 0;
     uint32_t lastRenderMs_ = 0;
+    uint32_t lastFlowRenderMs_[DashboardSlotCount]{};
+    RuntimeUiId lastFlowRuntimeId_[DashboardSlotCount]{};
     uint32_t splashHoldUntilMs_ = 0;
     uint32_t pageCycleStartMs_ = 0;
     uint32_t lastRenderedPageCycle_ = 0xFFFFFFFFU;
