@@ -24,7 +24,8 @@ class PulseFlowRateTests(unittest.TestCase):
         assert 'pulseFlowConvert(' in module
         assert 'pulseFlowUnitText(' in module
         driver = (ROOT / 'src/Modules/IOModule/IODrivers/PcntCounterDriver.cpp').read_text()
-        assert 'const uint32_t debounceMs = rateOnly_ ? 0U : debounceWindowMs_();' in driver
+        assert 'const uint32_t debounceMs = hardwareFilterOnly_ ? 0U : debounceWindowMs_();' in driver
+        assert '(s.inDef.mode == IO_DIGITAL_INPUT_COUNTER && s.logicalIdx == 1U)' in module
         assert 's.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE\n                );' in module
         assert 'const bool isFlowMeter = slot.inDef.mode == IO_DIGITAL_INPUT_PULSES_PER_MINUTE;' in module
         assert 'Flow dbg i%02u' in module
