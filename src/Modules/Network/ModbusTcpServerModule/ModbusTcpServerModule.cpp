@@ -134,27 +134,13 @@ MqttBuildResult ModbusTcpServerModule::buildConfigMqtt_(
     return MqttBuildResult::Ready;
 }
 
-// Web/bootlog snapshots: each entry fits LogEntry.msg (159 visible bytes).
-// Per-port counters are cumulative. No per-frame logging on the hot path.
+// OTA-only network snapshot. Routine Modbus diagnostics were temporary
+// instrumentation and are no longer emitted every 60 seconds.
 void ModbusTcpServerModule::logWebSnapshot_(
     uint32_t now, bool stationConnected, bool otaBusy)
 {
-    if (!Log::hub()) return;
-    // Remember last reported diagnostic counters per port. Keep regular
-    // snapshots, but never re-emit a historical incident as a fresh warning.
-    static uint32_t lastWarnRx[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnTx[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnInvalid[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnResolver[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnSilent[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnConnRejected[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnKeepalive[ModbusTcpServer::kPortCount]{};
-    static uint32_t lastWarnSocketAtMs[ModbusTcpServer::kPortCount]{};
-    Log::info(kLogModule_,
-              "[MODBUS-LOOKUP] busy=%lu unavailable=%lu cache_used=%lu",
-              (unsigned long)lookupLockBusy_,
-              (unsigned long)lookupUnavailable_,
-              (unsigned long)lookupCacheUsed_);
+    if (!otaBusy || !Log::hub()) return;
+
     const auto& a = server_.stats(0U);
     const auto& b = server_.stats(1U);
     const auto& c = server_.stats(2U);
@@ -163,140 +149,28 @@ void ModbusTcpServerModule::logWebSnapshot_(
     ModbusMasterStats queue{};
     if (master_ && master_->stats) (void)master_->stats(master_->ctx, &queue);
 
-    // Boot-local counters: actual listener stops/reopens only, not TCP SYN
-    // attempts (invisible to the application after listeners close).
     Log::info(kLogModule_,
-              "[MODBUS-OTA] paused=%lu resumed=%lu pending=%u busy=%u listen=%u",
-              (unsigned long)otaSuspensions_, (unsigned long)otaResumptions_,
-              otaResumePending_ ? 1U : 0U, otaBusy ? 1U : 0U,
-              running_ ? 1U : 0U);
-    if (otaBusy) {
-        Log::info(kLogModule_,
-                  "[OTA-NET] ms=%lu en=%u%u%u sta=%u listen=%u clients=%u,%u,%u psram=%u",
-                  (unsigned long)now,
-                  configs_[0].enabled ? 1U : 0U,
-                  configs_[1].enabled ? 1U : 0U,
-                  configs_[2].enabled ? 1U : 0U,
-                  stationConnected ? 1U : 0U, running_ ? 1U : 0U,
-                  (unsigned)a.activeClients, (unsigned)b.activeClients,
-                  (unsigned)c.activeClients, (unsigned)server_.psramFrameBytes());
-        Log::info(kLogModule_,
-                  "[OTA-NET] rtu_q=%u reject=%lu tick_us=%lu slow=%lu internal=%lu largest=%lu",
-                  (unsigned)queue.queued, (unsigned long)queue.queueRejected,
-                  (unsigned long)otaTickMaxUs_, (unsigned long)otaSlowTicks_,
-                  (unsigned long)internal, (unsigned long)largest);
-    } else {
-        Log::info(kLogModule_,
-                  "[MODBUS-PSRAM] bytes=%u ready=%u en=%u%u%u sta=%u listen=%u",
-                  (unsigned)server_.psramFrameBytes(),
-                  server_.frameStorageReady() ? 1U : 0U,
-                  configs_[0].enabled ? 1U : 0U,
-                  configs_[1].enabled ? 1U : 0U,
-                  configs_[2].enabled ? 1U : 0U,
-                  stationConnected ? 1U : 0U, running_ ? 1U : 0U);
-        Log::info(kLogModule_,
-                  "[MODBUS-MEM] int=%lu largest=%lu min=%lu psram=%lu stack=%lu rtu_q=%u reject=%lu",
-                  (unsigned long)internal, (unsigned long)largest,
-                  (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
-                  (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT),
-                  (unsigned long)uxTaskGetStackHighWaterMark(nullptr),
-                  (unsigned)queue.queued, (unsigned long)queue.queueRejected);
-    }
+              "[OTA-NET] ms=%lu en=%u%u%u sta=%u listen=%u clients=%u,%u,%u psram=%u",
+              (unsigned long)now,
+              configs_[0].enabled ? 1U : 0U,
+              configs_[1].enabled ? 1U : 0U,
+              configs_[2].enabled ? 1U : 0U,
+              stationConnected ? 1U : 0U, running_ ? 1U : 0U,
+              (unsigned)a.activeClients, (unsigned)b.activeClients,
+              (unsigned)c.activeClients, (unsigned)server_.psramFrameBytes());
+    Log::info(kLogModule_,
+              "[OTA-NET] rtu_q=%u reject=%lu tick_us=%lu slow=%lu internal=%lu largest=%lu",
+              (unsigned)queue.queued, (unsigned long)queue.queueRejected,
+              (unsigned long)otaTickMaxUs_, (unsigned long)otaSlowTicks_,
+              (unsigned long)internal, (unsigned long)largest);
     for (uint8_t i = 0U; i < ModbusTcpServer::kPortCount; ++i) {
         const auto& p = server_.stats(i);
-        const unsigned port = (unsigned)ModbusTcpServer::kPorts[i];
-        if (otaBusy) {
-            Log::info(kLogModule_,
-                      "[OTA-TCP] port=%u clients=%u req=%lu reply=%lu exc=%lu tmo=%lu rxerr=%lu txerr=%lu",
-                      port, (unsigned)p.activeClients,
-                      (unsigned long)p.received, (unsigned long)p.completed,
-                      (unsigned long)p.exceptionsSent, (unsigned long)p.timeouts,
-                      (unsigned long)p.rxErrors, (unsigned long)p.txErrors);
-        } else {
-            Log::info(kLogModule_,
-                      "[MODBUS-TCP] port=%u clients=%u peak=%u req=%lu reply=%lu exc=%lu tmo=%lu rej=%lu",
-                      port, (unsigned)p.activeClients, (unsigned)p.maxActiveClients,
-                      (unsigned long)p.received, (unsigned long)p.completed,
-                      (unsigned long)p.exceptionsSent, (unsigned long)p.timeouts,
-                      (unsigned long)p.queueRejected);
-            const bool newErrorCounters =
-                p.rxErrors != lastWarnRx[i] || p.txErrors != lastWarnTx[i] ||
-                p.invalidTcpAdus != lastWarnInvalid[i] ||
-                p.resolverFailures != lastWarnResolver[i] ||
-                p.silentFailures != lastWarnSilent[i] ||
-                p.connectionsRejected != lastWarnConnRejected[i] ||
-                p.keepaliveSetupFailures != lastWarnKeepalive[i];
-            if (newErrorCounters) {
-                Log::warn(kLogModule_,
-                          "[MODBUS-ERR] port=%u rxerr=%lu txerr=%lu invalid=%lu resolver=%lu silent=%lu connrej=%lu kaerr=%lu",
-                          port, (unsigned long)p.rxErrors, (unsigned long)p.txErrors,
-                          (unsigned long)p.invalidTcpAdus,
-                          (unsigned long)p.resolverFailures,
-                          (unsigned long)p.silentFailures,
-                          (unsigned long)p.connectionsRejected,
-                          (unsigned long)p.keepaliveSetupFailures);
-                lastWarnRx[i] = p.rxErrors;
-                lastWarnTx[i] = p.txErrors;
-                lastWarnInvalid[i] = p.invalidTcpAdus;
-                lastWarnResolver[i] = p.resolverFailures;
-                lastWarnSilent[i] = p.silentFailures;
-                lastWarnConnRejected[i] = p.connectionsRejected;
-                lastWarnKeepalive[i] = p.keepaliveSetupFailures;
-            }
-            if (p.acceptedClients || p.closedClients || p.connectionsRejected) {
-                Log::info(kLogModule_,
-                          "[MODBUS-CONN] port=%u accepted=%lu closed=%lu active=%u peer_fin=%lu idle=%lu refused=%lu",
-                          port, (unsigned long)p.acceptedClients,
-                          (unsigned long)p.closedClients, (unsigned)p.activeClients,
-                          (unsigned long)p.peerFinCloses,
-                          (unsigned long)p.idleReclaimed,
-                          (unsigned long)p.connectionsRejected);
-                Log::info(kLogModule_,
-                          "[MODBUS-CLOSE] port=%u reason=%u slot=%u tid=%u fc=%u idle_ms=%lu age_ms=%lu",
-                          port, (unsigned)p.lastCloseReason,
-                          (unsigned)p.lastCloseSlot, (unsigned)p.lastCloseTid,
-                          (unsigned)p.lastCloseFc,
-                          (unsigned long)p.lastCloseIdleMs,
-                          (unsigned long)(now - p.lastCloseAtMs));
-                Log::info(kLogModule_,
-                          "[MODBUS-DROP] port=%u partial=%lu stall=%lu invalid=%lu tx_wait=%lu",
-                          port, (unsigned long)p.partialFrameTimeouts,
-                          (unsigned long)p.writeStallCloses,
-                          (unsigned long)p.invalidFrameCloses,
-                          (unsigned long)p.txWouldBlock);
-            }
-            if (p.lastSocketStage != 0U && p.lastSocketErrorMs != 0U &&
-                p.lastSocketErrorMs != lastWarnSocketAtMs[i]) {
-                const char* socketStage = p.lastSocketStage == 1U ? "recv" :
-                    p.lastSocketStage == 2U ? "send" :
-                    p.lastSocketStage == 3U ? "probe" : "send_bad_fd";
-                Log::warn(kLogModule_,
-                          "[MODBUS-SOCKET] port=%u op=%s slot=%u fd=%d errno=%ld age_ms=%lu",
-                          port, socketStage, (unsigned)p.lastSocketSlot,
-                          (int)p.lastSocketFd, (long)p.lastSocketErrno,
-                          (unsigned long)(now - p.lastSocketErrorMs));
-                lastWarnSocketAtMs[i] = p.lastSocketErrorMs;
-            }
-            if (p.resolverFailures) {
-                Log::warn(kLogModule_,
-                          "[MODBUS-RESOLVE] port=%u mode=%u device=%u unit=%u fc=%u addr=%u fails=%lu age_ms=%lu",
-                          port,
-                          configs_[i].serialSource == ModbusTcpServer::SerialSource::Manual ? 2U : 1U,
-                          (unsigned)configs_[i].deviceId,
-                          (unsigned)p.lastResolverUnitId,
-                          (unsigned)p.lastResolverFunction,
-                          (unsigned)p.lastResolverAddress,
-                          (unsigned long)p.resolverFailures,
-                          (unsigned long)(now - p.lastResolverAtMs));
-            }
-            if (p.received || p.completed) {
-                Log::info(kLogModule_,
-                          "[MODBUS-LAT] port=%u tcpmax_ms=%lu queue_ms=%lu rtu_ms=%lu",
-                          port, (unsigned long)p.responseTimeMaxMs,
-                          (unsigned long)p.queueWaitMaxMs,
-                          (unsigned long)p.rtuResponseMaxMs);
-            }
-        }
+        Log::info(kLogModule_,
+                  "[OTA-TCP] port=%u clients=%u req=%lu reply=%lu exc=%lu tmo=%lu rxerr=%lu txerr=%lu",
+                  (unsigned)ModbusTcpServer::kPorts[i], (unsigned)p.activeClients,
+                  (unsigned long)p.received, (unsigned long)p.completed,
+                  (unsigned long)p.exceptionsSent, (unsigned long)p.timeouts,
+                  (unsigned long)p.rxErrors, (unsigned long)p.txErrors);
     }
 }
 
