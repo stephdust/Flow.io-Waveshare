@@ -494,8 +494,16 @@ bool PoolDeviceModule::serialLineForDevice(uint16_t deviceId, SerialLineProfile&
 bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
                                          char* label, size_t labelCapacity, uint8_t* slaveAddress) const
 {
-    if (deviceId >= POOL_DEVICE_MAX || !slots_) return false;
-    if (!lockState_(pdMS_TO_TICKS(10))) return false;
+    return serialDeviceInfoStatus(deviceId, out, label, labelCapacity, slaveAddress) ==
+           SerialDeviceLookup::Ready;
+}
+
+PoolDeviceModule::SerialDeviceLookup PoolDeviceModule::serialDeviceInfoStatus(
+    uint16_t deviceId, SerialLineProfile& out,
+    char* label, size_t labelCapacity, uint8_t* slaveAddress) const
+{
+    if (deviceId >= POOL_DEVICE_MAX || !slots_) return SerialDeviceLookup::Unavailable;
+    if (!lockState_(pdMS_TO_TICKS(10))) return SerialDeviceLookup::LockBusy;
     const PoolDeviceSlot& slot = slots_[deviceId];
     const bool valid = slot.used && slot.def.enabled &&
         slot.driverReady &&
@@ -508,5 +516,5 @@ bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& ou
         }
     }
     unlockState_();
-    return valid;
+    return valid ? SerialDeviceLookup::Ready : SerialDeviceLookup::Unavailable;
 }
