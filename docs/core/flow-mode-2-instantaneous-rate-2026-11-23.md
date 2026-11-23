@@ -14,6 +14,8 @@ En mode 2, l'utilisateur conserve la configuration GPIO, `Actif à 1`, le pull, 
 
 Le changement de mode ou d'unité s'applique au prochain redémarrage, comme les autres changements d'affectation du driver.
 
+**Important pour le sélecteur TFT :** après avoir modifié `flow_unit` dans Config Store, cliquer sur **Appliquer**, puis **redémarrer Flow.io**. L'unité configurée peut afficher `l/min` immédiatement dans l'éditeur tandis que les listes des mesures TFT/Web et Home Assistant affichent encore l'ancienne unité `m3/h` tant que le firmware n'a pas redémarré. Avec `FLOW_HA_ONESHOT_DISCOVERY=1` en production, la découverte HA n'est réémise qu'au démarrage ; le calcul utilise donc l'unité **active au démarrage** jusqu'au redémarrage suivant, afin de ne jamais publier une valeur en litres/minute annoncée comme mètres cubes/heure.
+
 ## Calcul physique et convention K
 
 **K / C0 = litres par impulsion**, valeur non négative et finie. Cette convention évite d'avoir un K ambigu quand on change l'unité choisie.
