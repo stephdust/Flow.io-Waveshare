@@ -42,13 +42,15 @@ PcntCounterDriver::PcntCounterDriver(const char* driverId,
                                      bool activeHigh,
                                      uint8_t inputPullMode,
                                      uint8_t edgeMode,
-                                     uint32_t counterDebounceUs)
+                                     uint32_t counterDebounceUs,
+                                     bool rateOnly)
     : driverId_(driverId),
       pin_(pin),
       activeHigh_(activeHigh),
       inputPullMode_(inputPullMode),
       edgeMode_(edgeMode),
-      counterDebounceUs_(counterDebounceUs)
+      counterDebounceUs_(counterDebounceUs),
+      rateOnly_(rateOnly)
 {
 }
 
@@ -289,7 +291,11 @@ bool PcntCounterDriver::syncCounter_(uint32_t nowMs) const
     const int32_t delta = static_cast<int32_t>(hwCount) - static_cast<int32_t>(s.lastHardwareCount);
     s.sampleCount++;
     s.lastSampleMs = nowMs;
-    const uint32_t debounceMs = debounceWindowMs_();
+    // A sampled-level software gate cannot debounce a high-frequency flow meter:
+    // its pulses are much shorter than the I/O polling interval. In rate-only
+    // mode the hardware PCNT glitch filter handles the configured debounce.
+    // Preserve the previous software gate for cumulative counter mode 1.
+    const uint32_t debounceMs = rateOnly_ ? 0U : debounceWindowMs_();
     if (!logicalOn) {
         if (s.idleSinceMs == 0U) s.idleSinceMs = nowMs;
         if (!s.gateArmed && (debounceMs == 0U || (uint32_t)(nowMs - s.idleSinceMs) >= debounceMs)) {
