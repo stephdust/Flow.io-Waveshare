@@ -26,7 +26,7 @@ public:
 
 class TFTModuleS3 : public Module {
 public:
-    static constexpr uint8_t DashboardSlotCount = 8;
+    static constexpr uint8_t DashboardSlotCount = 10;
     static constexpr uint8_t AlarmDashboardSlotCount = 8;
 
     explicit TFTModuleS3(const BoardSpec& board);
