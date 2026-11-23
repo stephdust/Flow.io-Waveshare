@@ -174,8 +174,9 @@ public:
                       (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
                       (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
         }
+        #if FLOW_PERFORMANCE_DIAGNOSTICS
         const uint32_t tickStartedUs = micros();
-#endif
+        #endif
         server_.tick(now);
 #if FLOW_PERFORMANCE_DIAGNOSTICS
         const uint32_t elapsedUs = uint32_t(micros() - tickStartedUs);
@@ -198,7 +199,6 @@ public:
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t stackWatermark = uxTaskGetStackHighWaterMark(nullptr);
-#if FLOW_PERFORMANCE_DIAGNOSTICS
         Serial.printf("[MODBUS-TCP] tick_max_us=%lu tick_slow_5ms=%lu\n",
             (unsigned long)tickMaxUs_, (unsigned long)slowTicks_);
         tickMaxUs_ = 0U;
@@ -227,6 +227,7 @@ public:
                 (unsigned long)p.responseTimeMaxMs, (unsigned long)p.queueWaitMaxMs,
                 (unsigned long)p.rtuResponseMaxMs);
         }
+#endif
     }
     // MQTT JSON extension retains the existing numeric settings used by HA.
     // Called by the standard MqttConfigRouteProducer (no second publisher).
