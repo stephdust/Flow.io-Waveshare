@@ -44,8 +44,6 @@ public:
     uint16_t historizedCount() const;
     void expire(uint64_t nowMs);
     void setPrecision(ValueId id, int8_t precision);
-    // Update a measurement's unit at runtime, without redefining its ValueId or losing the value.
-    bool setDisplayUnit(ValueId id, const char* unit);
     void setName(ValueId id, const char* name);
     void setUsable(ValueId id, bool enabled);
     bool usable(ValueId id) const;
