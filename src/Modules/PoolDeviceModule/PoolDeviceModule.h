@@ -85,6 +85,10 @@ public:
     /** Snapshot serial settings for an existing enabled RS485 device. */
     bool serialLineForDevice(uint16_t deviceId, SerialLineProfile& out) const;
     /** One locked snapshot of an available RS485 device profile and label. */
+    enum class SerialDeviceLookup : uint8_t { Ready, LockBusy, Unavailable };
+    SerialDeviceLookup serialDeviceInfoStatus(uint16_t deviceId, SerialLineProfile& out,
+                                              char* label, size_t labelCapacity,
+                                              uint8_t* slaveAddress = nullptr) const;
     bool serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
                           char* label, size_t labelCapacity,
                           uint8_t* slaveAddress = nullptr) const;
