@@ -140,6 +140,11 @@ void ModbusTcpServerModule::logWebSnapshot_(
     uint32_t now, bool stationConnected, bool otaBusy)
 {
     if (!Log::hub()) return;
+    Log::info(kLogModule_,
+              "[MODBUS-LOOKUP] busy=%lu unavailable=%lu cache_used=%lu",
+              (unsigned long)lookupLockBusy_,
+              (unsigned long)lookupUnavailable_,
+              (unsigned long)lookupCacheUsed_);
     const auto& a = server_.stats(0U);
     const auto& b = server_.stats(1U);
     const auto& c = server_.stats(2U);
@@ -389,9 +394,45 @@ void ModbusTcpServerModule::setPoolDeviceModule(PoolDeviceModule* devices)
 bool ModbusTcpServerModule::lookupDevice_(void* context, uint16_t deviceId,
                                           SerialLineProfile& out, uint8_t& slaveAddress)
 {
-    const auto* module = static_cast<const ModbusTcpServerModule*>(context);
-    return module && module->devices_ &&
-        module->devices_->serialDeviceInfo(deviceId, out, nullptr, 0U, &slaveAddress);
+    auto* module = static_cast<ModbusTcpServerModule*>(context);
+    if (!module || !module->devices_) return false;
+    const auto status = module->devices_->serialDeviceInfoStatus(
+        deviceId, out, nullptr, 0U, &slaveAddress);
+    if (status == PoolDeviceModule::SerialDeviceLookup::Ready) {
+        // Port configuration changes are staged until reboot. Only reuse a
+        // profile that was previously validated for this exact device ID.
+        for (auto& cached : module->serialProfileCache_) {
+            if (cached.valid && cached.deviceId == deviceId) {
+                cached.line = out;
+                cached.slaveAddress = slaveAddress;
+                return true;
+            }
+        }
+        for (auto& cached : module->serialProfileCache_) {
+            if (!cached.valid) {
+                cached.valid = true;
+                cached.deviceId = deviceId;
+                cached.line = out;
+                cached.slaveAddress = slaveAddress;
+                break;
+            }
+        }
+        return true;
+    }
+    if (status == PoolDeviceModule::SerialDeviceLookup::LockBusy) {
+        ++module->lookupLockBusy_;
+        for (const auto& cached : module->serialProfileCache_) {
+            if (cached.valid && cached.deviceId == deviceId) {
+                out = cached.line;
+                slaveAddress = cached.slaveAddress;
+                ++module->lookupCacheUsed_;
+                return true;
+            }
+        }
+    } else {
+        ++module->lookupUnavailable_;
+    }
+    return false;
 }
 
 bool ModbusTcpServerModule::readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const
