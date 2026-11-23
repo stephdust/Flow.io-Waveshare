@@ -56,6 +56,13 @@ struct PortStats {
     uint32_t txWouldBlock = 0U;
     uint32_t txErrors = 0U;
     uint32_t rxErrors = 0U;
+    // Last genuine socket error; stage: 1=recv, 2=send, 3=peer probe,
+    // 4=send with invalid descriptor. Snapshot only, no hot-path logging.
+    int32_t lastSocketErrno = 0;
+    int16_t lastSocketFd = -1;
+    uint8_t lastSocketSlot = 0U;
+    uint8_t lastSocketStage = 0U;
+    uint32_t lastSocketErrorMs = 0U;
     uint32_t tcpBytesReceived = 0U;
     uint32_t tcpBytesSent = 0U;
     uint32_t responseTimeTotalMs = 0U;
