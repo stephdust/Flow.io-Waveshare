@@ -176,15 +176,6 @@ void MqttConfigRouteProducer::expireTimedOutRoutes_(uint32_t nowMs)
         if (firstRefusedMs == 0U) continue;
         if ((uint32_t)(nowMs - firstRefusedMs) < kRetryTimeoutMs) continue;
 
-        // Diagnostic only: bounded details of routes dropped after 10s.
-        static uint8_t timeoutDetailsLogged = 0U;
-        if (timeoutDetailsLogged < 5U) {
-            ++timeoutDetailsLogged;
-            LOGW("[MQTT-CFG-EXPIRE] producer=%u msg=%u route=%u age_ms=%lu pending=%u",
-                 (unsigned)producerId_, (unsigned)routes_[i].messageId,
-                 (unsigned)i, (unsigned long)(nowMs - firstRefusedMs),
-                 (unsigned)isPending_(i));
-        }
         // Timeout reached: this logical cfg publication is considered lost.
         setNeedsEnqueue_(i, false);
         setPending_(i, false);
@@ -317,15 +308,6 @@ bool MqttConfigRouteProducer::enqueueByRoute_(uint8_t idx, MqttPublishPriority p
 
     ++metricsRefusedWin_;
     ++metricsRefusedTotal_;
-    // First refusal, then at most one diagnostic every two seconds.
-    static uint32_t lastRefusalDiagMs = 0U;
-    if (lastRefusalDiagMs == 0U || (uint32_t)(nowMs - lastRefusalDiagMs) >= 2000U) {
-        lastRefusalDiagMs = nowMs;
-        LOGW("[MQTT-CFG-REFUSE] producer=%u msg=%u route=%u prio=%u pending=%u building=%u retry_ms=%u",
-             (unsigned)producerId_, (unsigned)routes_[idx].messageId,
-             (unsigned)idx, (unsigned)prio, (unsigned)wasPending,
-             (unsigned)wasBuilding, (unsigned)retryBackoffMs_);
-    }
     // If a route was already pending and this enqueue was refused, preserve a
     // one-shot republish so changes that arrived in-between are not lost.
     if (wasPending && idx < MaxRoutes) state_->republishAfterPublish_[idx] = true;
