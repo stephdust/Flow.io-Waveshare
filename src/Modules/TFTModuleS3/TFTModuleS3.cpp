@@ -49,6 +49,7 @@ constexpr uint8_t kCfgBranchAlarmBase = 32;
 constexpr uint16_t kCfgMsgSensorBase = 16U;
 constexpr uint16_t kCfgMsgAlarmBase = 32U;
 constexpr uint32_t kRenderPeriodMs = 1000U;
+constexpr uint32_t kFlowMeterTftRefreshMs = 5000U; // Display only; acquisition remains 1 Hz.
 constexpr uint32_t kBacklightTimeoutMs = 60000U;
 constexpr uint32_t kStartupSplashHoldMs = 5000U;
 constexpr uint32_t kWakeSplashHoldMs = 1000U;
@@ -825,10 +826,39 @@ void TFTModuleS3::render_(bool force)
         for (uint8_t i = 0U; i < DashboardSlotCount; ++i) {
             DashboardSlotRenderState state{};
             readDashboardSlotState_(i, state);
-            if (fullRedraw || !dashboardSlotStateEquals_(uiStorage_->dashboardSlotCache[i], state)) {
+            const DashboardSlotRenderState& previous = uiStorage_->dashboardSlotCache[i];
+            const RuntimeUiId runtimeId = uiStorage_->dashboardCfg[i].runtimeUiId;
+            const ValueId dataId = runtimeDataValueId(runtimeId);
+            // Mode 2 publishes iXX.flow with a volumetric-flow unit. Only those
+            // TFT cards are rate-limited; regular values and counters stay live.
+            const bool flowId = dataId >= ValueIds::ConvertedRate &&
+                                dataId < ValueIds::Derived;
+            const bool flowUnit = strcmp(state.unit, "l/min") == 0 ||
+                                  strcmp(state.unit, "l/h") == 0 ||
+                                  strcmp(state.unit, "m3/min") == 0 ||
+                                  strcmp(state.unit, "m3/h") == 0;
+            const bool flowCard = flowId && flowUnit;
+            const bool sameFlowBinding = lastFlowRuntimeId_[i] == runtimeId;
+            const bool valueOnlyChanged = previous.valid == state.valid &&
+                                          previous.enabled == state.enabled &&
+                                          previous.available == state.available &&
+                                          previous.cardBg == state.cardBg &&
+                                          strncmp(previous.label, state.label, sizeof(state.label)) == 0 &&
+                                          strncmp(previous.unit, state.unit, sizeof(state.unit)) == 0;
+            const bool flowThrottle = !fullRedraw && flowCard && sameFlowBinding &&
+                                      valueOnlyChanged &&
+                                      (uint32_t)(now - lastFlowRenderMs_[i]) < kFlowMeterTftRefreshMs;
+            if (!flowThrottle &&
+                (fullRedraw || !dashboardSlotStateEquals_(previous, state))) {
                 const Rect r = metricCardRect_(w, h, i);
                 drawDashboardSlot_(i, r.x, r.y, r.w, r.h, state);
                 uiStorage_->dashboardSlotCache[i] = state;
+                if (flowCard) {
+                    lastFlowRenderMs_[i] = now;
+                    lastFlowRuntimeId_[i] = runtimeId;
+                } else {
+                    lastFlowRuntimeId_[i] = 0U;
+                }
             }
         }
     } else {
