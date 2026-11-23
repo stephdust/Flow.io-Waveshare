@@ -105,6 +105,7 @@ public:
     void recordSocketError_(uint8_t port, uint8_t slot, uint8_t stage,
                             int fd, int error, uint32_t nowMs) {
         PortStats& stats = stats_[port];
+        if (error == ECONNRESET) ++stats.peerResetCloses;
         stats.lastSocketErrno = error;
         stats.lastSocketFd = (int16_t)fd;
         stats.lastSocketSlot = slot;
@@ -453,7 +454,6 @@ private:
         const uint32_t nowMs = millis();
         ++diag.closedClients;
         if (reason == 1U) ++diag.peerFinCloses;
-        if (reason == 2U) ++diag.peerResetCloses;
         diag.lastCloseAtMs = nowMs;
         diag.lastCloseIdleMs = nowMs - lastReadProgressMs_[slot];
         diag.lastCloseReason = reason;
