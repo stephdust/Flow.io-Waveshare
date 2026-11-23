@@ -51,6 +51,19 @@ struct PortStats {
     // Idle sockets reclaimed only when a new client needs a full port.
     uint32_t idleReclaimed = 0U;
     uint32_t peerClosed = 0U;
+    uint32_t acceptedClients = 0U;
+    uint32_t closedClients = 0U;
+    uint32_t partialFrameTimeouts = 0U;
+    uint32_t writeStallCloses = 0U;
+    uint32_t invalidFrameCloses = 0U;
+    uint32_t peerFinCloses = 0U;
+    uint32_t peerResetCloses = 0U;
+    uint32_t lastCloseAtMs = 0U;
+    uint32_t lastCloseIdleMs = 0U;
+    uint8_t lastCloseReason = 0U; // 1=fin 2=reset 3=rxerr 4=txerr 5=partial 6=txstall 7=frame 8=idle 9=shutdown 10=badfd
+    uint8_t lastCloseSlot = 0U;
+    uint16_t lastCloseTid = 0U;
+    uint8_t lastCloseFc = 0U;
     uint32_t keepaliveSetupFailures = 0U;
     uint32_t invalidTcpAdus = 0U;
     uint32_t txWouldBlock = 0U;
