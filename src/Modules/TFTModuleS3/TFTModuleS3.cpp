@@ -96,22 +96,24 @@ constexpr const char* kSensorModuleNames[TFTModuleS3::DashboardSlotCount] = {
     "tft/s3/sensors/slot05",
     "tft/s3/sensors/slot06",
     "tft/s3/sensors/slot07",
+    "tft/s3/sensors/slot08",
+    "tft/s3/sensors/slot09",
 };
 
 constexpr const char* kSensorEnabledKeys[TFTModuleS3::DashboardSlotCount] = {
-    "tfs00en", "tfs01en", "tfs02en", "tfs03en", "tfs04en", "tfs05en", "tfs06en", "tfs07en"
+    "tfs00en", "tfs01en", "tfs02en", "tfs03en", "tfs04en", "tfs05en", "tfs06en", "tfs07en", "tfs08en", "tfs09en"
 };
 
 constexpr const char* kSensorRuntimeIdKeys[TFTModuleS3::DashboardSlotCount] = {
-    "tfs00ri", "tfs01ri", "tfs02ri", "tfs03ri", "tfs04ri", "tfs05ri", "tfs06ri", "tfs07ri"
+    "tfs00ri", "tfs01ri", "tfs02ri", "tfs03ri", "tfs04ri", "tfs05ri", "tfs06ri", "tfs07ri", "tfs08ri", "tfs09ri"
 };
 
 constexpr const char* kSensorLabelKeys[TFTModuleS3::DashboardSlotCount] = {
-    "tfs00lb", "tfs01lb", "tfs02lb", "tfs03lb", "tfs04lb", "tfs05lb", "tfs06lb", "tfs07lb"
+    "tfs00lb", "tfs01lb", "tfs02lb", "tfs03lb", "tfs04lb", "tfs05lb", "tfs06lb", "tfs07lb", "tfs08lb", "tfs09lb"
 };
 
 constexpr const char* kSensorColorIdKeys[TFTModuleS3::DashboardSlotCount] = {
-    "tfs00uc", "tfs01uc", "tfs02uc", "tfs03uc", "tfs04uc", "tfs05uc", "tfs06uc", "tfs07uc"
+    "tfs00uc", "tfs01uc", "tfs02uc", "tfs03uc", "tfs04uc", "tfs05uc", "tfs06uc", "tfs07uc", "tfs08uc", "tfs09uc"
 };
 
 constexpr const char* kAlarmModuleNames[TFTModuleS3::AlarmDashboardSlotCount] = {
@@ -155,6 +157,8 @@ constexpr RuntimeUiId kDashboardDefaultRuntimeUiIds[TFTModuleS3::DashboardSlotCo
     makeRuntimeUiId(ModuleId::Io, 8),
     makeRuntimeUiId(ModuleId::Io, 7),
     makeRuntimeUiId(ModuleId::Io, 6),
+    0U,
+    0U,
 };
 
 constexpr const char* kDashboardDefaultLabels[TFTModuleS3::DashboardSlotCount] = {
@@ -166,6 +170,8 @@ constexpr const char* kDashboardDefaultLabels[TFTModuleS3::DashboardSlotCount] =
     "BME680",
     "BMP280",
     "PSI",
+    "Mesure 9",
+    "Mesure 10",
 };
 
 constexpr DashboardColorPreset kDashboardColorPresets[] = {
@@ -201,6 +207,8 @@ constexpr uint8_t kDashboardDefaultColorIds[TFTModuleS3::DashboardSlotCount] = {
     5U,
     6U,
     7U,
+    8U,
+    9U,
 };
 
 constexpr uint16_t kAlarmDefaultIds[TFTModuleS3::AlarmDashboardSlotCount] = {
@@ -257,6 +265,8 @@ const MqttConfigRouteProducer::Route kCfgRoutes[] = {
     {(uint16_t)(kCfgMsgSensorBase + 5U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchSensorBase + 5U)}, kSensorModuleNames[5], kSensorModuleNames[5], (uint8_t)MqttPublishPriority::Normal, nullptr},
     {(uint16_t)(kCfgMsgSensorBase + 6U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchSensorBase + 6U)}, kSensorModuleNames[6], kSensorModuleNames[6], (uint8_t)MqttPublishPriority::Normal, nullptr},
     {(uint16_t)(kCfgMsgSensorBase + 7U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchSensorBase + 7U)}, kSensorModuleNames[7], kSensorModuleNames[7], (uint8_t)MqttPublishPriority::Normal, nullptr},
+    {(uint16_t)(kCfgMsgSensorBase + 8U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchSensorBase + 8U)}, kSensorModuleNames[8], kSensorModuleNames[8], (uint8_t)MqttPublishPriority::Normal, nullptr},
+    {(uint16_t)(kCfgMsgSensorBase + 9U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchSensorBase + 9U)}, kSensorModuleNames[9], kSensorModuleNames[9], (uint8_t)MqttPublishPriority::Normal, nullptr},
     {(uint16_t)(kCfgMsgAlarmBase + 0U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchAlarmBase + 0U)}, kAlarmModuleNames[0], kAlarmModuleNames[0], (uint8_t)MqttPublishPriority::Normal, nullptr},
     {(uint16_t)(kCfgMsgAlarmBase + 1U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchAlarmBase + 1U)}, kAlarmModuleNames[1], kAlarmModuleNames[1], (uint8_t)MqttPublishPriority::Normal, nullptr},
     {(uint16_t)(kCfgMsgAlarmBase + 2U), {(uint8_t)ConfigModuleId::TftS3, (uint8_t)(kCfgBranchAlarmBase + 2U)}, kAlarmModuleNames[2], kAlarmModuleNames[2], (uint8_t)MqttPublishPriority::Normal, nullptr},
@@ -363,9 +373,10 @@ Rect overviewAlarmCardRect_(int16_t w, int16_t h, uint8_t column)
 
 Rect metricCardRect_(int16_t w, int16_t h, uint8_t index)
 {
-    const int16_t gap = 6;
+    // Two columns x five rows, keep the current value font.
+    const int16_t gap = 4;
     const int16_t cardW = (int16_t)((w - (2 * kSidePad) - gap) / 2);
-    const int16_t cardH = (int16_t)((h - (2 * kSidePad) - (3 * gap)) / 4);
+    const int16_t cardH = (int16_t)((h - (2 * kSidePad) - (4 * gap)) / 5);
     const int16_t row = (int16_t)(index / 2U);
     const int16_t col = (int16_t)(index % 2U);
     return Rect{
@@ -431,7 +442,7 @@ bool TFTModuleS3::allocateUiStorage_()
 
     for (uint8_t i = 0; i < DashboardSlotCount; ++i) {
         DashboardSlotConfig& slotCfg = uiStorage_->dashboardCfg[i];
-        slotCfg.enabled = true;
+        slotCfg.enabled = (i < 8U); // Existing configuration untouched; new slots opt-in.
         slotCfg.runtimeUiId = kDashboardDefaultRuntimeUiIds[i];
         slotCfg.colorId = kDashboardDefaultColorIds[i];
         snprintf(slotCfg.label, sizeof(slotCfg.label), "%s", kDashboardDefaultLabels[i]);
@@ -1230,7 +1241,7 @@ void TFTModuleS3::drawDashboardSlot_(uint8_t slot, int16_t x, int16_t y, int16_t
         drawGfxText_(&FreeSans9pt7b, labelColor, state.cardBg, (int16_t)(x + 12), (int16_t)(y + 18), state.label);
     }
 
-    const int16_t valueBaseY = (int16_t)(y + h - 11);
+    const int16_t valueBaseY = (int16_t)(y + h - 7);
     if (state.value[0] != '\0') {
         setGfxFont_(&FreeSansBold12pt7b, valueColor, state.cardBg);
         display_.setCursor((int16_t)(x + 12), valueBaseY);
