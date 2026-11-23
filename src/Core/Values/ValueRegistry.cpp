@@ -2,6 +2,7 @@
 #include <esp_heap_caps.h>
 #include <new>
 #include <stdio.h>
+#include <string.h>
 #include <bitset>
 namespace {
 struct Lock {
@@ -273,6 +274,20 @@ uint16_t ValueRegistry::historizedCount() const {
     if (storage_) for (const auto* entry : storage_->slots.entries)
         if (entry && entry->used && entry->metadata.history) ++count;
     return count;
+}
+
+bool ValueRegistry::setDisplayUnit(ValueId id, const char* unit) {
+    char next[UnitTextCapacity]{};
+    setValueUnit(next, unit);
+    Lock lock(mutex_);
+    if (!storage_ || id >= ValueIds::Capacity || !storage_->slots[id].used) return false;
+    auto& slot = storage_->slots[id];
+    if (strncmp(slot.metadata.displayUnit, next, sizeof(next)) == 0) return true;
+    memcpy(slot.metadata.displayUnit, next, sizeof(next));
+    // A unit is presentation metadata; do not redefine the value or reset its history.
+    // Notify downstream displays even when the numeric value remains zero.
+    if (notification_) notification_(notificationContext_, id, slot.runtime.sequence);
+    return true;
 }
 
 void ValueRegistry::setName(ValueId id, const char* name) {
