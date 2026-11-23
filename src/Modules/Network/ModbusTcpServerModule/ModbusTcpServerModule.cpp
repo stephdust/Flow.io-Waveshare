@@ -140,6 +140,16 @@ void ModbusTcpServerModule::logWebSnapshot_(
     uint32_t now, bool stationConnected, bool otaBusy)
 {
     if (!Log::hub()) return;
+    // Remember last reported diagnostic counters per port. Keep regular
+    // snapshots, but never re-emit a historical incident as a fresh warning.
+    static uint32_t lastWarnRx[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnTx[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnInvalid[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnResolver[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnSilent[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnConnRejected[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnKeepalive[ModbusTcpServer::kPortCount]{};
+    static uint32_t lastWarnSocketAtMs[ModbusTcpServer::kPortCount]{};
     Log::info(kLogModule_,
               "[MODBUS-LOOKUP] busy=%lu unavailable=%lu cache_used=%lu",
               (unsigned long)lookupLockBusy_,
@@ -209,9 +219,14 @@ void ModbusTcpServerModule::logWebSnapshot_(
                       (unsigned long)p.received, (unsigned long)p.completed,
                       (unsigned long)p.exceptionsSent, (unsigned long)p.timeouts,
                       (unsigned long)p.queueRejected);
-            if (p.rxErrors || p.txErrors || p.invalidTcpAdus ||
-                p.resolverFailures || p.silentFailures ||
-                p.connectionsRejected || p.keepaliveSetupFailures) {
+            const bool newErrorCounters =
+                p.rxErrors != lastWarnRx[i] || p.txErrors != lastWarnTx[i] ||
+                p.invalidTcpAdus != lastWarnInvalid[i] ||
+                p.resolverFailures != lastWarnResolver[i] ||
+                p.silentFailures != lastWarnSilent[i] ||
+                p.connectionsRejected != lastWarnConnRejected[i] ||
+                p.keepaliveSetupFailures != lastWarnKeepalive[i];
+            if (newErrorCounters) {
                 Log::warn(kLogModule_,
                           "[MODBUS-ERR] port=%u rxerr=%lu txerr=%lu invalid=%lu resolver=%lu silent=%lu connrej=%lu kaerr=%lu",
                           port, (unsigned long)p.rxErrors, (unsigned long)p.txErrors,
@@ -220,6 +235,13 @@ void ModbusTcpServerModule::logWebSnapshot_(
                           (unsigned long)p.silentFailures,
                           (unsigned long)p.connectionsRejected,
                           (unsigned long)p.keepaliveSetupFailures);
+                lastWarnRx[i] = p.rxErrors;
+                lastWarnTx[i] = p.txErrors;
+                lastWarnInvalid[i] = p.invalidTcpAdus;
+                lastWarnResolver[i] = p.resolverFailures;
+                lastWarnSilent[i] = p.silentFailures;
+                lastWarnConnRejected[i] = p.connectionsRejected;
+                lastWarnKeepalive[i] = p.keepaliveSetupFailures;
             }
             if (p.acceptedClients || p.closedClients || p.connectionsRejected) {
                 Log::info(kLogModule_,
@@ -243,7 +265,8 @@ void ModbusTcpServerModule::logWebSnapshot_(
                           (unsigned long)p.invalidFrameCloses,
                           (unsigned long)p.txWouldBlock);
             }
-            if ((p.rxErrors || p.txErrors) && p.lastSocketStage != 0U) {
+            if (p.lastSocketStage != 0U && p.lastSocketErrorMs != 0U &&
+                p.lastSocketErrorMs != lastWarnSocketAtMs[i]) {
                 const char* socketStage = p.lastSocketStage == 1U ? "recv" :
                     p.lastSocketStage == 2U ? "send" :
                     p.lastSocketStage == 3U ? "probe" : "send_bad_fd";
@@ -252,6 +275,7 @@ void ModbusTcpServerModule::logWebSnapshot_(
                           port, socketStage, (unsigned)p.lastSocketSlot,
                           (int)p.lastSocketFd, (long)p.lastSocketErrno,
                           (unsigned long)(now - p.lastSocketErrorMs));
+                lastWarnSocketAtMs[i] = p.lastSocketErrorMs;
             }
             if (p.resolverFailures) {
                 Log::warn(kLogModule_,
