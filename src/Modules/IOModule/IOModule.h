@@ -298,7 +298,8 @@ private:
                                             uint8_t inputPullMode = GpioDriver::PullNone,
                                             bool counterEnabled = false,
                                             uint8_t edgeMode = IO_EDGE_RISING,
-                                            uint32_t counterDebounceUs = 0);
+                                            uint32_t counterDebounceUs = 0,
+                                            bool rateOnly = false);
     IAnalogSourceDriver* allocAdsDriver_(const char* driverId, I2CBus* bus, const Ads1115DriverConfig& cfg);
     Ds18b20Driver* allocDsDriver_(const char* driverId, OneWireBus* bus, const uint8_t address[8], const Ds18b20DriverConfig& cfg);
     IAnalogSourceDriver* allocSht40Driver_(const char* driverId, I2CBus* bus, const Sht40DriverConfig& cfg);
