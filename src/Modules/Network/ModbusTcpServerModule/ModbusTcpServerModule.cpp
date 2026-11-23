@@ -221,6 +221,28 @@ void ModbusTcpServerModule::logWebSnapshot_(
                           (unsigned long)p.connectionsRejected,
                           (unsigned long)p.keepaliveSetupFailures);
             }
+            if (p.acceptedClients || p.closedClients || p.connectionsRejected) {
+                Log::info(kLogModule_,
+                          "[MODBUS-CONN] port=%u accepted=%lu closed=%lu active=%u peer_fin=%lu idle=%lu refused=%lu",
+                          port, (unsigned long)p.acceptedClients,
+                          (unsigned long)p.closedClients, (unsigned)p.activeClients,
+                          (unsigned long)p.peerFinCloses,
+                          (unsigned long)p.idleReclaimed,
+                          (unsigned long)p.connectionsRejected);
+                Log::info(kLogModule_,
+                          "[MODBUS-CLOSE] port=%u reason=%u slot=%u tid=%u fc=%u idle_ms=%lu age_ms=%lu",
+                          port, (unsigned)p.lastCloseReason,
+                          (unsigned)p.lastCloseSlot, (unsigned)p.lastCloseTid,
+                          (unsigned)p.lastCloseFc,
+                          (unsigned long)p.lastCloseIdleMs,
+                          (unsigned long)(now - p.lastCloseAtMs));
+                Log::info(kLogModule_,
+                          "[MODBUS-DROP] port=%u partial=%lu stall=%lu invalid=%lu tx_wait=%lu",
+                          port, (unsigned long)p.partialFrameTimeouts,
+                          (unsigned long)p.writeStallCloses,
+                          (unsigned long)p.invalidFrameCloses,
+                          (unsigned long)p.txWouldBlock);
+            }
             if ((p.rxErrors || p.txErrors) && p.lastSocketStage != 0U) {
                 const char* socketStage = p.lastSocketStage == 1U ? "recv" :
                     p.lastSocketStage == 2U ? "send" :
