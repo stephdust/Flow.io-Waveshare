@@ -833,6 +833,11 @@ uint32_t IOModule::takeAnalogConfigDirtyMask()
     return mask;
 }
 
+uint16_t IOModule::takeFlowUnitDirtyMask()
+{
+    return flowUnitHaDirtyMask_.exchange(0U);
+}
+
 const char* IOModule::endpointLabel(IoId id) const
 {
     if (id >= IO_ID_AI_BASE && id < IO_ID_AI_BASE + ANALOG_CFG_SLOTS)
@@ -1664,10 +1669,23 @@ bool IOModule::processDigitalInputDefinition_(uint8_t slotIdx, uint32_t nowMs)
         auto* driver = static_cast<IDigitalCounterDriver*>(slot.provider.ctx);
         uint64_t raw = 0;
         if (!driver || !driver->readCount(raw)) return false;
+        const auto& cfg = digitalInCfg_[slot.logicalIdx];
+        const bool unitChanged = cfg.flowUnit != slot.appliedFlowUnit;
+        if (unitChanged) {
+            // ConfigStore applies this value immediately; update ValueRegistry's
+            // presentation metadata in the same I/O cycle as the flow conversion.
+            // Otherwise l/min values could still be advertised as m3/h until reboot.
+            if (!dataStore_->values.setDisplayUnit(ValueIds::ConvertedRate + slot.logicalIdx,
+                                                    pulseFlowUnitText(cfg.flowUnit)))
+                return false;
+            slot.appliedFlowUnit = cfg.flowUnit;
+            flowUnitHaDirtyMask_.fetch_or(uint16_t(1U << slot.logicalIdx));
+        }
         auto& measurement = slot.pulseRateOnly;
         const bool validRate = measurement.sample(raw, nowMs);
-        if (!measurement.refreshed) return validRate; // One evaluation per second.
-        const auto& cfg = digitalInCfg_[slot.logicalIdx];
+        if (!measurement.refreshed && !unitChanged) return validRate;
+        // Evaluate immediately after an engineering-unit switch, even if the
+        // next one-second frequency sample is not due yet.
         const bool validK = isfinite(cfg.c0) && cfg.c0 >= 0.0f;
         const bool validUnit = pulseFlowUnitValid(cfg.flowUnit);
         const double converted = pulseFlowConvert((double)measurement.pulsesPerMinute,
@@ -3148,6 +3166,7 @@ bool IOModule::configureRuntime_()
                 if (!dataStore_->values.define(ValueIds::PulseRate + s.logicalIdx, rateMeta) ||
                     !dataStore_->values.define(ValueIds::ConvertedRate + s.logicalIdx, flowMeta))
                     return false;
+                s.appliedFlowUnit = cfg.flowUnit;
                 // Reuse the physical input's configured name on its flow value.
                 // E.g. I05 "Flow Meter" remains selectable on TFT and Web when
                 // i05.state (mode 0) is replaced by i05.flow (mode 2).
