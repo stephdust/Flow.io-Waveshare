@@ -221,6 +221,16 @@ void ModbusTcpServerModule::logWebSnapshot_(
                           (unsigned long)p.connectionsRejected,
                           (unsigned long)p.keepaliveSetupFailures);
             }
+            if ((p.rxErrors || p.txErrors) && p.lastSocketStage != 0U) {
+                const char* socketStage = p.lastSocketStage == 1U ? "recv" :
+                    p.lastSocketStage == 2U ? "send" :
+                    p.lastSocketStage == 3U ? "probe" : "send_bad_fd";
+                Log::warn(kLogModule_,
+                          "[MODBUS-SOCKET] port=%u op=%s slot=%u fd=%d errno=%ld age_ms=%lu",
+                          port, socketStage, (unsigned)p.lastSocketSlot,
+                          (int)p.lastSocketFd, (long)p.lastSocketErrno,
+                          (unsigned long)(now - p.lastSocketErrorMs));
+            }
             if (p.resolverFailures) {
                 Log::warn(kLogModule_,
                           "[MODBUS-RESOLVE] port=%u mode=%u device=%u unit=%u fc=%u addr=%u fails=%lu age_ms=%lu",
