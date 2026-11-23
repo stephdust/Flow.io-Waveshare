@@ -768,5 +768,7 @@
     "cfg.counter.value.saved": "Value saved and persisted.",
     "cfg.counter.value.saveFailed": "Could not save the value. Check the count before trying again.",
     "cfg.counter.value.loadFailed": "Counter unavailable. Reload the page after enabling it."
-  }
+  },
+  "cfg.digitalInput.polarityHigh": "Active-high signal",
+  "cfg.digitalInput.polarityHelp": "On: active at high level (1). Off: active at low level (0). This does not disable the input."
 }
