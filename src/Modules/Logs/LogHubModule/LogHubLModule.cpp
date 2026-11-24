@@ -108,6 +108,10 @@ void LogHubModule::init(ConfigStore& cfg, ServiceRegistry& services) {
     } else {
         LOGE("Log module registry unavailable: per-module levels cannot be configured");
     }
+    // Expose the Modbus TCP log level unconditionally in ConfigStore.
+    // ModuleManager will re-register the same ID during module init without
+    // adding a duplicate, so this also survives changes in startup order.
+    (void)Log::registerModule((LogModuleId)LogModuleIdValue::ModbusTcpServerModule, "modbustcp");
     (void)Log::registerModule((LogModuleId)LogModuleIdValue::CoreI2cLink, "core.i2clink");
     (void)Log::registerModule((LogModuleId)LogModuleIdValue::CoreModuleManager, "core.modulemanager");
     (void)Log::registerModule((LogModuleId)LogModuleIdValue::CoreConfigStore, "core.configstore");
