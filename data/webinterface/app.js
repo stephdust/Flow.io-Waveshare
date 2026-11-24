@@ -7181,18 +7181,18 @@
     }
 
     function buildPoolSondeSlotsGrid(slots) {
-      const cleanSlots = Array(10).fill(null);
-      if (Array.isArray(slots)) {
-        slots.forEach((slot) => {
-          const idx = Number(slot && slot.slot);
-          if (Number.isInteger(idx) && idx >= 0 && idx < 10) cleanSlots[idx] = slot;
-        });
-      }
+      // Only configured, enabled slots are visible. Preserve slot order,
+      // but close gaps when a sensor is switched off (including slots 0..7).
+      const visibleSlots = Array.isArray(slots)
+        ? slots.filter((slot) => slot && slot.enabled !== false &&
+            Number.isInteger(Number(slot.slot)) &&
+            Number(slot.slot) >= 0 && Number(slot.slot) < 10)
+          .sort((a, b) => Number(a.slot) - Number(b.slot))
+        : [];
       const grid = document.createElement('div');
       grid.className = 'status-sonde-slot-grid';
 
-      for (let i = 0; i < 10; i += 1) {
-        const slot = cleanSlots[i] || null;
+      for (const slot of visibleSlots) {
         const tile = document.createElement('div');
         tile.className = 'status-sonde-slot';
         const available = !!(slot && slot.enabled !== false && slot.available);
