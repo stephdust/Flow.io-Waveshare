@@ -263,5 +263,6 @@ private:
     uint32_t pageCycleStartMs_ = 0;
     uint32_t lastRenderedPageCycle_ = 0xFFFFFFFFU;
     uint8_t lastPage_ = 0xFFU;
+    uint16_t lastSensorEnabledMask_ = 0xFFFFU;
     OverviewRenderCache overviewCache_{};
 };
