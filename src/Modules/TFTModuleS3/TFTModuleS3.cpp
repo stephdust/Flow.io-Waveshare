@@ -1255,13 +1255,14 @@ void TFTModuleS3::drawDashboardSlot_(uint8_t slot, int16_t x, int16_t y, int16_t
     const uint16_t labelColor = state.enabled ? kColorMuted : kColorOff;
     const uint16_t valueColor = (state.enabled && state.available) ? kColorValue : kColorMuted;
     if (state.enabled && state.label[0] != '\0') {
-        drawGfxText_(&FreeSans9pt7b, labelColor, state.cardBg, (int16_t)(x + 12), (int16_t)(y + 18), state.label);
+        drawGfxText_(&FreeSans9pt7b, labelColor, state.cardBg, (int16_t)(x + 9), (int16_t)(y + 15), state.label);
     }
 
-    const int16_t valueBaseY = (int16_t)(y + h - 7);
+    // Five-row layout: move the label up, retain a clear gap before values.
+    const int16_t valueBaseY = (int16_t)(y + h - 5);
     if (state.value[0] != '\0') {
-        setGfxFont_(&FreeSansBold12pt7b, valueColor, state.cardBg);
-        display_.setCursor((int16_t)(x + 12), valueBaseY);
+        setGfxFont_(&FreeSansBold9pt7b, valueColor, state.cardBg);
+        display_.setCursor((int16_t)(x + 9), valueBaseY);
         display_.print(state.value);
     }
 
@@ -1269,13 +1270,13 @@ void TFTModuleS3::drawDashboardSlot_(uint8_t slot, int16_t x, int16_t y, int16_t
         setGfxFont_(&FreeSans9pt7b, kColorMuted, state.cardBg);
         if (isDegreeCUnit_(state.unit)) {
             const int16_t cw = gfxTextWidth_("C");
-            const int16_t unitX = (int16_t)(x + w - cw - 18);
+            const int16_t unitX = (int16_t)(x + w - cw - 12);
             display_.drawCircle((int16_t)(unitX - 6), (int16_t)(valueBaseY - 11), 2, color_(kColorMuted));
             display_.setCursor(unitX, valueBaseY);
             display_.print("C");
         } else {
             const int16_t unitW = gfxTextWidth_(state.unit);
-            const int16_t unitX = (int16_t)(x + w - unitW - 12);
+            const int16_t unitX = (int16_t)(x + w - unitW - 9);
             display_.setCursor(unitX, valueBaseY);
             display_.print(state.unit);
         }
