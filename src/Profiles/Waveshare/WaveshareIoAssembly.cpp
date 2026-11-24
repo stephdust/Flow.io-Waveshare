@@ -402,6 +402,17 @@ void configureIoModule(const AppContext& ctx, ModuleInstances& modules)
         def.mode = IO_DIGITAL_INPUT_STATE;
         def.edgeMode = IO_EDGE_RISING;
         def.counterDebounceUs = 0U;
+        if (i == PoolInputSlots::FlowMeter) {
+            // GPIO09: instantaneous flow in l/min, 23 impulses/litre.
+            def.activeHigh = true;
+            def.pullMode = IO_PULL_NONE;
+            def.mode = IO_DIGITAL_INPUT_PULSES_PER_MINUTE;
+            def.edgeMode = IO_EDGE_RISING;
+            def.counterDebounceUs = 100U;
+            def.flowUnit = IO_FLOW_LITERS_PER_MINUTE;
+            def.c0 = 23.0f;
+            def.precision = 0;
+        }
         const PhysicalPortId defaultPort = digitalInputPortFromOrdinal((uint8_t)(i + 1U));
         def.binding.primaryPort = FlowIoLayout::digitalInputPortUsedByDomainRole(defaultPort)
             ? IO_PORT_INVALID
