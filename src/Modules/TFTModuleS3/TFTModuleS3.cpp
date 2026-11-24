@@ -761,7 +761,19 @@ void TFTModuleS3::render_(bool force)
     const uint32_t pageCycle = currentPageCycle_() % 3U;
     const Page page = pageCycle == 0U ? Page::Overview : (pageCycle == 1U ? Page::Metrics : Page::Alarms);
     const uint8_t pageId = (uint8_t)page;
-    const bool fullRedraw = force || !layoutDrawn_ || lastPage_ != pageId;
+    // A change in enabled sensors changes their screen positions. Force
+    // one complete repaint so old cards cannot remain in vacated cells.
+    uint16_t enabledMask = 0U;
+    if (page == Page::Metrics) {
+        for (uint8_t i = 0U; i < DashboardSlotCount; ++i) {
+            if (uiStorage_->dashboardCfg[i].enabled) enabledMask |= (uint16_t)(1U << i);
+        }
+    }
+    const bool sensorLayoutChanged = page == Page::Metrics &&
+                                     enabledMask != lastSensorEnabledMask_;
+    const bool fullRedraw = force || !layoutDrawn_ || lastPage_ != pageId ||
+                            sensorLayoutChanged;
+    if (page == Page::Metrics) lastSensorEnabledMask_ = enabledMask;
     if (fullRedraw) {
         drawStaticLayout_(page);
         overviewCache_.valid = false;
@@ -834,7 +846,9 @@ void TFTModuleS3::render_(bool force)
     } else if (page == Page::Metrics) {
         const int16_t w = display_.width();
         const int16_t h = display_.height();
+        uint8_t visibleIndex = 0U;
         for (uint8_t i = 0U; i < DashboardSlotCount; ++i) {
+            if (!uiStorage_->dashboardCfg[i].enabled) continue;
             DashboardSlotRenderState state{};
             readDashboardSlotState_(i, state);
             const DashboardSlotRenderState& previous = uiStorage_->dashboardSlotCache[i];
@@ -861,7 +875,7 @@ void TFTModuleS3::render_(bool force)
                                       (uint32_t)(now - lastFlowRenderMs_[i]) < kFlowMeterTftRefreshMs;
             if (!flowThrottle &&
                 (fullRedraw || !dashboardSlotStateEquals_(previous, state))) {
-                const Rect r = metricCardRect_(w, h, i);
+                const Rect r = metricCardRect_(w, h, visibleIndex);
                 drawDashboardSlot_(i, r.x, r.y, r.w, r.h, state);
                 uiStorage_->dashboardSlotCache[i] = state;
                 if (flowCard) {
@@ -871,6 +885,7 @@ void TFTModuleS3::render_(bool force)
                     lastFlowRuntimeId_[i] = 0U;
                 }
             }
+            ++visibleIndex;
         }
     } else {
         const int16_t w = display_.width();
@@ -1205,8 +1220,10 @@ void TFTModuleS3::drawMetricsPage_()
 {
     const int16_t w = display_.width();
     const int16_t h = display_.height();
+    uint8_t visibleIndex = 0U;
     for (uint8_t i = 0; i < DashboardSlotCount; ++i) {
-        const Rect r = metricCardRect_(w, h, i);
+        if (!uiStorage_->dashboardCfg[i].enabled) continue;
+        const Rect r = metricCardRect_(w, h, visibleIndex++);
         drawDashboardSlot_(i, r.x, r.y, r.w, r.h);
     }
 }
