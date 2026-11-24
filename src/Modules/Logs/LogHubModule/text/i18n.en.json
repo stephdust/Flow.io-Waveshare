@@ -1,6 +1,10 @@
 {
   "locale": "en",
   "translations": {
+    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.0.label": "Debug",
+    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.1.label": "Info",
+    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.2.label": "Warning",
+    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.3.label": "Error",
     "cfgmods.log.levels.m10_lvl.help": "Minimum log level for moteur of alarms.",
     "cfgmods.log.levels.m10_lvl.label": "alarms",
     "cfgmods.log.levels.m11_lvl.help": "Minimum log level for connexion network.",
@@ -21,6 +25,8 @@
     "cfgmods.log.levels.m18_lvl.label": "fwupdate",
     "cfgmods.log.levels.m19_lvl.help": "Minimum log level for module systeme.",
     "cfgmods.log.levels.m19_lvl.label": "system",
+    "cfgmods.log.levels.m2_lvl.help": "Minimum log level for hub de logs.",
+    "cfgmods.log.levels.m2_lvl.label": "loghub",
     "cfgmods.log.levels.m20_lvl.help": "Minimum log level for supervision systeme.",
     "cfgmods.log.levels.m20_lvl.label": "sysmon",
     "cfgmods.log.levels.m21_lvl.help": "Minimum log level for Home Assistant.",
@@ -35,10 +41,12 @@
     "cfgmods.log.levels.m25_lvl.label": "poollogic",
     "cfgmods.log.levels.m26_lvl.help": "Minimum log level for IHM.",
     "cfgmods.log.levels.m26_lvl.label": "hmi",
-    "cfgmods.log.levels.m2_lvl.help": "Minimum log level for hub de logs.",
-    "cfgmods.log.levels.m2_lvl.label": "loghub",
     "cfgmods.log.levels.m3_lvl.help": "Minimum log level for dispatcher asynchrone.",
     "cfgmods.log.levels.m3_lvl.label": "log.dispatcher",
+    "cfgmods.log.levels.m35_lvl.help": "Minimum log level for the Modbus TCP server.",
+    "cfgmods.log.levels.m35_lvl.label": "Modbus TCP",
+    "cfgmods.log.levels.m4_lvl.help": "Minimum log level for output serie.",
+    "cfgmods.log.levels.m4_lvl.label": "log.sink.serial",
     "cfgmods.log.levels.m40_lvl.help": "Minimum log level for lien I2C coeur.",
     "cfgmods.log.levels.m40_lvl.label": "core.i2clink",
     "cfgmods.log.levels.m41_lvl.help": "Minimum log level for gestionnaire de modules.",
@@ -47,8 +55,6 @@
     "cfgmods.log.levels.m42_lvl.label": "core.configstore",
     "cfgmods.log.levels.m43_lvl.help": "Minimum log level for EventBus coeur.",
     "cfgmods.log.levels.m43_lvl.label": "core.eventbus",
-    "cfgmods.log.levels.m4_lvl.help": "Minimum log level for output serie.",
-    "cfgmods.log.levels.m4_lvl.label": "log.sink.serial",
     "cfgmods.log.levels.m5_lvl.help": "Minimum log level for sink of alarms.",
     "cfgmods.log.levels.m5_lvl.label": "log.sink.alarm",
     "cfgmods.log.levels.m6_lvl.help": "Minimum log level for module EventBus.",
@@ -56,10 +62,6 @@
     "cfgmods.log.levels.m7_lvl.help": "Minimum log level for module de configuration.",
     "cfgmods.log.levels.m7_lvl.label": "config",
     "cfgmods.log.levels.m9_lvl.help": "Minimum log level for module de commandes.",
-    "cfgmods.log.levels.m9_lvl.label": "cmd",
-    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.0.label": "Debug",
-    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.1.label": "Info",
-    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.2.label": "Warning",
-    "cfgmods_meta.logs.loghubmodule.enum_sets.log_levels.3.label": "Error"
+    "cfgmods.log.levels.m9_lvl.label": "cmd"
   }
 }
