@@ -84,10 +84,25 @@ public:
     const char* deviceLabel(uint8_t idx) const;
     /** Snapshot serial settings for an existing enabled RS485 device. */
     bool serialLineForDevice(uint16_t deviceId, SerialLineProfile& out) const;
+    // Diagnostics report precisely why a device profile could not be read.
+    // Caller must log AFTER this function releases its PoolDevice mutex.
+    enum class SerialLookupFailure : uint8_t {
+        None = 0, IdOutOfRange, StorageMissing, LockBusy, SlotUnused,
+        Disabled, DriverNotReady, NotRs485
+    };
+    struct SerialLookupDebug {
+        SerialLookupFailure failure = SerialLookupFailure::None;
+        uint8_t used = 255U;       // 255: unknown (no lock)
+        uint8_t enabled = 255U;
+        uint8_t driverReady = 255U;
+        uint8_t isRs485 = 255U;
+        uint8_t slaveAddress = 0U;
+    };
     /** One locked snapshot of an available RS485 device profile and label. */
     bool serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
                           char* label, size_t labelCapacity,
-                          uint8_t* slaveAddress = nullptr) const;
+                          uint8_t* slaveAddress = nullptr,
+                          SerialLookupDebug* debug = nullptr) const;
     uint16_t runtimeSnapshotCount() const override;
     const char* runtimeSnapshotSuffix(uint16_t idx) const override;
     RuntimeRouteClass runtimeSnapshotClass(uint16_t idx) const override;
