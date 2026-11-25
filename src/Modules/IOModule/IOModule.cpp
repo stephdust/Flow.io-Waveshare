@@ -1001,9 +1001,20 @@ bool IOModule::writeRuntimeUiValue(uint8_t valueId, IRuntimeUiWriter& writer) co
             return writeAnalogProviderRuntimeValue_(runtimeId, IO_SRC_BME680, 2U, writer);
         case RuntimeUiBme680Gaz:
             return writeAnalogProviderRuntimeValue_(runtimeId, IO_SRC_BME680, 3U, writer);
-        case RuntimeUiWaterTemp:
+        case RuntimeUiWaterTemp: {
             runtimeIndex = 4;
+            const auto* service = serviceRegistry_
+                ? serviceRegistry_->get<PoolConfigurationService>(ServiceId::PoolConfiguration)
+                : nullptr;
+            PoolWaterTemperaturePublicationPolicy policy{};
+            if (service && service->getWaterTempPublicationPolicy &&
+                service->getWaterTempPublicationPolicy(service->ctx, &policy) &&
+                policy.ioId >= IO_ID_AI_BASE &&
+                policy.ioId < IO_ID_AI_BASE + MAX_ANALOG_ENDPOINTS) {
+                runtimeIndex = uint8_t(policy.ioId - IO_ID_AI_BASE);
+            }
             break;
+        }
         case RuntimeUiAirTemp:
             runtimeIndex = 5;
             break;
