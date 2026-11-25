@@ -1880,6 +1880,8 @@ void wavesharePrintUnavailableByManifestType_(Print& out, bool& firstValue, Runt
     printRuntimeUnavailable_(out, firstValue, id, item ? item->key : "", item ? item->type : "unknown");
 }
 
+IoId waveshareConfiguredWaterTemperatureInput_(const PoolConfigurationService* poolCfgSvc);
+
 bool appendWaveshareLocalRuntimeValue_(Print& out,
                                       DataStore* dataStore,
                                       ConfigStore* cfgStore,
