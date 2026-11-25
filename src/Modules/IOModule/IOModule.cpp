@@ -2429,6 +2429,15 @@ IoStatus IOModule::ioWriteDigital_(IoId id, uint8_t on, uint32_t tsMs, uint8_t o
 
 IoStatus IOModule::ioReadAnalog_(IoId id, float* outValue, uint32_t* outTsMs, IoSeq* outSeq) const
 {
+    // Canonical service-level exposure gate: covers web, RF, external module
+    // reads and future consumers, without affecting PoolLogic raw acquisition.
+    if (id >= IO_ID_AI_BASE && id < IO_ID_AI_MAX &&
+        !waterTempPublicationAllowed_(id)) return IO_ERR_NOT_READY;
+    return ioReadAnalogRaw_(id, outValue, outTsMs, outSeq);
+}
+
+IoStatus IOModule::ioReadAnalogRaw_(IoId id, float* outValue, uint32_t* outTsMs, IoSeq* outSeq) const
+{
     if (!outValue) return IO_ERR_INVALID_ARG;
     if (id < IO_ID_AI_BASE || id >= IO_ID_AI_MAX) return IO_ERR_UNKNOWN_ID;
 
