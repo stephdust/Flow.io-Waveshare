@@ -888,6 +888,7 @@ void IOModule::refreshWaterTempPublicationGate_(uint32_t nowMs)
     const bool allowed = waterTempPublicationAllowed_(policy.ioId);
     if (waterTempGateLastIoId_ == policy.ioId &&
         waterTempGateLastAllowed_ == allowed) return;
+    const IoId previouslyGatedId = waterTempGateLastIoId_;
     waterTempGateLastIoId_ = policy.ioId;
     waterTempGateLastAllowed_ = allowed;
     // Apply the gate at the shared published-value source, not in each UI.
@@ -913,9 +914,9 @@ void IOModule::refreshWaterTempPublicationGate_(uint32_t nowMs)
             dataStore_->notifyChanged(DataKey(DATAKEY_IO_BASE + runtimeIndex));
         }
     };
-    if (waterTempGateLastIoId_ != IO_ID_INVALID &&
-        waterTempGateLastIoId_ != policy.ioId) {
-        updatePublished(waterTempGateLastIoId_, true);
+    if (previouslyGatedId != IO_ID_INVALID &&
+        previouslyGatedId != policy.ioId) {
+        updatePublished(previouslyGatedId, true);
     }
     updatePublished(policy.ioId, allowed);
 }
