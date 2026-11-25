@@ -859,10 +859,14 @@ bool IOModule::waterTempPublicationAllowed_(IoId ioId) const
     if (!svc->getWaterTempPublicationPolicy(svc->ctx, &policy) ||
         !policy.circulationOnly || policy.ioId != ioId) return true;
     if (poolWaterTemperatureCanPublish(policy.circulationOnly, policy.filtrationOn, false)) return true;
-    // A real, fresh mode-2 flow measurement is required, not a pulse count.
+    // Use a fresh converted flow rate, not the accumulated pulse count.
+    // Both pulse-counter mode (1) and rate-only mode (2) can be configured
+    // as flow meters; their ConvertedRate quality validates the reading.
     if (!dataStore_) return false;
     for (uint8_t i = 0; i < MAX_DIGITAL_INPUTS; ++i) {
-        if (digitalInCfg_[i].mode != IO_DIGITAL_INPUT_PULSES_PER_MINUTE ||
+        const uint8_t mode = digitalInCfg_[i].mode;
+        if ((mode != IO_DIGITAL_INPUT_COUNTER &&
+             mode != IO_DIGITAL_INPUT_PULSES_PER_MINUTE) ||
             !digitalInputSlotUsed(i)) continue;
         ValueSnapshot flow{};
         const bool valid = dataStore_->values.read(ValueIds::ConvertedRate + i, flow) &&
