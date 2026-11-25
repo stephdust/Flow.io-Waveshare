@@ -454,9 +454,49 @@ void ModbusTcpServerModule::setPoolDeviceModule(PoolDeviceModule* devices)
 bool ModbusTcpServerModule::lookupDevice_(void* context, uint16_t deviceId,
                                           SerialLineProfile& out, uint8_t& slaveAddress)
 {
-    const auto* module = static_cast<const ModbusTcpServerModule*>(context);
-    return module && module->devices_ &&
-        module->devices_->serialDeviceInfo(deviceId, out, nullptr, 0U, &slaveAddress);
+    auto* module = static_cast<ModbusTcpServerModule*>(context);
+    if (!module) return false;
+    PoolDeviceModule::SerialLookupDebug detail{};
+    const bool resolved = module->devices_ &&
+        module->devices_->serialDeviceInfo(deviceId, out, nullptr, 0U, &slaveAddress, &detail);
+#if FLOW_MODBUS_RESOLVER_DIAGNOSTICS
+    if (!resolved) {
+        const auto why = module->devices_ ? detail.failure :
+            PoolDeviceModule::SerialLookupFailure::StorageMissing;
+        const char* reason = "unknown";
+        switch (why) {
+            case PoolDeviceModule::SerialLookupFailure::IdOutOfRange: reason = "id_out_of_range"; break;
+            case PoolDeviceModule::SerialLookupFailure::StorageMissing: reason = "storage_missing"; break;
+            case PoolDeviceModule::SerialLookupFailure::LockBusy: reason = "lock_busy_10ms"; break;
+            case PoolDeviceModule::SerialLookupFailure::SlotUnused: reason = "slot_unused"; break;
+            case PoolDeviceModule::SerialLookupFailure::Disabled: reason = "disabled"; break;
+            case PoolDeviceModule::SerialLookupFailure::DriverNotReady: reason = "driver_not_ready"; break;
+            case PoolDeviceModule::SerialLookupFailure::NotRs485: reason = "not_rs485"; break;
+            default: break;
+        }
+        uint8_t port = 0U;
+        for (uint8_t p = 0U; p < ModbusTcpServer::kPortCount; ++p) {
+            if (module->configs_[p].serialSource == ModbusTcpServer::SerialSource::FlowioDevice &&
+                module->configs_[p].deviceId == deviceId) { port = p; break; }
+        }
+        const uint32_t now = millis();
+        if (!module->lastDeviceDebugMs_[port] ||
+            uint32_t(now - module->lastDeviceDebugMs_[port]) >= 15000U ||
+            module->lastDeviceDebugId_[port] != deviceId ||
+            module->lastDeviceDebugReason_[port] != uint8_t(why)) {
+            module->lastDeviceDebugMs_[port] = now ? now : 1U;
+            module->lastDeviceDebugId_[port] = deviceId;
+            module->lastDeviceDebugReason_[port] = uint8_t(why);
+            // Never log while holding the PoolDevice state mutex.
+            Log::warn(kLogModule_,
+                "[MODBUS-DEVICE] p=%u dev=%u why=%s used=%u en=%u drv=%u rs485=%u slave=%u",
+                unsigned(ModbusTcpServer::kPorts[port]), unsigned(deviceId), reason,
+                unsigned(detail.used), unsigned(detail.enabled), unsigned(detail.driverReady),
+                unsigned(detail.isRs485), unsigned(detail.slaveAddress));
+        }
+    }
+#endif
+    return resolved;
 }
 
 bool ModbusTcpServerModule::readPort(uint8_t index, ModbusTcpServer::PortConfig& out) const
