@@ -890,14 +890,34 @@ void IOModule::refreshWaterTempPublicationGate_(uint32_t nowMs)
         waterTempGateLastAllowed_ == allowed) return;
     waterTempGateLastIoId_ = policy.ioId;
     waterTempGateLastAllowed_ = allowed;
-    // Wake the existing MQTT runtime route on a gate transition even if the
-    // physical temperature is unchanged. Do not mutate the sensor/ValueStore.
-    const uint8_t analog = uint8_t(policy.ioId - IO_ID_AI_BASE);
-    if (analog < MAX_ANALOG_ENDPOINTS && analogSlots_[analog].endpoint) {
-        const uint8_t runtimeIndex = analogSlots_[analog].endpoint->runtimeIndex;
-        if (runtimeIndex < IO_MAX_ENDPOINTS)
+    // Apply the gate at the shared published-value source, not in each UI.
+    // The raw AnalogSensorEndpoint still holds the physical sample for PoolLogic
+    // heater/filtration regulation via IOServiceV2::readAnalog.
+    // Changing the selected sensor must also restore the old input.
+    const auto updatePublished = [&](IoId id, bool publish) {
+        if (id < IO_ID_AI_BASE || id >= IO_ID_AI_MAX) return;
+        const uint8_t analog = uint8_t(id - IO_ID_AI_BASE);
+        if (analog >= MAX_ANALOG_ENDPOINTS) return;
+        AnalogSlot& slot = analogSlots_[analog];
+        if (!slot.endpoint) return;
+        const uint64_t timestampMs = uint64_t(esp_timer_get_time()) / 1000ULL;
+        ValueNumber sample{}; sample.f = slot.lastRounded;
+        const bool available = publish && slot.lastRoundedValid;
+        (void)dataStore_->values.write(ValueIds::Analog + analog, sample,
+                                       timestampMs,
+                                       available ? ValueQuality::Valid : ValueQuality::Invalid);
+        const uint8_t runtimeIndex = slot.endpoint->runtimeIndex;
+        if (runtimeIndex < IO_MAX_ENDPOINTS) {
+            if (available) (void)setIoEndpointFloat(*dataStore_, runtimeIndex, slot.lastRounded, nowMs);
+            else (void)setIoEndpointInvalid(*dataStore_, runtimeIndex, IO_VALUE_FLOAT, nowMs);
             dataStore_->notifyChanged(DataKey(DATAKEY_IO_BASE + runtimeIndex));
+        }
+    };
+    if (waterTempGateLastIoId_ != IO_ID_INVALID &&
+        waterTempGateLastIoId_ != policy.ioId) {
+        updatePublished(waterTempGateLastIoId_, true);
     }
+    updatePublished(policy.ioId, allowed);
 }
 
 bool IOModule::buildInputSnapshot(char* out, size_t len, uint32_t& maxTsOut) const
@@ -1650,10 +1670,15 @@ bool IOModule::processAnalogDefinition_(uint8_t idx, uint32_t nowMs)
         }
     }
 
+    // One authoritative exposure decision for the shared value registry,
+    // live HTTP runtime snapshots, HMI/Nextion and other external consumers.
+    // Keep the endpoint's raw sample for local closed-loop PoolLogic control.
+    const bool publish = waterTempPublicationAllowed_(slot.ioId);
     slot.endpoint->update(rounded, true, uint32_t(timestampMs));
     if (dataStore_) {
         ValueNumber sample; sample.f = rounded;
-        dataStore_->values.write(ValueIds::Analog + idx, sample, timestampMs);
+        dataStore_->values.write(ValueIds::Analog + idx, sample, timestampMs,
+                                 publish ? ValueQuality::Valid : ValueQuality::Invalid);
     }
 
     if (!slot.lastRoundedValid || rounded != slot.lastRounded) {
@@ -1662,7 +1687,8 @@ bool IOModule::processAnalogDefinition_(uint8_t idx, uint32_t nowMs)
         if (dataStore_) {
             uint8_t rtIdx = 0;
             if ((rtIdx = slot.endpoint->runtimeIndex) < IO_MAX_ENDPOINTS) {
-                (void)setIoEndpointFloat(*dataStore_, rtIdx, rounded, nowMs);
+                if (publish) (void)setIoEndpointFloat(*dataStore_, rtIdx, rounded, nowMs);
+                else (void)setIoEndpointInvalid(*dataStore_, rtIdx, IO_VALUE_FLOAT, nowMs);
             }
         }
         markIoCycleChanged_(slot.ioId);
@@ -2311,6 +2337,9 @@ IoStatus IOModule::ioReadValue_(IoId id, IoValue* outValue) const
         const uint8_t analogIdx = (uint8_t)(id - IO_ID_AI_BASE);
         const AnalogSlot& s = analogSlots_[analogIdx];
         if (!s.used || !s.endpoint) return IO_ERR_NOT_READY;
+        // Public typed I/O reads must obey the same source-level gate as the
+        // shared DataStore; internal readAnalog remains unchanged for control.
+        if (!waterTempPublicationAllowed_(id)) return IO_ERR_NOT_READY;
 
         IOEndpointValue v{};
         if (!s.endpoint->read(v) || !v.valid || v.valueType != IO_EP_VALUE_FLOAT) return IO_ERR_NOT_READY;
