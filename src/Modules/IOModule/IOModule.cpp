@@ -1903,7 +1903,10 @@ void IOModule::forceAnalogSnapshotPublish_(uint8_t analogIdx, uint32_t nowMs)
     float republished = ioRoundToPrecision(v.v.f, slot.def.precision);
     slot.endpoint->update(republished, true, nowMs);
     if (dataStore_) {
-        (void)setIoEndpointFloat(*dataStore_, slot.endpoint->runtimeIndex, republished, nowMs);
+        if (waterTempPublicationAllowed_(slot.ioId))
+            (void)setIoEndpointFloat(*dataStore_, slot.endpoint->runtimeIndex, republished, nowMs);
+        else
+            (void)setIoEndpointInvalid(*dataStore_, slot.endpoint->runtimeIndex, IO_VALUE_FLOAT, nowMs);
     }
 }
 
