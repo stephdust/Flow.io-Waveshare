@@ -463,10 +463,12 @@ bool ModbusTcpServerModule::lookupDevice_(void* context, uint16_t deviceId,
     if (!resolved) {
         const auto why = module->devices_ ? detail.failure :
             PoolDeviceModule::SerialLookupFailure::StorageMissing;
-        const char* reason = "unknown";
+        const char* reason = module->devices_ ? "unknown" : "pool_module_missing";
         switch (why) {
             case PoolDeviceModule::SerialLookupFailure::IdOutOfRange: reason = "id_out_of_range"; break;
-            case PoolDeviceModule::SerialLookupFailure::StorageMissing: reason = "storage_missing"; break;
+            case PoolDeviceModule::SerialLookupFailure::StorageMissing:
+                if (module->devices_) reason = "storage_missing";
+                break;
             case PoolDeviceModule::SerialLookupFailure::LockBusy: reason = "lock_busy_10ms"; break;
             case PoolDeviceModule::SerialLookupFailure::SlotUnused: reason = "slot_unused"; break;
             case PoolDeviceModule::SerialLookupFailure::Disabled: reason = "disabled"; break;
