@@ -492,14 +492,37 @@ bool PoolDeviceModule::serialLineForDevice(uint16_t deviceId, SerialLineProfile&
 }
 
 bool PoolDeviceModule::serialDeviceInfo(uint16_t deviceId, SerialLineProfile& out,
-                                         char* label, size_t labelCapacity, uint8_t* slaveAddress) const
+                                         char* label, size_t labelCapacity, uint8_t* slaveAddress,
+                                         SerialLookupDebug* debug) const
 {
-    if (deviceId >= POOL_DEVICE_MAX || !slots_) return false;
-    if (!lockState_(pdMS_TO_TICKS(10))) return false;
+    if (debug) *debug = SerialLookupDebug{};
+    if (deviceId >= POOL_DEVICE_MAX) {
+        if (debug) debug->failure = SerialLookupFailure::IdOutOfRange;
+        return false;
+    }
+    if (!slots_) {
+        if (debug) debug->failure = SerialLookupFailure::StorageMissing;
+        return false;
+    }
+    // Do not retry or extend this 10ms timeout for instrumentation.
+    if (!lockState_(pdMS_TO_TICKS(10))) {
+        if (debug) debug->failure = SerialLookupFailure::LockBusy;
+        return false;
+    }
     const PoolDeviceSlot& slot = slots_[deviceId];
-    const bool valid = slot.used && slot.def.enabled &&
-        slot.driverReady &&
-        slot.driverConfig.capabilities.kind == PoolControlKind::Rs485;
+    const bool rs485 = slot.driverConfig.capabilities.kind == PoolControlKind::Rs485;
+    const bool valid = slot.used && slot.def.enabled && slot.driverReady && rs485;
+    if (debug) {
+        debug->used = slot.used ? 1U : 0U;
+        debug->enabled = slot.def.enabled ? 1U : 0U;
+        debug->driverReady = slot.driverReady ? 1U : 0U;
+        debug->isRs485 = rs485 ? 1U : 0U;
+        debug->slaveAddress = slot.driverConfig.serial.address;
+        debug->failure = !slot.used ? SerialLookupFailure::SlotUnused :
+            !slot.def.enabled ? SerialLookupFailure::Disabled :
+            !slot.driverReady ? SerialLookupFailure::DriverNotReady :
+            !rs485 ? SerialLookupFailure::NotRs485 : SerialLookupFailure::None;
+    }
     if (valid) {
         out = slot.driverConfig.serial.line;
         if (slaveAddress) *slaveAddress = slot.driverConfig.serial.address;
