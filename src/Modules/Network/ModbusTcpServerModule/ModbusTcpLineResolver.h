@@ -8,6 +8,7 @@
  */
 #include "ModbusTcpServerPolicy.h"
 #include <Arduino.h>
+#include <string.h>
 #include "Core/Log.h"
 #include "Core/LogModuleIds.h"
 
@@ -80,7 +81,7 @@ private:
         // Only report a failure when the reason changes, or every 15 seconds.
         // This is network-task-local state; no extra locks or RS485 traffic.
         const uint32_t now = millis();
-        if (!lastReason_[port] || lastReason_[port] != why ||
+        if (!lastReason_[port] || strcmp(lastReason_[port], why) != 0 ||
             uint32_t(now - lastReasonAtMs_[port]) >= 15000U) {
             lastReason_[port] = why;
             lastReasonAtMs_[port] = now ? now : 1U;
