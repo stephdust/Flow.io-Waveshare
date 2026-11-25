@@ -1899,7 +1899,16 @@ bool appendWaveshareLocalRuntimeValue_(Print& out,
     if (runtimeDataValueId(id) != VALUE_INVALID) {
         ValueSnapshot value{}; ValueMetadata metadata{};
         const auto* item = findRuntimeUiManifestItem(id);
-        if (!readRuntimeDataValue(dataStore->values, id, value, metadata)) {
+        // pool.water_temp is a semantic measurement: its configured I/O input
+        // can differ from the legacy manifest mapping to analog a04.
+        ValueId sourceId = runtimeDataValueId(id);
+        if (id == 2201U) {
+            const IoId selected = waveshareConfiguredWaterTemperatureInput_(poolCfgSvc);
+            if (selected >= IO_ID_AI_BASE && selected < IO_ID_AI_MAX)
+                sourceId = ValueIds::Analog + uint8_t(selected - IO_ID_AI_BASE);
+        }
+        if (!readAvailableDataValue(dataStore->values, sourceId, value, metadata) ||
+            !metadata.usable) {
             wavesharePrintUnavailableByManifestType_(out, firstValue, id);
             return true;
         }
@@ -2743,7 +2752,17 @@ bool waveshareReadDashboardRuntimeValue_(DataStore* dataStore,
     if (!findRuntimeUiManifestItem(id)) return false;
     if (runtimeDataValueId(id) != VALUE_INVALID) {
         ValueMetadata metadata{};
-        if (!dataStore || !presentDataValue(dataStore->values, id, out, metadata)) return false;
+        bool haveData = false;
+        if (dataStore && id == 2201U) {
+            const IoId selected = waveshareConfiguredWaterTemperatureInput_(poolCfgSvc);
+            if (selected >= IO_ID_AI_BASE && selected < IO_ID_AI_MAX) {
+                const ValueId actual = ValueIds::Analog + uint8_t(selected - IO_ID_AI_BASE);
+                haveData = presentDataValueById(dataStore->values, actual, out, metadata) && out.available;
+            }
+        } else if (dataStore) {
+            haveData = presentDataValue(dataStore->values, id, out, metadata);
+        }
+        if (!haveData) return false;
         out.precision = metadata.precision;
         snprintf(out.unit, sizeof(out.unit), "%s", metadata.displayUnit);
         return true;
