@@ -335,6 +335,10 @@ private:
     ModbusTcpServer::LineResolver resolver_{};
     ModbusTcpServer::SocketServer server_{};
     ModbusTcpServer::PortConfig configs_[ModbusTcpServer::kPortCount]{};
+    // Only the Modbus TCP task writes these debug rate-limiter slots.
+    uint32_t lastDeviceDebugMs_[ModbusTcpServer::kPortCount]{};
+    uint16_t lastDeviceDebugId_[ModbusTcpServer::kPortCount]{};
+    uint8_t lastDeviceDebugReason_[ModbusTcpServer::kPortCount]{};
     // Last counters reported in periodic Web warnings (not reset on OTA).
     struct ReportedErrors {
         uint32_t rxErrors = 0U;
