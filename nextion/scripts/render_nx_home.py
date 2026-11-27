@@ -274,7 +274,7 @@ def draw_preview_gauge_cursor(image, origin_x, percent):
     d.ellipse((cx-2,cy-3,cx,cy-1),fill=WHITE)
 
 
-FAN_X,FAN_Y,FAN_SIZE=207,244,70
+FAN_X,FAN_Y,FAN_SIZE=205,239,70
 FAN_RING_ATLAS_Y=620
 FAN_CORE_SIZE=42
 FAN_CORE_X=FAN_X+(FAN_SIZE-FAN_CORE_SIZE)//2
