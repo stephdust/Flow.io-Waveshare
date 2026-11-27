@@ -15,7 +15,7 @@ runner = project_dir / "nextion" / "scripts" / "run_nextion.py"
 
 
 def _invoke(mode):
-    def action(source, target, environment):
+    def action(source, target, env):
         print(f"[NEXTION] mode={mode}; ESP32/SPIFFS build disabled")
         subprocess.run(
             [sys.executable, str(runner), mode],
