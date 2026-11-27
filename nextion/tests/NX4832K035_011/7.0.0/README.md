@@ -53,6 +53,13 @@ de la pompe de filtration au centre de l'écran. Son dessin, sa zone `m2`
 et son événement ont été supprimés. La grille de configuration est
 recentrée dans la zone libérée ; les autres icônes restent inchangées.
 
+Le bandeau inférieur est désormais **minimaliste** : fond bleu nuit
+uniforme, un contour cyan, **aucun séparateur interne**, aucune case vide
+ou bouton fantôme. Seules trois icônes restent dans le bandeau
+(grille/configuration, engrenage/équipements, alarme), la turbine restant
+une commande distincte au centre. Les zones tactiles gardent leurs
+coordonnées vérifiées et ne se chevauchent pas.
+
 | Icône | Composant | Zone (x, y, largeur, hauteur) | Action |
 |---|---|---|---|
 | Grille (en bas à gauche) | `b0` | `64,268,72,45` | Configuration |
