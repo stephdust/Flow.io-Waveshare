@@ -159,12 +159,13 @@ def gauge_sprite(bg,kind,active):
     # (softened toward the ring), with no visible rectangular frame.
     # This preserves dynamic pH/ORP text on the real device.
     text(d,kind,103,135,13)
+    # Range endpoints sit above the central turbine (which overlaps y=210..280).
     if kind=='pH':
-        text(d,'6.8',21,140,11)
-        text(d,'8.2',188,140,11)
+        text(d,'6.8',21,109,11)
+        text(d,'8.2',188,109,11)
     else:
-        text(d,'600',19,140,10)
-        text(d,'800',188,140,10)
+        text(d,'600',19,109,10)
+        text(d,'800',188,109,10)
     return image.convert('RGB')
 
 
