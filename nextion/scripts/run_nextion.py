@@ -138,6 +138,9 @@ def compile_nextion() -> None:
 
         execute(str(python), str(renderer), "--source", str(work_source),
                 "--preview", str(work_preview))
+        # Never ship graphical changes without checking the generated PNG.
+        execute(str(python), str(ROOT / "nextion/scripts/test_nextion_preview_layout.py"),
+                "--preview", str(work_preview))
         execute(str(python), str(ROOT / "nextion/scripts/test_nextion_turbine_3d.py"),
                 "--atlas", str(work_source / "pictures" / "picture-0003.png"))
         execute(str(nx), "check", str(work_source))
