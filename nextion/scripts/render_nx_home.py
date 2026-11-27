@@ -90,21 +90,47 @@ def make_background():
     d=ImageDraw.Draw(image)
     text(d,'flow',65,31,20,anchor='lm')
     text(d,'.io',115,31,20,(11,212,248),anchor='lm')
-    # Two real temperatures share the 154..300px header column:
-    # drop = pool water (top), sun/cloud = outdoor air (bottom).
-    # Readings remain native text widgets, never baked into the bitmap.
-    # Compact icons deliberately leave x=187..296 clear for dynamic text.
-    drop=[(171,9),(167,14),(164,19),(163,23),(164,27),(167,29),
-          (171,30),(175,28),(178,25),(178,21),(175,15),(171,9)]
-    line(d,drop,(188,237,255),1.5)
-    line(d,[(166,22),(167,25),(170,27)],(9,207,244),1.4)
-    # Partly cloudy outline like the 5"/7" Home pages, simplified for 480x320.
-    d.arc((163*S,33*S,171*S,41*S),185,355,fill=(255,216,96),width=2*S)
-    for a,b in [((167,30),(167,32)),((160,35),(162,36)),((172,34),(174,33))]:
-        line(d,[a,b],(255,216,96),1.1)
-    d.arc((160*S,40*S,172*S,53*S),130,280,fill=WHITE,width=round(1.6*S))
-    d.arc((169*S,37*S,181*S,51*S),188,356,fill=WHITE,width=round(1.6*S))
-    line(d,[(162,50),(178,50)],WHITE,1.6)
+    # Two large live temperatures share the 154..300 header column.
+    # Icons are purpose-drawn at 3x for the 480x320 NX4832K035:
+    # blue water droplet (top), yellow sun + white cloud (bottom).
+    # Leave x>=185 clear for 24px native text in both rows.
+    d=ImageDraw.Draw(image)
+    water_drop=[
+        (171,6),(176,13),(180,19),(181,23),(179,27),
+        (176,30),(171,31),(166,30),(162,27),(160,23),
+        (161,19),(165,13)
+    ]
+    d.polygon([(x*S,y*S) for x,y in water_drop],
+              fill=(9,137,231,255))
+    d.line([(x*S,y*S) for x,y in water_drop+[water_drop[0]]],
+           fill=(216,249,255,255),width=2*S,joint='curve')
+    d.polygon([(168*S,14*S),(164*S,21*S),(165*S,25*S),
+               (168*S,26*S),(167*S,21*S)],fill=(165,240,255,255))
+    d.line([(165*S,27*S),(169*S,29*S)],fill=(55,220,255,255),width=S)
+
+    # Sun behind the cloud: genuine cloud silhouette, not two tiny
+    # disconnected curves that looked like a malformed symbol on hardware.
+    sun=(175,39)
+    d.ellipse(((sun[0]-5)*S,(sun[1]-5)*S,
+               (sun[0]+5)*S,(sun[1]+5)*S),
+              fill=(255,202,36,255),outline=(255,238,131,255),width=S)
+    for angle in range(0,360,45):
+        theta=math.radians(angle)
+        d.line([(round((sun[0]+7*math.cos(theta))*S),
+                 round((sun[1]+7*math.sin(theta))*S)),
+                (round((sun[0]+9*math.cos(theta))*S),
+                 round((sun[1]+9*math.sin(theta))*S))],
+               fill=(255,220,80,255),width=S)
+    # Opaque navy cloud covers only the lower left of the sun.
+    cloud=(3,26,52,255)
+    d.ellipse((159*S,44*S,173*S,53*S),fill=cloud)
+    d.ellipse((165*S,40*S,178*S,53*S),fill=cloud)
+    d.ellipse((171*S,45*S,183*S,53*S),fill=cloud)
+    d.line([(162*S,49*S),(163*S,46*S),(167*S,44*S),
+            (169*S,43*S),(172*S,43*S),(175*S,46*S),
+            (178*S,46*S),(181*S,49*S),(180*S,52*S),
+            (162*S,52*S),(160*S,50*S),(162*S,49*S)],
+           fill=(232,250,255,255),width=2*S,joint='curve')
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
     # Footer: four useful actions (grid/config, centre pump/filtration,
@@ -449,9 +475,9 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((187,20),'27.3°C',font=preview_font(16),
+    d.text((185,18),'27.3°C',font=preview_font(23),
            fill=WHITE,anchor='lm')
-    d.text((187,42),'7.3°C',font=preview_font(16),
+    d.text((185,43),'7.3°C',font=preview_font(23),
            fill=WHITE,anchor='lm')
     d.text((360,22),'10:47',font=preview_font(20),
            fill=WHITE,anchor='mm')
