@@ -51,7 +51,7 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
     assert f"sys2={other}.val" not in section, (
         f"{field} cursor test accidentally includes the other gauge"
     )
-    cases = [int(x) for x in re.findall(r"if\\(sys2==(\\d+)\\)", section)]
+    cases = [int(x) for x in re.findall(r"if\(sys2==(\d+)\)", section)]
     assert cases == list(range(21)), (
         f"{field} must have exactly the 21 cursor positions 0..20: {cases}"
     )
