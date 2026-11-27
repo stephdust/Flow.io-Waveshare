@@ -252,13 +252,22 @@ def replace_pic(buf:bytearray,dir_table:dict,name:str,im:Image.Image,append:bool
     im=im.convert('RGB')
     a=np.array(im,dtype=np.uint16)
     rgb=((a[:,:,0]>>3)<<11)|((a[:,:,1]>>2)<<5)|(a[:,:,2]>>3)
-    # CRITICAL: Nextion .i payloads are x-major (column-major), not normal
-    # row-major RGB565. The old encoder wrote rows and produced white/corrupt
-    # rectangles and broken sprites on a real NX4832K035 display.
-    payload=rgb.astype('<u2').tobytes(order='F')
-    decoded=np.frombuffer(payload,dtype='<u2').reshape((im.width,im.height)).T
-    assert np.array_equal(decoded,rgb), f'Nextion image layout mismatch: {name}'
-    # A row-major encoder must never be accepted for a non-uniform image.
+    # The original NX4832K035 .i header starts 0B 64 01 00:
+    #   0B means 90-degree rotation; 00 is raw RGB565.
+    # nxwright/project/screen_copy.py documents the actual stored_order(90):
+    #   columns left-to-right, within each column BOTTOM-to-TOP.
+    # A naive numpy Fortran-order encoder is still wrong: it walks columns
+    # TOP-to-bottom. The first fix for the white rectangles missed the Y flip.
+    assert old[:4] == bytes((0x0B, 0x64, 0x01, 0x00)), (name,old[:4])
+    payload=np.flipud(rgb).astype('<u2').tobytes(order='F')
+    # Decode using the independent x-major / inverted-y index formula.
+    # Check asymmetric pixels at 5 points, plus every pixel on a full roundtrip.
+    decoded=np.flipud(np.frombuffer(payload,dtype='<u2').reshape((im.width,im.height)).T)
+    assert np.array_equal(decoded,rgb), f'Nextion 90-degree picture pixel order mismatch: {name}'
+    for x,y in ((0,0),(im.width-1,0),(0,im.height-1),
+                (im.width-1,im.height-1),(im.width//2,im.height//3)):
+        raw565=struct.unpack_from('<H',payload,2*(x*im.height+(im.height-1-y)))[0]
+        assert raw565==int(rgb[y,x]),f'Nextion 90-degree pixel probe failed: {name} ({x},{y})'
     if im.width>1 and im.height>1 and not np.all(rgb==rgb.flat[0]):
         assert payload != rgb.astype('<u2').tobytes(order='C'), name
     header=bytearray(old[:24]);struct.pack_into('<H',header,12,im.width);struct.pack_into('<H',header,14,im.height);struct.pack_into('<I',header,16,len(payload))
