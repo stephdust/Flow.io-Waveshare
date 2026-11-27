@@ -70,14 +70,15 @@ def make_background():
     # native text, hot spots, gauge/turbine icons or screen coordinates.
     image=Image.new('RGBA',(480*S,320*S),(*NAVY,255))
     image=panel(image,(5,4,475,58),13,(3,26,52),(7,197,245))
-    # Two distinct touch frames with a full-width open gap for the turbine.
-    image=panel(image,(5,262,196,315),13,(3,25,48),(6,202,246))
-    image=panel(image,(289,262,475,315),13,(3,25,48),(6,202,246))
+    # Slim, balanced navigation trays: leave the center open for the
+    # raised, independent 70px turbine. Keep the navy canvas flat.
+    image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))
+    image=panel(image,(291,269,470,311),11,(3,25,48),(6,180,216))
     d=ImageDraw.Draw(image)
     for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
-    # Two bottom frames: grid/config left, gear/switches and alarm right.
-    # Nothing crosses the turbine in the middle; no unused play button.
-    # A single separator belongs to the right-hand frame only.
+    # Two compact bottom frames: navigation grid on the left,
+    # genuine 3D-ish gear and alert on the right, with one subtle divider.
+    # No large empty cyan-bordered banners or overlapping hitboxes.
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
     logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
@@ -146,31 +147,40 @@ def make_background():
            fill=(232,250,255,255),width=2*S,joint='curve')
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
-    # Transparent touch targets b0/m0/b1 match these visible icons.
-    # No opaque play button. The 70px turbine fits the clear centre gap.
-    for xx in (88,104):
-        for yy in (273,288):
-            d.rounded_rectangle((xx*S,yy*S,(xx+10)*S,(yy+10)*S),
-                                radius=2*S,outline=WHITE,width=2*S)
-    # Home switches / controls. Use a recognizable gear, not the former
-    # ambiguous curved arrow. Its hitbox is m0 (x=309..387, y=268..313).
-    line(d,[(401,272),(401,305)],(8,175,227),1)
+    # Invisible Nextion hotspots b0/m0/b1 remain untouched and aligned.
+    # Tight 2x2 square grid: 28x28, optically centered in the left tray.
+    for xx in (93,110):
+        for yy in (276,293):
+            d.rounded_rectangle((xx*S,yy*S,(xx+12)*S,(yy+12)*S),
+                                radius=3*S,fill=(4,36,68,255),
+                                outline=(230,251,255,255),width=2*S)
+    # A small luminous mark provides depth without colouring the base.
+    d.rounded_rectangle((95*S,278*S,100*S,283*S),
+                        radius=S,fill=(5,211,247,255))
+    # Vertical divider belongs only to the right grouped tray.
+    line(d,[(401,278),(401,302)],(6,123,169),1)
+    # True 10-tooth gear silhouette instead of a crude spoke/sun glyph.
     gear_x,gear_y=349,290
-    for spoke in range(8):
-        angle=spoke*math.pi/4
-        co,si=math.cos(angle),math.sin(angle)
-        d.line([(round((gear_x+12*co)*S),round((gear_y+12*si)*S)),
-                (round((gear_x+16*co)*S),round((gear_y+16*si)*S))],
-               fill=(*WHITE,),width=4*S)
-    d.ellipse(((gear_x-12)*S,(gear_y-12)*S,
-               (gear_x+12)*S,(gear_y+12)*S),
-              outline=(*AQUA,),width=2*S)
-    d.ellipse(((gear_x-5)*S,(gear_y-5)*S,
-               (gear_x+5)*S,(gear_y+5)*S),
-              outline=(*WHITE,),width=2*S)
-    line(d,[(450,276),(433,304),(467,304),(450,276)],WHITE,2)
-    line(d,[(450,285),(450,296)],WHITE,2)
-    d.ellipse((448*S,298*S,452*S,302*S),fill=WHITE)
+    gear_points=[]
+    for tooth in range(10):
+        for angle_offset,radius in ((-.40,13),(-.28,17),(.28,17),(.40,13)):
+            theta=2*math.pi*(tooth+angle_offset)/10-math.pi/2
+            gear_points.append((round((gear_x+radius*math.cos(theta))*S),
+                                round((gear_y+radius*math.sin(theta))*S)))
+    d.polygon(gear_points,fill=(4,66,100,255))
+    d.line(gear_points+[gear_points[0]],fill=(228,251,255,255),
+           width=2*S,joint='curve')
+    # Deliberate concentric bearing and polished cyan inner rim.
+    d.ellipse(((gear_x-9)*S,(gear_y-9)*S,
+               (gear_x+9)*S,(gear_y+9)*S),
+              fill=(3,25,48,255),outline=(8,208,240,255),width=2*S)
+    d.ellipse(((gear_x-3)*S,(gear_y-3)*S,
+               (gear_x+3)*S,(gear_y+3)*S),
+              fill=(226,251,255,255))
+    # Calmer, lighter alert symbol, now genuinely centered in its half.
+    line(d,[(442,276),(427,304),(457,304),(442,276)],WHITE,2)
+    line(d,[(442,285),(442,294)],WHITE,2)
+    d.ellipse((440*S,297*S,444*S,301*S),fill=WHITE)
     # Time, date, water and outdoor-air temperatures stay live widgets. Wi-Fi
     # signal tiers are drawn dynamically from atlas frames (RSSI from ESP32).
     return image.convert('RGB')
@@ -229,11 +239,11 @@ def gauge_sprite(bg,kind,active):
     # by pageHome.nx only after the current gauge frame is blitted.
     text(d,kind,103,135,13)
     if kind=='pH':
-        text(d,'6.8',21,109,16)
-        text(d,'8.2',187,109,16)
+        text(d,'6.8',21,116,16)
+        text(d,'8.2',187,116,16)
     else:
-        text(d,'600',21,109,15)
-        text(d,'800',187,109,15)
+        text(d,'600',21,116,15)
+        text(d,'800',187,116,15)
     return image
 
 
