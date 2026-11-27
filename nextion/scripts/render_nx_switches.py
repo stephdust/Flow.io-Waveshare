@@ -117,7 +117,7 @@ def main():
         # with original Nextion text component rectangles and coordinates.
         for i in range(8):
             c=components[f"t{i}"]
-            linebreaks=c["txt"].replace("\\r\\n","\\n").replace("   ","").replace("  ","").strip()
+            linebreaks=c["txt"].replace(chr(13)+chr(10), chr(10)).replace(chr(13), "").replace("   ","").replace("  ","").strip()
             cx=c["x"]+c["w"]/2
             draw.multiline_text((cx,c["y"]+c["h"]/2),linebreaks,
                 font=font(12),fill=(255,255,255),anchor="mm",
