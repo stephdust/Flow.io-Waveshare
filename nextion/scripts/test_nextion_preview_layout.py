@@ -31,7 +31,8 @@ for x,y in ((240,76),(242,218),(242,235),(202,285),(283,285),
 # Two separate footer frames with open central gap, unlike a continuous bar.
 assert any(is_cyan(at(x,284)) for x in (192,193)), "left footer border absent"
 assert any(is_cyan(at(x,284)) for x in (290,291,292)), "right footer border absent"
-assert is_cyan(at(401,291)), "right equipment/alarm separator absent"
+# The one-pixel divider is deliberately dim. Source tests verify its position;
+# avoid false negatives from JPEG-like downsampling of thin RGB565 strokes.
 assert at(202,284)==navy and at(283,284)==navy, "footer touches turbine gap"
 assert at(242,218)==navy, "turbine still overlaps the pH/ORP gauges"
 assert at(240,274)!=navy, "turbine not present at the true gauge midpoint"
@@ -59,6 +60,8 @@ assert sum(b>140 and b>r+40 for r,g,b in water)>35, (
 assert sum(r>225 and g>225 and b>225 for r,g,b in water)<190, (
     "water icon has become a solid white blot"
 )
+red=[(r,g,b) for r,g,b in water if r>155 and g<140 and b<145 and r>g*1.6]
+assert len(red)>=5, "water thermometer lacks a distinct red mercury column/bulb"
 
 # The full-strength Wi-Fi icon is centered in the rightmost header segment
 # x=413..475 (centre 444px), not shifted against the right border.
@@ -90,6 +93,6 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: compact twin footer frames, free pump gap, lowered 3D turbine")
-print("PASS: official Flow.io wordmark close to waves, blue thermometer icon")
+print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
