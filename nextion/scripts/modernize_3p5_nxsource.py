@@ -66,6 +66,14 @@ def edit_home_text(source_folder: Path) -> None:
     if data.count(old) != 1:
         raise ValueError("unexpected pageHome.loadend source")
     data = data.replace(old, new)
+    # wup=255 only refreshes native widgets. Re-enter pageHome on wake to
+    # recreate xpic background and both non-native pH/ORP gauge layers.
+    load = "on pageHome.load:\n"
+    unload = "on pageHome.unload:\n  PreviousPage=dp\n"
+    if data.count(load) != 1 or data.count(unload) != 1:
+        raise ValueError("unexpected pageHome wake/exit events")
+    data = data.replace(load, load + "  wup=1\n", 1)
+    data = data.replace(unload, "on pageHome.unload:\n  wup=255\n  PreviousPage=dp\n", 1)
     for component in ("tpH", "tORP"):
         for color in ("Red_Color", "Orange_Color", "Green_Color"):
             before = f"{component}.bco={color}"

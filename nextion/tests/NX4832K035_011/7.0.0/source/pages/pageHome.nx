@@ -1,4 +1,6 @@
 on pageHome.load:
+  // Re-enter this page after automatic wake: custom xpic layers require full redraw.
+  wup=1
   printh 23 02 50 00
   printh 23 03 60 03 00
   vis bUpdateGauge,0
@@ -38,6 +40,8 @@ on pageHome.loadend:
   click bDateTime,1
 
 on pageHome.unload:
+  // Preserve ordinary wake behavior when visiting config/alarms/other pages.
+  wup=255
   PreviousPage=dp
 
 on tmAnim.timer:

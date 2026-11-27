@@ -33,3 +33,12 @@ La compilation nxwright réussie ne valide pas l'affichage physique, les jauges,
 le retour après veille ou les événements série/tactiles. Aucun PR amont avant
 validation matérielle. Les sources HMI fonctionnelles précédentes sont sauvegardées
 sur la branche de référence `backup/nextion-v7-validated-20261127`.
+
+## Correction de la veille — 7.0.0 (27/11/2026)
+
+Home définit `wup=1` dans `pageHome.load` : après mise en veille, le Nextion
+recharge la page physique 1 (Home) et réexécute les commandes `xpic` de
+`pageHome.loadend` ainsi que l'invalidation du cache des deux jauges.
+Sur `pageHome.unload`, `wup=255` restaure le comportement habituel des
+autres pages. Le test `nextion/scripts/test_nextion_wake.py` vérifie ce
+contrat. **Validation réelle après plusieurs veilles toujours requise.**

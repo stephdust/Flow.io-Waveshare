@@ -30,6 +30,10 @@ jobs:
           python-version: '3.11'
       - name: Install PlatformIO Core only
         run: python -m pip install 'platformio>=6.2,<7'
+      - name: Validate Home wake/redraw source contract
+        run: |
+          python nextion/scripts/test_nextion_wake.py
+          python -m py_compile nextion/scripts/modernize_3p5_nxsource.py
       - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
         run: pio run -e nextion
       - name: Validate release, manifest and model without touching ESP32/SPIFFS
