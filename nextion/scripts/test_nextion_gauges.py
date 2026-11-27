@@ -63,30 +63,54 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
     assert "sys2+=7" in section and "sys2=sys2/14" in section
     xpic = f"xpic {destination_x},89,207,150"
     assert xpic in section
-    first_x = destination_x + 103
+    # Verify the real 3D needle instead of the obsolete 22px rim cursor.
+    # Every Nextion position has four layered strokes from the dial centre
+    # to the measured angle: shadow, blue side, cyan side, white highlight.
+    cx = destination_x + 103
+    cy = 159
     for i in range(21):
         a = math.pi+i*math.pi/20
-        inner_x = round(first_x + 77*math.cos(a))
-        inner_y = round(89 + 96.5 + 66*math.sin(a))
-        outer_x = round(first_x + 99*math.cos(a))
-        outer_y = round(89 + 96.5 + 85*math.sin(a))
-        # The source was generated using round-half-up; Python's round()
-        # uses ties-to-even. Allow at most one pixel for that difference,
-        # without weakening the colour, 21-position or alignment checks.
+        tx = round(cx + 81*math.cos(a))
+        ty = round(cy + 59*math.sin(a))
+        # Isolate each phase, to ensure the ORP check cannot match pH lines.
         match = re.search(
-            rf"if\(sys2=={i}\)\s*\{{\s*line [^\n]+2047\s*"
-            rf"line (\d+),(\d+),(\d+),(\d+),65535\s*"
-            rf"line [^\n]+2047",
+            rf"(?m)^    if\\(sys2=={i}\\)\\n    \\{{\\n"
+            rf"(?P<block>(?:      line [^\\n]+\\n){{4}})    \\}}",
             section,
         )
-        assert match, f"missing {field} measurement bar at phase {i}"
-        actual = [int(x) for x in match.groups()]
-        expected = [inner_x, inner_y, outer_x, outer_y]
-        assert all(abs(a-b) <= 1 for a,b in zip(actual, expected)), (
-            f"misaligned {field} cursor {i}: got {actual}, expected {expected}"
+        assert match, f"missing {field} 3D needle at position {i}"
+        strokes = []
+        for line_text in match.group("block").strip().splitlines():
+            values = [int(x) for x in line_text.strip()[5:].split(",")]
+            assert len(values) == 5, f"invalid needle stroke: {line_text}"
+            strokes.append(values)
+        assert [x[4] for x in strokes] == [841,2015,2047,65535], (
+            f"missing 3D shadow/blue/cyan/highlight for {field} phase {i}"
         )
-        assert destination_x <= min(inner_x,outer_x) <= max(inner_x,outer_x) < destination_x+207
-        assert 89 <= inner_y <= 239 and 89 <= outer_y <= 239
+        # All four line origins stay inside the 7px central bearing.
+        for x0,y0,x1,y1,_ in strokes:
+            assert abs(x0-cx) <= 5 and abs(y0-cy) <= 5, (
+                f"{field} phase {i} no longer starts at its hub"
+            )
+            assert abs(x1-tx) <= 3 and abs(y1-ty) <= 3, (
+                f"{field} phase {i} tip at {(x1,y1)} not {(tx,ty)}"
+            )
+            assert destination_x <= min(x0,x1) <= max(x0,x1) < destination_x+207
+            assert 89 <= min(y0,y1) <= max(y0,y1) <= 239
+        dx = strokes[-1][2]-strokes[-1][0]
+        dy = strokes[-1][3]-strokes[-1][1]
+        assert dx*dx+dy*dy > 50*50, (
+            f"{field} phase {i} is a short rim tick, not a full needle"
+        )
+    for instruction in (
+        f"cirs {cx},159,6,841",
+        f"cirs {cx},159,5,2047",
+        f"cirs {cx},159,3,1068",
+        f"cirs {cx-1},157,1,65535",
+    ):
+        assert instruction in section, (
+            f"missing {field} layered 3D bearing: {instruction}"
+        )
 
 # Zero = far left red, 140 = central green, 280 = far right red.
 bucket = lambda percent: min(4,(percent+35)//70)
@@ -99,6 +123,6 @@ assert "draw_preview_gauge_cursor(demo, 253, 144)" in art
 assert byname["tpH"]["x"] == 87 and byname["tORP"]["x"] == 321
 assert "m2" not in byname
 print("PASS: original-style danger/attention/good/attention/danger gauge colours")
-print("PASS: 21 live measurement pointers on each dial (0..280)")
+print("PASS: 21 full-length layered 3D needles and bearings on each dial (0..280)")
 print("PASS: no static setpoint arrows and larger range endpoint labels")
 print("PASS: central green zone at configured setpoints, no false warning")
