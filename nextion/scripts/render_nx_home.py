@@ -149,8 +149,11 @@ def gauge_sprite(bg,kind,active):
     md.ellipse((27*S,30*S,179*S,163*S),fill=255)
     mask=mask.filter(ImageFilter.GaussianBlur(11*S))
     image=Image.composite(shade,image,mask)
-    colors=((249,35,83),(255,147,29),(255,212,36),
-            (105,247,51),(8,217,248))
+    # Original safety semantics restored around the configured setpoint:
+    # centre (140/280) = GOOD green, shoulders = caution amber,
+    # extremes = alarm red. Never show orange/red at the target value.
+    colors=((254,39,86),(255,212,32),(98,252,55),
+            (255,212,32),(254,39,86))
     ring=tuple(q*S for q in (7,11,200,182))
     image=halo(image,lambda d:[d.arc(ring,180+i*36+2,180+(i+1)*36-2,
                                      fill=(*colors[i],150),width=13*S)
@@ -176,11 +179,11 @@ def gauge_sprite(bg,kind,active):
     text(d,kind,103,135,13)
     # Range endpoints sit above the central turbine (which overlaps y=210..280).
     if kind=='pH':
-        text(d,'6.8',21,109,11)
-        text(d,'8.2',188,109,11)
+        text(d,'6.8',21,109,16)
+        text(d,'8.2',187,109,16)
     else:
-        text(d,'600',19,109,10)
-        text(d,'800',188,109,10)
+        text(d,'600',21,109,15)
+        text(d,'800',187,109,15)
     return image.convert('RGB')
 
 
