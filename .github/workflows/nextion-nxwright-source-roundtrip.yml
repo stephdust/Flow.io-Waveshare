@@ -42,6 +42,33 @@ jobs:
           find "$RUNNER_TEMP/nx-source" -maxdepth 3 -type f | sort > "$RUNNER_TEMP/source-files.txt"
           cat "$RUNNER_TEMP/nx-source/app.toml" > "$GITHUB_STEP_SUMMARY"
           printf '\nNX4832K035 source extraction, check and rebuild successful. Not uploaded to any Nextion.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Experimental nxwright compile from extracted 7.0.0 (NOT production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "This is an experimental NX4832K035 build, not a release artifact."
+          echo "Use only the existing 6.0.0 Nextion TFT as firmware input (no downloads)."
+          nxwright compile "$RUNNER_TEMP/nx-source" "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
+            --firmware nextion/releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.tft \
+            2>&1 | tee "$RUNNER_TEMP/nxwright-compile.log"
+          test -s "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft"
+          sha256sum "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
+            | tee "$RUNNER_TEMP/nxwright-compiled-sha256.txt"
+          nxwright tft-read "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
+            2>&1 | tee "$RUNNER_TEMP/nxwright-tft-inspection.txt"
+          echo "Experimental TFT compiled and parsed; real Nextion Editor/device validation still required." >> "$GITHUB_STEP_SUMMARY"
+      - name: Archive experimental TFT and compile diagnostics (NOT a release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NX4832K035-7.0.0-NXWRIGHT-TFT-EXPERIMENTAL-DO-NOT-INSTALL
+          path: |
+            ${{ runner.temp }}/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft
+            ${{ runner.temp }}/nxwright-compile.log
+            ${{ runner.temp }}/nxwright-compiled-sha256.txt
+            ${{ runner.temp }}/nxwright-tft-inspection.txt
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload extracted editable Nextion 7.0.0 project
         uses: actions/upload-artifact@v4
         with:
