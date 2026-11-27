@@ -142,14 +142,15 @@ def make_background():
             (178*S,46*S),(181*S,49*S),(180*S,52*S),
             (162*S,52*S),(160*S,50*S),(162*S,49*S)],
            fill=(232,250,255,255),width=2*S,joint='curve')
-    # Group both temperature icons on the same x=194 vertical axis:
-    # both icons +23 px. The right edge of each icon is
-    # <=205px, just BEFORE the native text widgets starting at x=207.
-    # This prevents Nextion text refresh from painting over the icons.
+    # Pair each icon with its own reading at a fixed 3..8px gap.
+    # The temperature fields begin at x=218 and are LEFT-aligned, because
+    # right-aligning variable-length values (7.3 vs 27.3) was causing
+    # the visually detached icons reported on the real Nextion.
+    # Drawn icon pixels end before x=218; native text repaint cannot erase.
     image.alpha_composite(
-        weather_icons.crop((159*S,5*S,184*S,30*S)),(182*S,5*S))
+        weather_icons.crop((159*S,5*S,184*S,30*S)),(191*S,5*S))
     image.alpha_composite(
-        weather_icons.crop((159*S,30*S,184*S,55*S)),(182*S,30*S))
+        weather_icons.crop((159*S,30*S,184*S,55*S)),(191*S,30*S))
     d=ImageDraw.Draw(image)
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
@@ -592,10 +593,10 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((296,18),'27.3°C',font=preview_font(22),
-           fill=WHITE,anchor='rm')
-    d.text((296,43),'7.3°C',font=preview_font(22),
-           fill=WHITE,anchor='rm')
+    d.text((218,18),'27.3°C',font=preview_font(22),
+           fill=WHITE,anchor='lm')
+    d.text((218,43),'7.3°C',font=preview_font(22),
+           fill=WHITE,anchor='lm')
     d.text((360,22),'10:47',font=preview_font(25),
            fill=WHITE,anchor='mm')
     d.text((357,44),'27/11/26',font=preview_font(20),
