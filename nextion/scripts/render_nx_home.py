@@ -86,11 +86,12 @@ def make_background():
         raise ValueError('official Flow.io waves are empty')
     wave=wave.crop(bbox)
     wave.thumbnail((57*S,33*S),Image.Resampling.LANCZOS)
-    image.paste(wave,(8*S,14*S+((33*S-wave.height)//2)),wave)
+    image.paste(wave,(20*S,14*S+((33*S-wave.height)//2)),wave)
     d=ImageDraw.Draw(image)
-    # Tighten wordmark to the official waves, while staying left of x=154.
-    text(d,'flow',51,31,20,anchor='lm')
-    text(d,'.io',101,31,20,(11,212,248),anchor='lm')
+    # Move the COMPLETE Flow.io mark +12px to centre its visual group
+    # within the leftmost header segment; internal spacing is unchanged.
+    text(d,'flow',63,31,20,anchor='lm')
+    text(d,'.io',113,31,20,(11,212,248),anchor='lm')
     # Water temperature: sharp small blue droplet with a RED thermometer.
     # No Gaussian halo and no thick overlapping white contours: crisp at
     # the actual 480x320 resolution and after RGB565 conversion.
@@ -142,15 +143,14 @@ def make_background():
             (178*S,46*S),(181*S,49*S),(180*S,52*S),
             (162*S,52*S),(160*S,50*S),(162*S,49*S)],
            fill=(232,250,255,255),width=2*S,joint='curve')
-    # Pair each icon with its own reading at a fixed 3..8px gap.
-    # The temperature fields begin at x=218 and are LEFT-aligned, because
-    # right-aligning variable-length values (7.3 vs 27.3) was causing
-    # the visually detached icons reported on the real Nextion.
-    # Drawn icon pixels end before x=218; native text repaint cannot erase.
+    # Move the complete, paired water/air group 10px to the RIGHT,
+    # matching the centre line of the pump at x240 in the real display.
+    # Keep both symbol-to-value gaps unchanged. Native live text starts x228
+    # and NEVER paints over the icon region ending before x226.
     image.alpha_composite(
-        weather_icons.crop((159*S,5*S,184*S,30*S)),(191*S,5*S))
+        weather_icons.crop((159*S,5*S,184*S,30*S)),(201*S,5*S))
     image.alpha_composite(
-        weather_icons.crop((159*S,30*S,184*S,55*S)),(191*S,30*S))
+        weather_icons.crop((159*S,30*S,184*S,55*S)),(201*S,30*S))
     d=ImageDraw.Draw(image)
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
@@ -593,13 +593,13 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((218,18),'27.3°C',font=preview_font(22),
+    d.text((228,18),'27.3°C',font=preview_font(22),
            fill=WHITE,anchor='lm')
-    d.text((218,43),'7.3°C',font=preview_font(22),
+    d.text((228,43),'7.3°C',font=preview_font(22),
            fill=WHITE,anchor='lm')
-    d.text((360,22),'10:47',font=preview_font(25),
+    d.text((370,22),'10:47',font=preview_font(25),
            fill=WHITE,anchor='mm')
-    d.text((357,44),'27/11/26',font=preview_font(20),
+    d.text((367,44),'27/11/26',font=preview_font(20),
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
