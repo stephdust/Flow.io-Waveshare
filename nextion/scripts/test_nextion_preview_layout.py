@@ -52,7 +52,7 @@ assert abs((min(rim)+max(rim))/2 - 240) <= 1.5, (
 )
 
 # Inspect the actual 3D icon colours, not merely their Python source.
-# The artwork is centered exactly under pH (x=123), then x=320 and x=400;
+# The artwork is centered under pH (x=123), then moved to x=346 / 440;
 # the rotor remains x=240 regardless of navigation styling.
 def colored_pixels(x0,x1,y0,y1,predicate):
     return [(x,y) for y in range(y0,y1) for x in range(x0,x1)
@@ -60,21 +60,23 @@ def colored_pixels(x0,x1,y0,y1,predicate):
 
 grid = colored_pixels(102,145,272,311,
     lambda q: q[2]>125 and q[2]>q[0]+45 and q[1]>75)
-gear = colored_pixels(298,342,269,312,
+gear = colored_pixels(322,371,269,312,
     lambda q: q[1]>110 and q[1]>q[0]*1.18 and q[1]>q[2]*0.85)
-alarm = colored_pixels(378,422,269,312,
+alarm = colored_pixels(417,466,269,312,
     lambda q: q[0]>155 and q[1]>70 and q[2]<155 and q[0]>q[2]*1.4)
 assert len(grid)>35, f"cyan glass grid not visible: {len(grid)} pixels"
 assert len(gear)>35, f"jade 3D gear not visible: {len(gear)} pixels"
 assert len(alarm)>35, f"amber warning triangle not visible: {len(alarm)} pixels"
-for name,px,target in (("grid",grid,123),("gear",gear,320),("alert",alarm,400)):
+for name,px,target in (("grid",grid,123),("gear",gear,346),("alert",alarm,440)):
     center=(min(x for x,y in px)+max(x for x,y in px))/2
     assert abs(center-target)<=3.5, (
         f"{name} icon shifted: x={center}, expected x={target}"
     )
-assert 320-240==400-320==480-400
+assert (346-18)-(240+35)>=50
+assert (440-20)-(346+18)>=50
+assert 440+20<=480-15
 # The three buttons remain separate on the uniform navy base.
-for x in (161,180,285,355,360,451):
+for x in (161,180,285,298,388,393,473):
     assert at(x,290)==navy, f"footer has unwanted frame or glow at x={x}"
 
 # The wordmark must begin soon after the official turquoise waves.
@@ -125,7 +127,7 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: frameless footer with 3 distinct raised cyan, jade and amber icons")
-print("PASS: icon centres x123/320/400, 80px equal spacing from pump to edge")
+print("PASS: icon centres x123/346/440, 50px+ gap to pump and neighbour")
 print("PASS: 70px turbine correctly centered between gauges")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
