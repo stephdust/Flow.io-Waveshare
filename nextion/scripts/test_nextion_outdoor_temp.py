@@ -34,8 +34,11 @@ assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
 assert water["x"] == air["x"] == 185
 assert water["w"] == air["w"] == 113
-assert water["font"] == air["font"] == "SegoeUI_24_Keyboard"
-assert water["bco"] == air["bco"] == "#031a34"
+assert water["font"] == air["font"] == "SegoeUI_16"
+assert water["bco"] == air["bco"] == "#041225"
+assert byname["tTime"]["bco"] == byname["tDate"]["bco"] == "#041225", (
+    "native header labels must not paint rectangular panels over uniform navy"
+)
 assert water["ycen"] == air["ycen"] == 1
 assert 154 < water["x"] and water["x"] + water["w"] <= 300
 assert 154 < air["x"] and air["x"] + air["w"] <= 300
@@ -65,9 +68,9 @@ assert "fill=(242,48,62,255)" in renderer
 assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
 assert "cloud=(3,26,52,255)" in renderer
-assert "d.text((185,18),'27.3°C',font=preview_font(23)" in renderer
-assert "d.text((185,43),'7.3°C',font=preview_font(23)" in renderer
+assert "d.text((185,18),'27.3°C',font=preview_font(18)" in renderer
+assert "d.text((185,43),'7.3°C',font=preview_font(18)" in renderer
 assert "d.text((187,20),'27.3°C'" not in renderer
 print("PASS: water/outdoor temperatures use existing ESP32 globals")
-print("PASS: two 24px rows fit the Home header without moving time/date/Wi-Fi")
+print("PASS: smaller 16px native temperature fonts, no text background rectangles")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
