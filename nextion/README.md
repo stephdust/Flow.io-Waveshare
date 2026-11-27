@@ -67,6 +67,8 @@ La source nxwright de la nouvelle Home se trouve dans `nextion/tests/NX4832K035_
 
 ## Compilation Nextion via PlatformIO (méthode unique)
 
+**Mémo :** `pio run -e nextion` = compilation HMI/TFT **+** copie dans `binary/` **+** manifeste. `pio run -e nextion -t manifest` = copie et manifeste **seulement**. Le paramètre `-t manifest` n'est pas obligatoire lorsque l'on recompile.
+
 `platformio.ini` possède une section isolée **`[env:nextion]`** :
 
 ```bash

@@ -129,6 +129,26 @@ L'écran tactile [Nextion](https://nextion.tech/) peut être installé dans le l
   <em>Écran Nextion présenté dans un boîtier dédié.</em>
 </p>
 
+### Compilation Nextion 7.0.0 avec PlatformIO (fork `dev`)
+
+Pour l'écran **NX4832K035_011 (480 × 320)** uniquement, depuis la racine du dépôt :
+
+```bash
+pio run -e nextion
+```
+
+Compile le **HMI et le TFT avec nxwright**, copie le TFT dans `nextion/releases/7.0.0/` et `binary/`, puis régénère `binary/manifest.json`.
+
+```bash
+pio run -e nextion -t manifest
+```
+
+**Commande rapide :** ne recompile rien ; recopie le TFT déjà présent dans `nextion/releases/7.0.0/` vers `binary/` et actualise uniquement le manifeste (taille et SHA-256).
+
+`-t manifest` est donc **facultatif** : sans lui, la compilation complète Nextion inclut déjà l'export et la mise à jour du manifeste. **Aucune de ces commandes ne compile l'ESP32 ou le SPIFFS.**
+
+Voir [la documentation Nextion](nextion/README.md#compilation-nextion-via-platformio-méthode-unique). La version reste **7.0.0** jusqu'au PR ; les modèles 5″/7″ ne sont pas concernés.
+
 ## Le matériel flow.io
 
 L'installation de référence associe un contrôleur industriel [Waveshare ESP32-S3-POE-ETH-8DI-8RO](https://www.waveshare.com/product/iot-communication/esp32-s3-eth-8di-8ro.htm) à la carte flow.io Companion.

@@ -15,6 +15,17 @@ Le [workflow de compilation nxwright](../../../.github/workflows/nextion-nxwrigh
 publie ce HMI et son TFT **sur la branche `dev` de notre fork seulement**.
 Le numéro de version reste `7.0.0`, et aucun PR n'est envoyé automatiquement.
 
+## Raccourcis PlatformIO pour ce Nextion 7.0.0
+
+Depuis la **racine** du dépôt, sur `stephdust/dev` :
+
+| Commande | Effet |
+|---|---|
+| `pio run -e nextion` | Recompile avec nxwright le HMI et le TFT, les place dans `nextion/releases/7.0.0/`, copie le TFT dans `binary/` et actualise `binary/manifest.json`. |
+| `pio run -e nextion -t manifest` | Sans compilation : copie le TFT existant dans `binary/` et régénère `binary/manifest.json`. |
+
+`-t manifest` est **facultatif** : la commande de compilation complète inclut déjà ces opérations. **Pas de build ESP32/SPIFFS** avec ces deux commandes. En cas de mise à jour HTTP, publier **ensemble** le TFT et le manifeste régénérés.
+
 ## Périmètre validé
 
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
