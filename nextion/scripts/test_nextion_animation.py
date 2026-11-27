@@ -41,6 +41,7 @@ assert "tProp.pic=" not in update, "hidden legacy component should not redraw"
 assert "FAN_X,FAN_Y,FAN_SIZE=207,210,70" in renderer
 assert "FAN_ATLAS_Y=620" in renderer and "FAN_FRAMES=11" in renderer
 assert "fan_frame(bg,state,frame)" in renderer
+assert "ImageFont.truetype(FONTS[0]" not in renderer, "Windows preview must use portable fonts"
 assert "for frame in range(FAN_FRAMES):" in renderer
 print("PASS: new turbine stays centered at 242,245; no glyph offset")
 print("PASS: filtration ON -> 10 rotating frames / OFF -> stationary frame 0")

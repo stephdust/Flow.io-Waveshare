@@ -33,6 +33,15 @@ def font(n):
     raise RuntimeError('No vector font available for Nextion rendering')
 
 
+def preview_font(n):
+    # Preview is rendered at 480x320, not at the supersampled 3x scale.
+    # Use the same portable font choices as the production atlas renderer.
+    for candidate in FONTS:
+        try: return ImageFont.truetype(candidate,n)
+        except OSError: pass
+    raise RuntimeError('No vector font available for Nextion preview')
+
+
 def text(d,value,x,y,n,color=WHITE,anchor='mm'):
     d.text((round(x*S),round(y*S)),str(value),fill=color,font=font(n),anchor=anchor)
 
@@ -238,14 +247,14 @@ def render(source,preview):
     demo.paste(fan_frame(bg,1,4).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
     d=ImageDraw.Draw(demo)
-    sample_font=ImageFont.truetype(FONTS[0],26)
+    sample_font=preview_font(26)
     d.text((123,184),'7.50',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((248,32),'22.7°C',font=ImageFont.truetype(FONTS[0],21),
+    d.text((248,32),'22.7°C',font=preview_font(21),
            fill=WHITE,anchor='mm')
-    d.text((360,22),'10:47',font=ImageFont.truetype(FONTS[0],20),
+    d.text((360,22),'10:47',font=preview_font(20),
            fill=WHITE,anchor='mm')
-    d.text((360,42),'27/11/26',font=ImageFont.truetype(FONTS[0],12),
+    d.text((360,42),'27/11/26',font=preview_font(12),
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
