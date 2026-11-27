@@ -389,11 +389,12 @@ def _copy_if_exists(src_path, dst_name):
     _update_manifest()
 
 
-def _compile_nextion_for_firmware():
-    """Always rebuild Nextion before publishing firmware artifacts.
+def _compile_nextion_for_firmware(source, target, env):
+    """Separate default build target, also run on incremental 'pio run'.
 
-    This reuses the same pinned nxwright pipeline as 'pio run -e nextion'.
-    A failure must stop the release rather than silently copy a stale TFT.
+    Reuses the pinned isolated nxwright pipeline. A failed Nextion compile
+    must fail the overall PlatformIO invocation, not publish stale images.
+    The runner compiles first and only then publishes TFT + manifest.
     """
     runner = _project_dir() / "nextion" / "scripts" / "run_nextion.py"
     print("[export_binaries] compiling Nextion HMI/TFT for combined build", flush=True)
@@ -434,8 +435,8 @@ def _export_program_bin(source, target, env):
         _copy_if_exists(build_dir / "firmware.bin", f"flowios3-{fw_version}.bin")
         _write_release_package(fw_version)
         _assert_complete_release(fw_version)
-        _compile_nextion_for_firmware()
-        _export_nextion_release()
+        # TFT is built by the independent default 'nextion' target. Keeping
+        # it separate also handles an incremental build with no ESP32 relink.
 
 
 def _export_spiffs_bin(source, target, env):
@@ -457,5 +458,16 @@ if env.subst("$PIOENV") == _WAVESHARE_ENV:
     release_filesystem = env.DataToBin("$BUILD_DIR/spiffs", "$PROJECT_DATA_DIR")
     env.AlwaysBuild(release_filesystem)
     env.Depends("$BUILD_DIR/${PROGNAME}.bin", release_filesystem)
+
+    # platformio.ini defaults to 'buildprog, nextion'. A separate target
+    # avoids skipping HMI changes when firmware.bin itself is up to date.
+    env.AddCustomTarget(
+        name="nextion",
+        dependencies=None,
+        actions=_compile_nextion_for_firmware,
+        title="Nextion HMI + TFT + manifest",
+        description="Build the 3.5in Nextion and publish TFT + manifest into binary/",
+        always_build=True,
+    )
 
 env.AddPostAction("$BUILD_DIR/spiffs.bin", _export_spiffs_bin)
