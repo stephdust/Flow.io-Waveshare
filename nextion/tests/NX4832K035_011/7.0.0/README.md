@@ -117,3 +117,40 @@ La branche sauvegardée `backup/nextion-v7-validated-20261127` reste disponible.
 Voir `scripts/tests/test_nextion_wifi_rssi.py` et
 [`docs/integration/nextion-esp-protocol.md`](../../../../docs/integration/nextion-esp-protocol.md)
 pour les seuils Wi-Fi.
+
+## Nettoyage sûr des images et audit des pages
+
+Le source nxwright original comporte neuf pages et 33 images. Un inventaire
+des composants `pic/picc/pic2`, des commandes `xpic` et des constantes
+numériques du programme a permis de retirer **neuf images orphelines**.
+Il reste **24 PNG**, tous déclarés dans `app.toml`, sans référence nommée
+absente. Les images initiales `picture-0000` à `picture-0020` gardent
+strictement leurs numéros : `HomeGaugepic=3`, `LEDpic=1` et
+`PSIGaugepic=20` ne changent pas.
+
+Les trois images encore utilisées au-delà de 20 ont été déplacées avec
+leurs références :
+
+| Ancien numéro | Nouveau numéro | Utilisation |
+|---|---|---|
+| `picture-0025` | `picture-0021` | clavier texte |
+| `picture-0031` | `picture-0022` | boutons équipements |
+| `picture-0032` | `picture-0023` | boutons équipements |
+
+**À conserver :** `picture-0005.png` (goutte/vagues) est encore
+référencé dans `pageSetTime`, la page de réglage date/heure. Cette page
+n'a pas de lien `page pageSetTime` direct depuis les autres pages du
+HMI : elle est *non atteignable par le graphe tactile natif* aujourd'hui.
+Cela ne prouve pas qu'aucune commande série externe ne peut l'ouvrir,
+et ne justifie donc pas la suppression de sa ressource. Conserver cette
+page pour un futur correctif de navigation.
+
+Les autres pages accessibles par navigation native depuis Home sont :
+configuration, alarmes, équipements, clavier texte, pavé numérique
+et redémarrage (ce dernier via la séquence de l'interface).
+La page `globals` stocke les variables et n'est pas une page utilisateur.
+
+Les tests suivants sont exécutés avant la compilation Nextion :
+`test_nextion_picture_refs.py` (table PNG, dépendances, identifiants)
+et `test_nextion_page_navigation.py` (graphe de navigation). Ils
+ne remplacent pas un test tactile sur le NX4832K035_011.
