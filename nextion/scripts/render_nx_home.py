@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Rebuild glossy Nextion Home pictures from nxwright source (480x320 only).
 
-HomeGaugepic atlas (logical picture #3) is compact: gauges at y=0..299,
-flat-background Home at y=300..619, five 70x70 pressure rings plus eleven
-42x42 turbine centres packed in a single row at y=620..689, and five 43x38
-RSSI icons in a single row at y=690..727.
+HomeGaugepic atlas (logical picture #3) is compact: ONE 207x150 pH dial at
+(0,0) and ONE ORP dial at (207,0), a 480x320 flat-background Home at y=150,
+five 70x70 pressure rings plus eleven 42x42 shared turbine phases at y=470,
+and five 43x38 RSSI icons at y=540. Atlas size: 812x578 (not 1035x728).
+The needles remain dynamic Nextion draw commands, never baked into the dial.
 tmAnim.timer stays at 50ms; the ring redraws only if pressure status changes
 while a separate, shared 10-phase core animates on every tick.
 The native tProp component/IDs and ESP32 serial protocol remain unchanged.
@@ -142,13 +143,13 @@ def make_background():
             (162*S,52*S),(160*S,50*S),(162*S,49*S)],
            fill=(232,250,255,255),width=2*S,joint='curve')
     # Group both temperature icons on the same x=194 vertical axis:
-    # water +23 px, outdoor-air +19 px. The right edge of each icon is
+    # both icons +23 px. The right edge of each icon is
     # <=205px, just BEFORE the native text widgets starting at x=207.
     # This prevents Nextion text refresh from painting over the icons.
     image.alpha_composite(
         weather_icons.crop((159*S,5*S,184*S,30*S)),(182*S,5*S))
     image.alpha_composite(
-        weather_icons.crop((157*S,30*S,186*S,55*S)),(176*S,30*S))
+        weather_icons.crop((159*S,30*S,184*S,55*S)),(182*S,30*S))
     d=ImageDraw.Draw(image)
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
@@ -228,14 +229,14 @@ def _shade(rgb, intensity):
     return tuple(max(0,min(255,round(value*intensity))) for value in rgb)
 
 
-def gauge_sprite(bg,kind,active):
+def gauge_sprite(kind):
     """Five-colour 3D semicircle, without ANY gradient in the background.
 
     Each frame deliberately starts from the same exact solid NAVY. Shading
     affects only arc/scale strokes, preventing the visible rectangular patches
     the earlier blurred gauge background created on the real Nextion.
     """
-    assert kind in ('pH','ORP') and 0 <= active <= 4
+    assert kind in ('pH','ORP')
     image=Image.new('RGB',(207*S,150*S),NAVY)
     d=ImageDraw.Draw(image)
     # Original reference palette, symmetrical around the GOOD setpoint:
@@ -312,7 +313,7 @@ def draw_preview_gauge_cursor(image, origin_x, percent):
 
 
 FAN_X,FAN_Y,FAN_SIZE=205,239,70
-FAN_RING_ATLAS_Y=620
+FAN_RING_ATLAS_Y=470
 FAN_CORE_SIZE=42
 FAN_CORE_X=FAN_X+(FAN_SIZE-FAN_CORE_SIZE)//2
 FAN_CORE_Y=FAN_Y+(FAN_SIZE-FAN_CORE_SIZE)//2
@@ -387,7 +388,7 @@ def blade_frame(frame):
 
     0 = muted stationary OFF, 1..10 = glossy ON rotation phases.
     These eleven pressure-independent 42px frames keep the compact
-    1035x728 atlas and 50ms animation, with no extra memory allocation.
+    812x578 atlas and 50ms animation, with no extra memory allocation.
     """
     assert 0 <= frame < FAN_FRAMES
     im = Image.new("RGBA", (FAN_CORE_SIZE*S,FAN_CORE_SIZE*S),
@@ -477,7 +478,7 @@ def blade_frame(frame):
 
 
 WIFI_X,WIFI_Y,WIFI_W,WIFI_H=423,11,43,38
-WIFI_ATLAS_Y=690
+WIFI_ATLAS_Y=540
 WIFI_LEVELS=5
 
 
@@ -518,13 +519,15 @@ def render(source,preview):
     pictures=source/'pictures'
     assert (pictures/'picture-0003.png').is_file(), 'expected an editable RGB Home atlas'
     bg=make_background()
-    # The widest sprites are the two gauge strips (5 x 207 = 1035 px).
-    # All smaller assets are packed horizontally below the background.
-    atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)
+    # Only two visually different gauges exist: no fivefold pH/ORP copies.
+    # Ring pressure variants and animated rotor cores remain independent.
+    # The core sequence ends at x=350+11*42=812 (width of compact atlas).
+    atlas=Image.new('RGB',(812,WIFI_ATLAS_Y+WIFI_H),NAVY)
+    ph=gauge_sprite('pH').resize((207,150),Image.Resampling.LANCZOS)
+    orp=gauge_sprite('ORP').resize((207,150),Image.Resampling.LANCZOS)
+    atlas.paste(ph,(0,0))
+    atlas.paste(orp,(207,0))
     for state in range(5):
-        for y,kind in ((0,'pH'),(150,'ORP')):
-            im=gauge_sprite(bg,kind,state).resize((207,150),Image.Resampling.LANCZOS)
-            atlas.paste(im,(state*207,y))
         ring=ring_frame(bg,state).resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
         atlas.paste(ring,(state*FAN_SIZE,FAN_RING_ATLAS_Y))
     for frame in range(FAN_FRAMES):
@@ -533,11 +536,12 @@ def render(source,preview):
     for level in range(WIFI_LEVELS):
         tile=wifi_frame(bg,level).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS)
         atlas.paste(tile,(level*WIFI_W,WIFI_ATLAS_Y))
-    atlas.paste(bg.resize((480,320),Image.Resampling.LANCZOS),(0,300))
+    # Home background starts immediately after the gauge row at y=150.
+    atlas.paste(bg.resize((480,320),Image.Resampling.LANCZOS),(0,150))
     atlas.save(pictures/'picture-0003.png',optimize=True)
     demo=bg.resize((480,320),Image.Resampling.LANCZOS)
-    demo.paste(atlas.crop((414,0,621,150)),(20,89))
-    demo.paste(atlas.crop((414,150,621,300)),(253,89))
+    demo.paste(atlas.crop((0,0,207,150)),(20,89))
+    demo.paste(atlas.crop((207,0,414,150)),(253,89))
     # Preview uses the exact shaded 3D sprites from the firmware atlas.
     demo.paste(ring_frame(bg,1).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
@@ -564,7 +568,7 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
-    print('Home atlas=1035x728: 5 rings + 11 small turbine frames + 5 RSSI tiers')
+    print('Home atlas=812x578: 2 unique gauges + 5 rings + 11 turbine phases + 5 RSSI tiers')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
 
