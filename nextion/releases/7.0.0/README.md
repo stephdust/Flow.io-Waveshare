@@ -15,7 +15,7 @@ Les définitions 5″ et 7″ ont la même résolution, mais leurs firmwares res
 ## Évolutions prévues
 
 - Bandeau supérieur : logo flow.io à gauche, date `JJ/MM/AA` et heure `HH:MM` au centre, état Wi-Fi à droite ; disposition à vérifier sur l'écran réel.
-- **Heure uniquement** : contrôle toutes les 10 secondes, sans lecture NTP supplémentaire ; envoyer `tTime.txt` seulement si `HH:MM` a changé (ou après réveil / reconnexion). Source : heure locale de Flow.io (NTP/RTC), selon le contrat existant.
+- **Heure uniquement** : contrôle toutes les 60 secondes, sans lecture NTP supplémentaire ; envoyer `tTime.txt` seulement si `HH:MM` a changé (ou après réveil / reconnexion). Source : heure locale de Flow.io (NTP/RTC), selon le contrat existant.
 - **Date** : format compact `JJ/MM/AA`, actualisation au changement de jour et après réveil ; conserver la logique RTC Nextion existante jusqu'à adaptation validée de l'HMI.
 - **Wi-Fi** : mises à jour uniquement sur changement d'état, sans imposer de cadence de 10 secondes.
 - **Jauges, mesures et autres éléments** : conserver leurs cadences de mise à jour existantes, sans rafraîchissement global de l'écran toutes les 10 secondes.
@@ -27,7 +27,7 @@ Les définitions 5″ et 7″ ont la même résolution, mais leurs firmwares res
 
 1. Ajouter les fichiers sources `.HMI` éditables, issus des projets Nextion Editor et vérifiés.
 2. Appliquer les changements d'interface et de logique, puis compiler chaque cible avec Nextion Editor.
-3. Vérifier que le contrôle d'heure à 10 s n'entraîne pas de transmissions redondantes ni de rafraîchissement global ; vérifier minuit et sortie de veille.
+3. Vérifier que le contrôle d'heure à 60 s n'entraîne pas de transmissions redondantes ni de rafraîchissement global ; vérifier minuit et sortie de veille.
 4. Vérifier la compilation des trois modèles et nommer les TFT selon la convention ci-dessus.
 5. Tester l'affichage, les commandes tactiles, le bandeau, la langue, le réveil et la mise à jour Nextion sur matériel.
 6. Seulement après validation, basculer `common.nextion_firmware_version` de `6.0.0` à `7.0.0` dans `platformio.ini` et contrôler le contenu de `binary/` ainsi que le manifeste OTA.
