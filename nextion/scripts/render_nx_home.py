@@ -256,12 +256,14 @@ def wifi_frame(bg,level):
                   (cx-radius,cy-radius,cx+radius,cy+radius))
         color=colors[ring] if level>=ring+1 else inactive
         d.arc(box,205,335,fill=(*color,255),width=3*S)
-    dot=colors[0] if level>=1 else inactive
+    # The central indicator follows the *current* RSSI tier, so a strong
+    # connection has a green dot (not a misleading red one).
+    dot=colors[level-1] if level>=1 else inactive
     d.ellipse(((cx-3)*S,(cy-3)*S,(cx+3)*S,(cy+3)*S),fill=(*dot,255))
     if level>=1:
         image=halo(image,lambda od: od.ellipse(
             ((cx-2)*S,(cy-2)*S,(cx+2)*S,(cy+2)*S),
-            fill=(*colors[0],95)),1)
+            fill=(*colors[level-1],95)),1)
     return image.convert('RGB')
 
 
