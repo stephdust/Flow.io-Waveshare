@@ -141,9 +141,9 @@ def make_background():
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
     # Exactly three independent 3D colour icons, floating on flat navy.
-    # Centres: config=123 (directly below pH); equipment=320; alarm=400.
-    # The latter two divide the distance from pump x=240 to right x=480
-    # into equal 80px steps. Native invisible hotspots match each one.
+    # Centres: config=123 (directly below pH); equipment=346; alarm=440.
+    # Keep >50px clear space from pump rim to gear and gear to alarm.
+    # The pump stays fixed at x=240, regardless of footer geometry.
     # Each small icon has its own dark bevel, colour body and highlight;
     # absolutely no surrounding frame, panel or dividing line.
 
@@ -164,7 +164,7 @@ def make_background():
     d.ellipse((111*S,277*S,114*S,280*S),fill=(234,255,255,255))
 
     # 2. EQUIPMENT — 10 machined teeth, jade/teal face, metallic gold hub.
-    gear_x,gear_y=320,290
+    gear_x,gear_y=346,290
     gear_points=[]
     for tooth in range(10):
         for angle_offset,radius in ((-.40,13),(-.28,18),(.28,18),(.40,13)):
@@ -188,7 +188,7 @@ def make_background():
                (gear_x+1)*S,(gear_y)*S),fill=(255,254,233,255))
 
     # 3. ALARMS — amber/bronze faceted triangle, ruby accent, light glyph.
-    alarm_x,alarm_y=400,290
+    alarm_x,alarm_y=440,290
     alert_pts=[(alarm_x,271),(alarm_x-20,306),(alarm_x+20,306)]
     d.polygon([((x+1)*S,(y+2)*S) for x,y in alert_pts],
               fill=(63,23,19,255))
@@ -197,8 +197,8 @@ def make_background():
     d.line([(x*S,y*S) for x,y in alert_pts+[alert_pts[0]]],
            fill=(255,193,53,255),width=3*S,joint='curve')
     # A thin upper facet catches light without a large glow/halo.
-    line(d,[(400,275),(383,304)],(255,244,156),1)
-    line(d,[(385,305),(415,305)],(248,95,54),1)
+    line(d,[(alarm_x,275),(alarm_x-17,304)],(255,244,156),1)
+    line(d,[(alarm_x-15,305),(alarm_x+15,305)],(248,95,54),1)
     d.rounded_rectangle(((alarm_x-2)*S,282*S,
                          (alarm_x+2)*S,295*S),radius=2*S,
                         fill=(255,251,231,255))
@@ -542,13 +542,13 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((296,18),'27.3°C',font=preview_font(18),
+    d.text((296,18),'27.3°C',font=preview_font(22),
            fill=WHITE,anchor='rm')
-    d.text((296,43),'7.3°C',font=preview_font(18),
+    d.text((296,43),'7.3°C',font=preview_font(22),
            fill=WHITE,anchor='rm')
-    d.text((360,22),'10:47',font=preview_font(20),
+    d.text((360,22),'10:47',font=preview_font(25),
            fill=WHITE,anchor='mm')
-    d.text((360,42),'27/11/26',font=preview_font(12),
+    d.text((357,44),'27/11/26',font=preview_font(20),
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
