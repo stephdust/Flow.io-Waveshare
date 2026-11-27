@@ -27,8 +27,8 @@ def event(name):
 
 water = byname["tWaterTemp"]
 air = byname["tAirTemp"]
-assert components[-2]["name"] == "tAirTemp", "outdoor widget must follow legacy components"
-assert components[-1]["name"] == "m2", "play hotspot must be appended after outdoor widget"
+assert components[-1]["name"] == "tAirTemp", "outdoor widget must stay after legacy components"
+assert "m2" not in byname, "redundant play hotspot must stay removed"
 assert "vaWaterTemp" in global_components and "vaAirTemp" in global_components
 assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
