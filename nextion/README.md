@@ -6,7 +6,7 @@ Les fichiers `.HMI` sont les sources éditables dans Nextion Editor. Les fichier
 
 Les fichiers Nextion sont rangés **uniquement par version** dans `releases/<version>/`. Les anciens `.tft` à la racine et le répertoire `src/` ont été supprimés pour éviter les doublons.
 
-**Convention de nommage commune aux sources et binaires :** `FlowIO_Nextion_<MODELE_COMPATIBLE>-<VERSION>.HMI` pour le projet source, même nom en `.tft` pour le firmware compilé, et **même nom en `.png` pour l'aperçu**. Cela permet d'identifier le modèle et la version de chaque écran sans fichiers génériques `preview.png`. L'extension `.HMI` n'est pas analysée par le script d'export des TFT.
+**Convention de nommage :** un projet `FlowIO_Nextion_<MODELE_COMPATIBLE>-<VERSION>.HMI`, son firmware `.tft` de même base, mais **un PNG par page du HMI** : `FlowIO_Nextion_<MODELE_COMPATIBLE>-<VERSION>-<NOM_PAGE>.png` (par exemple `-pageHome.png`, puis `-pageAlarms.png`). Cela distingue les pages à l'intérieur d'un même HMI et les différents modèles. L'extension `.HMI` n'est pas analysée par le script d'export des TFT. Pour l'instant, seule la page `pageHome` dispose d'un rendu PNG automatisé.
 
 **Cas 800 × 480 (6.0.0) :** une source HMI historique unique sert aux écrans 5″ (`NX8048P050_011`) et 7″ (`NX8048P070_011`). Elle est rangée sous le nom canonique `FlowIO_Nextion_NX8048P050_011-6.0.0.HMI` ; cela **n'affirme pas** que le fichier compilé est utilisable indifféremment sur les deux écrans. Les TFT restent séparés par modèle.
 
@@ -87,7 +87,7 @@ Cette commande exécute uniquement la chaîne du **NX4832K035_011, 480 × 320, v
 dans les dossiers ignorés `.pio/nextion-output/` et `binary/` → régénération
 de `binary/manifest.json`. Une compilation locale ne modifie **jamais**
 les fichiers suivis par Git sous `nextion/releases/7.0.0/`,
-`nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png` ni
+`nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png` ni
 `source/pictures/picture-0003.png`. Les fichiers de release suivis par
 Git ne sont promus que dans l'étape dédiée de GitHub Actions, après tous
 les contrôles.
@@ -96,11 +96,11 @@ Les fichiers résultants sont disponibles ici :
 
 - `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`
 - `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft`
-- `.pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png` (prévisualisation locale complète, isolée par **modèle, version et nom HMI**)
+- `.pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png` (prévisualisation locale complète, isolée par **modèle, version et nom HMI**)
 - `binary/FlowIO_Nextion_NX4832K035_011-7.0.0.tft` et
   `binary/manifest.json` (distribution OTA)
 
-**La prévisualisation ne va plus dans `binary/`.** La compilation supprime automatiquement les anciennes copies `binary/nextion-preview.png`, `.pio/nextion-output/preview.png` et `.pio/nextion-output/NX4832K035_011/7.0.0/preview.png`. Chaque nouvel écran (3,5″, 5″ et 7″) aura son fichier `.pio/nextion-output/<MODÈLE>/<VERSION>/FlowIO_Nextion_<MODÈLE>-<VERSION>.png`, sans collision. La CI publie aussi l'aperçu validé dans `nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png` et `nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png` (suivis par Git), sans modifier les sources lors d'une compilation locale.
+**La prévisualisation ne va plus dans `binary/`.** La compilation supprime automatiquement les anciennes copies `binary/nextion-preview.png`, `.pio/nextion-output/preview.png`, `.pio/nextion-output/NX4832K035_011/7.0.0/preview.png` et l'ancien PNG nommé seulement d'après le HMI (`FlowIO_Nextion_NX4832K035_011-7.0.0.png`). La CI retire les anciens noms suivis par Git. Chaque page de chaque projet HMI pourra ainsi avoir son fichier `.pio/nextion-output/<MODÈLE>/<VERSION>/FlowIO_Nextion_<MODÈLE>-<VERSION>-<NOM_PAGE>.png`, sans collision. La CI publie aussi l'aperçu validé dans `nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png` et `nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png` (suivis par Git), sans modifier les sources lors d'une compilation locale.
 
 **Pour simplement republier le TFT déjà compilé et son manifeste**,
 sans installer nxwright, sans compilation ni SPIFFS :
