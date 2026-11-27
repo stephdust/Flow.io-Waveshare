@@ -120,12 +120,12 @@ def main():
             linebreaks=c["txt"].replace(chr(13)+chr(10), chr(10)).replace(chr(13), "").replace("   ","").replace("  ","").strip()
             cx=c["x"]+c["w"]/2
             draw.multiline_text((cx,c["y"]+c["h"]/2),linebreaks,
-                font=font(12),fill=(255,255,255),anchor="mm",
+                font=font(16),fill=(255,255,255),anchor="mm",
                 align="center",spacing=0)
         # HOME caption is an actual Nextion text component, not preview-only artwork.
         caption=components["tHomeCaption"]
         draw.text((caption["x"]+caption["w"]/2,caption["y"]+caption["h"]/2),
-                  caption["txt"],font=font(14),fill=(255,255,255),anchor="mm")
+                  caption["txt"],font=font(16),fill=(255,255,255),anchor="mm")
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         canvas.save(args.preview,optimize=True)
         print("[NEXTION] Switch preview from actual generated sprite images:",args.preview)
