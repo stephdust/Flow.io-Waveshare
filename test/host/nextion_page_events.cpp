@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <initializer_list>
+#include <string>
 
 uint32_t testNowMs = 0;
 
@@ -120,10 +121,57 @@ void test_native_and_custom_reports_agree()
     assert(f.page(1).type == HmiEventType::Home);
 }
 
+void test_gauge_xpic_refresh_after_wake()
+{
+    Fixture f;
+    // Never draw HomeSimple-only gauges without a confirmed current page.
+    assert(!f.driver.requestHomeGaugeRedraw());
+    assert(f.page(0).type == HmiEventType::Home);
+
+    // Invalidate only the two previously rendered percentages, not the
+    // measurements or the configured pH/ORP setpoints.
+    f.serial.transmitted.clear();
+    assert(f.driver.requestHomeGaugeRedraw());
+    const std::string expected =
+        "vaPrvpHPercen.val=65535\xff\xff\xff"
+        "vaPrvOrpPercen.val=65535\xff\xff\xff";
+    assert(std::string(f.serial.transmitted.begin(),
+                       f.serial.transmitted.end()) == expected);
+
+    // Sleeping screens must not accept cache invalidations.
+    assert(f.receive({0x86}).type == HmiEventType::DisplaySleep);
+    f.serial.transmitted.clear();
+    assert(!f.driver.requestHomeGaugeRedraw());
+    assert(f.serial.transmitted.empty());
+
+    // Automatic touch wake reports 0x87. HomeSimple can then repaint.
+    assert(f.receive({0x87}).type == HmiEventType::DisplayWake);
+    assert(f.driver.requestHomeGaugeRedraw());
+
+    // Serial/PIR wake does NOT report 0x87, so the driver handles it.
+    assert(f.receive({0x86}).type == HmiEventType::DisplaySleep);
+    f.serial.transmitted.clear();
+    assert(f.driver.wakeFromSleep());
+    const std::string tx(f.serial.transmitted.begin(), f.serial.transmitted.end());
+    assert(tx == std::string("sleep=0\xff\xff\xff") + expected);
+
+    // The configuration and other Home page never get the HomeSimple
+    // cache commands, protecting the existing Nextion page contract.
+    assert(f.page(10).type == HmiEventType::ConfigEnter);
+    f.serial.transmitted.clear();
+    assert(!f.driver.requestHomeGaugeRedraw());
+    assert(f.serial.transmitted.empty());
+    assert(f.page(1).type == HmiEventType::ConfigExit);
+    f.serial.transmitted.clear();
+    assert(!f.driver.requestHomeGaugeRedraw());
+    assert(f.serial.transmitted.empty());
+}
+
 int main()
 {
     test_home_after_explicit_menu_exit();
     test_page_reports_preserve_navigation_types();
     test_context_is_restored_only_on_menu_pages();
     test_native_and_custom_reports_agree();
+    test_gauge_xpic_refresh_after_wake();
 }
