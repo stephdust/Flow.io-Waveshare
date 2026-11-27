@@ -168,9 +168,9 @@ tim = 200
 [[component]]
 name = "tErrMessage"
 type = "scrolling-text"
-x = 80
+x = 132
 y = 271
-w = 378
+w = 326
 h = 30
 font = "SegoeUI_28"
 bco = "#041225"
@@ -309,3 +309,18 @@ bco = "#041225"
 pco = "#ffffff"
 txt = "Hivernage"
 txt_maxl = 20
+
+[[component]]
+name = "tHomeCaption"
+type = "text"
+x = 58
+y = 278
+w = 66
+h = 25
+font = "SegoeUI_16"
+xcen = 1
+ycen = 1
+bco = "#041225"
+pco = "#ffffff"
+txt = "HOME"
+txt_maxl = 8
