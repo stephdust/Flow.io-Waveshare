@@ -27,7 +27,8 @@ def event(name):
 
 water = byname["tWaterTemp"]
 air = byname["tAirTemp"]
-assert components[-1]["name"] == "tAirTemp", "new widget must be appended to preserve existing IDs"
+assert components[-2]["name"] == "tAirTemp", "outdoor widget must follow legacy components"
+assert components[-1]["name"] == "m2", "play hotspot must be appended after outdoor widget"
 assert "vaWaterTemp" in global_components and "vaAirTemp" in global_components
 assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
