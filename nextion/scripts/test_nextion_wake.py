@@ -33,7 +33,7 @@ def main() -> None:
     assert "xpic 20,89,207,150,sys1,0,HomeGaugepic" in gauges
     assert "xpic 253,89,207,150,sys1,150,HomeGaugepic" in gauges
     assert "vaPrvWifiLevel.val=-1" in final
-    assert "xpic 428,11,43,38,sys1,690,HomeGaugepic" in gauges
+    assert "xpic 423,11,43,38,sys1,690,HomeGaugepic" in gauges
     assert "vis tErrMessage,0" in initial
     assert not re.search(r"(?m)^\s*ref b[01]\s*$", final), "opaque footer buttons redrawn"
     assert "click bUpdateGauge,1" in tick
