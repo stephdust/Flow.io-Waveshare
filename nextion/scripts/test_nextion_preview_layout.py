@@ -73,7 +73,12 @@ for center in (123,356):
     assert sum(g>130 and b>155 for r,g,b in needle)>15, (
         f"long cyan/white measurement needle missing at x={center}"
     )
-assert at(90,145)!=navy or at(153,145)!=navy, "pH gauge lost its scale"
+# The old test sampled two arbitrary dark pixels between graduations.
+# Count visible raised white tick marks over the dial instead.
+ticks=[at(x,y) for x in range(41,210) for y in range(118,179)]
+assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
+    "pH gauge lost its white scale graduations"
+)
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: two distinct footer frames, free pump gap, lowered 3D turbine")
