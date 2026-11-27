@@ -31,29 +31,31 @@ jobs:
         run: python scripts/tests/test_nextion_wifi_rssi.py
       - name: Install PlatformIO Core
         run: python -m pip install 'platformio>=6.2,<7'
-      - name: Select last Arduino-ESP32 3.x platform for this CI build
+      - name: Verify the tested Arduino-ESP32 3.3.13 platform is pinned
+        run: grep -F 'platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.313/platform-espressif32.zip' platformio.ini
+      - name: Compile Waveshare ESP32-S3 firmware (without re-building the Nextion)
+        run: pio run -e Flowio-waveshare-esp32-s3
+      - name: Verify full paired firmware + SPIFFS release and Nextion export
         shell: bash
         run: |
           set -euo pipefail
-          # Stable now resolves to Arduino-ESP32 4.0.0, which cannot compile
-          # OneWireNg 0.14.1 (GPIO register API removed upstream).
-          # Override only on the disposable CI runner until app migration.
-          sed -i 's|^platform = https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip|platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.313/platform-espressif32.zip|' platformio.ini
-          grep -F 'platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.313/platform-espressif32.zip' platformio.ini
-      - name: Compile Waveshare ESP32-S3 firmware (without re-building the Nextion)
-        run: pio run -e Flowio-waveshare-esp32-s3
-      - name: Verify that firmware binary exists
-        shell: bash
-        run: |
           test -f .pio/build/Flowio-waveshare-esp32-s3/firmware.bin
-          ls -lh .pio/build/Flowio-waveshare-esp32-s3/firmware.bin
-          echo "ESP32-S3 firmware compilation succeeded." >> "$GITHUB_STEP_SUMMARY"
+          test -f .pio/build/Flowio-waveshare-esp32-s3/spiffs.bin
+          test -s binary/flowios3-2026.11.1.bin
+          test -s binary/flowios3-spiffs-2026.11.1.bin
+          test -s binary/flowio-2026.11.1.zip
+          test -s binary/flowio-release-2026.11.1.json
+          test -s binary/release.json
+          test -s binary/manifest.json
+          test -s binary/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
+          echo "ESP32-S3 and SPIFFS paired OTA release built successfully." >> "$GITHUB_STEP_SUMMARY"
+          du -h binary/* | sort -h
       - name: Save firmware build for hardware testing
         uses: actions/upload-artifact@v4
         with:
-          name: FlowIO-Waveshare-HMI-RSSI-firmware
+          name: FlowIO-Waveshare-HMI-RSSI-paired-OTA-2026.11.1
           path: |
+            binary/
             .pio/build/Flowio-waveshare-esp32-s3/firmware.bin
-            binary/manifest.json
           if-no-files-found: warn
           retention-days: 7
