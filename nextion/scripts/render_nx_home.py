@@ -73,7 +73,10 @@ def make_background():
     image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))
     d=ImageDraw.Draw(image)
     for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
-    for x in (194,294,387):line(d,[(x,270),(x,307)],(7,155,209),.8)
+    # Minimal footer, as requested: one uninterrupted dark strip with a
+    # fine cyan frame, no dividing columns or unused 'play' space.
+    # Three actual footer icons only: configuration, switches, alarms.
+    # The centrally placed turbine remains the only filtration control.
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
     logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
@@ -133,10 +136,9 @@ def make_background():
            fill=(232,250,255,255),width=2*S,joint='curve')
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
-    # Footer: four useful actions (grid/config, centre pump/filtration,
-    # gear/switches and triangle/alarms). No redundant 'play' button.
-    # Grid is centered in the freed left footer section, with a matching
-    # transparent b0 hotspot. Icons never render opaque touch rectangles.
+    # Footer buttons are graphical only; the aligned Nextion hotspots b0,
+    # m0 and b1 stay invisible. No play icon, separators or black overlays.
+    # The pump remains a separate, centered touch target above this strip.
     for xx in (88,104):
         for yy in (273,288):
             d.rounded_rectangle((xx*S,yy*S,(xx+10)*S,(yy+10)*S),
