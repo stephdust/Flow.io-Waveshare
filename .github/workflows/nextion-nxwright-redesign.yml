@@ -52,6 +52,11 @@ jobs:
           python nextion/scripts/test_nextion_footer_touch.py
           python scripts/tests/test_nextion_wifi_rssi.py
           python -m py_compile nextion/scripts/render_nx_home.py
+      - name: Seed obsolete previews to verify automatic cleanup
+        run: |
+          mkdir -p binary .pio/nextion-output
+          printf 'obsolete preview' > binary/nextion-preview.png
+          printf 'obsolete preview' > .pio/nextion-output/preview.png
       - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
         run: pio run -e nextion
       - name: Validate release, manifest and model without touching ESP32/SPIFFS
