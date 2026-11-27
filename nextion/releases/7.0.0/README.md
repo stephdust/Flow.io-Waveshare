@@ -66,8 +66,8 @@ ils protègent l'écran d'une mise à jour partielle.
   fond et les deux jauges `xpic` (pH/ORP).
 - Rotation de la pompe : `tmAnim` conserve sa période de 50 ms et le
   bit 0 de filtration. Les pales sont désormais de **vraies images animées**
-  centrées : 10 images en marche, une fixe à l'arrêt, avec 5 couleurs
-  selon l'état PSI. `tProp` et la police `Propeller_50` restent dans le
+  centrées : 5 couronnes PSI et 11 petits centres partagés
+  (10 positions animées et une fixe à l'arrêt). `tProp` et la police `Propeller_50` restent dans le
   projet mais l'ancienne représentation est masquée.
 - Conserver les valeurs dynamiques, le protocole série, les commandes tactiles,
   les timers et les identifiants des composants.
@@ -81,6 +81,26 @@ avant tout PR vers Christophe.
 
 Documentation : [Nextion](../../README.md) ·
 [Tests et sources](../../tests/NX4832K035_011/7.0.0/README.md).
+
+## Optimisation mémoire du Nextion 3,5″
+
+Pour limiter la taille du TFT et conserver 10 positions d'animation,
+l'atlas Home passe de **1035×1160 à 1035×728 pixels**. Les 55 anciennes
+images de turbine complètes sont remplacées par **5 couronnes PSI
+statiques + 11 centres de turbine de 48×48 pixels** partagés.
+Les quatre pales restent centrées et symétriques; seul le centre est
+redessiné à 50 ms, la couronne seulement lorsque l'état PSI change.
+
+Le fond Home est désormais uniforme et les halos décoratifs du cadre ont
+été supprimés. Les jauges pH/ORP, les états RSSI, le tactile et les IDs de
+composants restent inchangés. Le fichier TFT doit être recompilé avec
+`pio run -e nextion` ou `pio run` avant tout test matériel.
+
+Le firmware ESP32 dispose également d'une nouvelle pré-vérification OTA
+en **segments PSRAM de 64 KiB** : il conserve la réserve de **2 MiB**,
+télécharge intégralement le TFT, contrôle le SHA-256 puis effectue l'UART.
+Cela évite le besoin d'un bloc contigu de plusieurs MiB. La mémoire totale
+libre doit toujours couvrir taille du TFT + réserve de sécurité.
 
 ## Wi-Fi multicolore réel et retouches Home
 
