@@ -91,6 +91,8 @@ jobs:
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0023.png
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0024.png
           git add -- nextion/tests/NX4832K035_011/7.0.0/preview.png
+          cp nextion/tests/NX4832K035_011/7.0.0/preview.png nextion/releases/7.0.0/preview-modern.png
+          git add -- nextion/releases/7.0.0/preview-modern.png
           if git diff --cached --quiet; then
             echo "Both generated HMI and TFT match the current fork dev."
           else

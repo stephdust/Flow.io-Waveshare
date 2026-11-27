@@ -53,3 +53,14 @@ L'atlas `picture-0003.png` contient maintenant deux lignes distinctes
 (pH et ORP) et un fond haute définition, reproduisant les repères verts,
 les jauges multicolores, les cadres cyan et le bandeau du modèle graphique.
 Le comportement après veille reste à valider physiquement.
+
+## Compilation du nouveau design sur la branche dev
+
+Le [workflow PlatformIO Nextion](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46013144134)
+a produit les fichiers HMI/TFT compilés avec nxwright après les changements
+visuels et le correctif de réveil. Les images du bandeau, les arcs pH/ORP,
+les gradients cyan et le fond de l'anneau de pompe sont générés par
+`nextion/scripts/render_nx_home.py`. Le caractère dynamique de pompe est
+**inchangé** : timer 50 ms, bit 0 de filtration et police Propeller native.
+Le prochain test réel doit vérifier la sortie de veille, la rotation de la
+pompe et les valeurs dynamiques. Ne pas ouvrir de PR avant validation.
