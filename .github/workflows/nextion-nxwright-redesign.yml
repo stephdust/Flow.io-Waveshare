@@ -63,10 +63,12 @@ jobs:
           from pathlib import Path
           name = 'FlowIO_Nextion_NX4832K035_011-7.0.0.tft'
           source_dir = Path('nextion/tests/NX4832K035_011/7.0.0/source')
-          release = Path('nextion/releases/7.0.0')
+          compiled = Path('.pio/nextion-output')
           assert (source_dir / 'pages/pageHome.nx').is_file()
-          assert (release / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
-          tft = release / name
+          assert (compiled / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
+          tft = compiled / name
+          assert (compiled / 'preview.png').stat().st_size > 4096
+          assert (compiled / 'picture-0003.png').stat().st_size > 4096
           copied = Path('binary') / name
           assert tft.stat().st_size > 1000000
           assert tft.read_bytes() == copied.read_bytes()
@@ -81,28 +83,41 @@ jobs:
           print('PASS: PlatformIO Nextion-only HMI/TFT compile and manifest')
           PY
           test -z "$(git diff --name-only -- 'nextion/releases/6.0.0/*NX8048*')"
+      - name: Ensure local build does not dirty tracked Nextion assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
+          echo "PASS: pio run -e nextion leaves tracked HMI, TFT, preview and atlas untouched"
       - name: Store compiled nxwright Nextion outputs as test artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NX4832K035-7.0.0-PLATFORMIO-NXWRIGHT
           path: |
-            nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
-            nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
-            nextion/tests/NX4832K035_011/7.0.0/source/
-            nextion/tests/NX4832K035_011/7.0.0/preview.png
+            .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
+            .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
+            .pio/nextion-output/preview.png
+            .pio/nextion-output/picture-0003.png
             binary/manifest.json
+          include-hidden-files: true
           retention-days: 14
       - name: Commit NX4832K035 source images + preview + HMI/TFT on fork dev
         shell: bash
         run: |
           set -euo pipefail
+          # Only the CI release step promotes the ignored build outputs
+          # into version-controlled release artifacts. A plain local pio run
+          # never modifies these four tracked files.
+          cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI nextion/releases/7.0.0/
+          cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft nextion/releases/7.0.0/
+          cp .pio/nextion-output/picture-0003.png nextion/tests/NX4832K035_011/7.0.0/source/pictures/
+          cp .pio/nextion-output/preview.png nextion/tests/NX4832K035_011/7.0.0/preview.png
+          cp .pio/nextion-output/preview.png nextion/releases/7.0.0/preview-modern.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
-          # Generated artwork only; do not reference obsolete deleted slots
-          # (picture-0024 was removed in the 33 -> 24 PNG cleanup).
-          git add -A -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
           git add -- nextion/tests/NX4832K035_011/7.0.0/preview.png
-          cp nextion/tests/NX4832K035_011/7.0.0/preview.png nextion/releases/7.0.0/preview-modern.png
           git add -- nextion/releases/7.0.0/preview-modern.png
           if git diff --cached --quiet; then
             echo "Both generated HMI and TFT match the current fork dev."
