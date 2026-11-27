@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Rebuild glossy Nextion Home pictures from nxwright source (480x320 only).
 
-HomeGaugepic atlas (logical picture #3) stays 1035px wide:
-pH gauge sprites at y=0..149, ORP sprites at y=150..299, backdrop at y=300..619.
-The atlas additionally contains 5 pressure-status rows of 11 turbine frames
-(y=620..969). Four asymmetric cyan blades rotate around the exact 35px center.
-tmAnim.timer remains 50ms and gates frames on globals.vaStates bit 0:
-filtration OFF -> frame 0, ON -> animation frames 1..10.
-The native tProp component/IDs are retained but hidden; no ESP32 change.
+HomeGaugepic atlas (logical picture #3) is compact: gauges at y=0..299,
+flat-background Home at y=300..619, five 70x70 pressure rings plus eleven
+48x48 turbine centres packed in a single row at y=620..689, and five 43x38
+RSSI icons in a single row at y=690..727.
+tmAnim.timer stays at 50ms; the ring redraws only if pressure status changes
+while a separate, shared 10-phase core animates on every tick.
+The native tProp component/IDs and ESP32 serial protocol remain unchanged.
 """
 from __future__ import annotations
 
@@ -59,21 +59,16 @@ def halo(im,painter,blur=4):
 
 def panel(im,coords,r,fill,edge):
     rect=tuple(round(q*S) for q in coords)
-    im=halo(im,lambda d:d.rounded_rectangle(rect,radius=r*S,
-                                            outline=(*edge,150),width=3*S))
+    # Solid panel with no blurred halo: much smaller Nextion bitmap.
     ImageDraw.Draw(im).rounded_rectangle(rect,radius=r*S,fill=(*fill,255),
                                           outline=(*edge,255),width=S)
     return im
 
 
 def make_background():
-    small=Image.new('RGB',(480,320))
-    pixels=small.load()
-    for y in range(320):
-        for x in range(480):
-            glow=math.exp(-((x-250)/190)**2-((y-136)/155)**2)
-            pixels[x,y]=(round(3+4*glow),round(14+17*glow),round(34+32*glow))
-    image=small.resize((480*S,320*S),Image.Resampling.BICUBIC).convert('RGBA')
+    # Uniform dark base reduces encoded RGB565 variation without altering
+    # native text, hot spots, gauge/turbine icons or screen coordinates.
+    image=Image.new('RGBA',(480*S,320*S),(*NAVY,255))
     image=panel(image,(5,4,475,58),13,(3,26,52),(7,197,245))
     image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))
     d=ImageDraw.Draw(image)
@@ -170,24 +165,23 @@ def gauge_sprite(bg,kind,active):
 
 
 FAN_X,FAN_Y,FAN_SIZE=207,210,70
-FAN_ATLAS_Y=620
+FAN_RING_ATLAS_Y=620
+FAN_CORE_SIZE=48
+FAN_CORE_X=FAN_X+(FAN_SIZE-FAN_CORE_SIZE)//2
+FAN_CORE_Y=FAN_Y+(FAN_SIZE-FAN_CORE_SIZE)//2
+FAN_CORE_ATLAS_X=350
 FAN_FRAMES=11
 
 
 def _cubic(a,b,c,d,steps=12):
     return [((1-t)**3*a[0]+3*(1-t)**2*t*b[0]+3*(1-t)*t*t*c[0]+t**3*d[0],
-             (1-t)**3*a[1]+3*(1-t)**2*t*b[1]+3*(1-t)*t*t*c[1]+t**3*d[1])
+             (1-t)**3*a[1]+3*(1-t)**2*t*b[1]+t**3*d[1]*0+3*(1-t)*t*t*c[1]+t**3*d[1])
             for t in (i/steps for i in range(steps+1))]
 
 
-def fan_frame(bg,status,frame):
-    """70x70 high-contrast turbine, perfectly centered at (35,35).
-
-    There are 11 frames: 0 is the stationary OFF glyph, 1..10 are active
-    rotational phases covering 90 degrees (4-fold symmetry), avoiding jumps.
-    Pressure condition remains the same 0..4, independently of ON/OFF.
-    """
-    assert 0<=status<=4 and 0<=frame<FAN_FRAMES
+def ring_frame(bg,status):
+    """Pressure status ring, shared by every turbine animation frame."""
+    assert 0<=status<=4
     im=bg.crop((FAN_X*S,FAN_Y*S,(FAN_X+FAN_SIZE)*S,
                 (FAN_Y+FAN_SIZE)*S)).convert('RGBA')
     colors=((152,176,195),(107,248,44),(246,216,40),
@@ -196,45 +190,52 @@ def fan_frame(bg,status,frame):
     rect=(3*S,3*S,67*S,67*S)
     im=halo(im,lambda d:d.ellipse(rect,outline=(*AQUA,150),width=3*S),3)
     d=ImageDraw.Draw(im)
-    d.ellipse(rect,fill=(4,24,44,255),outline=(*AQUA,255),width=1*S)
+    d.ellipse(rect,fill=(4,24,44,255),outline=(*AQUA,255),width=S)
     d.ellipse((6*S,6*S,64*S,64*S),
               fill=(3,17,31,255),outline=(111,158,188,255),width=S)
-    # Continuous status ring around the spinner. Green/yellow/orange/red
-    # follows the same pressure severity as the old image 20..24.
     d.arc((5*S,5*S,65*S,65*S),5,170,
           fill=(185,205,222,255),width=4*S)
     d.arc((5*S,5*S,65*S,65*S),187,338,
           fill=(*active,255),width=4*S)
+    return im.convert('RGB')
+
+
+def blade_frame(frame):
+    """One pressure-independent 48x48 turbine core, 0=OFF, 1..10=rotation.
+
+    The centre has a solid fill matching the inner ring and never overlaps
+    the outer status arcs. Symmetric four blades repeat after 90 degrees.
+    """
+    assert 0<=frame<FAN_FRAMES
+    im=Image.new('RGBA',(FAN_CORE_SIZE*S,FAN_CORE_SIZE*S),(3,17,31,255))
+    d=ImageDraw.Draw(im)
     curves=[
       ((-3,-7),(-8,-9),(-18,-23),(-8,-26)),
       ((-8,-26),(-5,-30),(10,-29),(13,-25)),
       ((13,-25),(16,-20),(13,-17),(9,-13)),
       ((9,-13),(7,-11),(6,-7),(-3,-7)),
     ]
-    # Frame 0 is held when filtration is off. Active phases 1..10 run
-    # continuously at 50ms per frame with a seamless 4-blade turn.
     phase=(max(0,frame-1)*math.pi/20) if frame else 0
+    cx=cy=FAN_CORE_SIZE/2
     for blade in range(4):
         angle=phase+blade*math.pi/2
         co,si=math.cos(angle),math.sin(angle)
         outline=[pt for c in curves for pt in _cubic(*c)]
-        # Thin, airy turbine: 28% smaller blades, same exact center.
-        coords=[((35+.72*(u*co-v*si))*S,(35+.72*(u*si+v*co))*S)
+        coords=[((cx+.72*(u*co-v*si))*S,(cy+.72*(u*si+v*co))*S)
                 for u,v in outline]
         d.polygon(coords,fill=(23,195,244,255))
         d.line(coords+[coords[0]],fill=(228,252,255,255),width=S)
         highlights=[(-6,-21),(1,-26),(8,-25)]
-        d.line([((35+.72*(u*co-v*si))*S,(35+.72*(u*si+v*co))*S)
+        d.line([((cx+.72*(u*co-v*si))*S,(cy+.72*(u*si+v*co))*S)
                 for u,v in highlights],
                fill=(144,235,255,255),width=S)
-    d.ellipse((32*S,32*S,38*S,38*S),
+    d.ellipse(((cx-3)*S,(cy-3)*S,(cx+3)*S,(cy+3)*S),
               fill=(6,74,128,255),outline=(*WHITE,255),width=S)
     return im.convert('RGB')
 
 
-
 WIFI_X,WIFI_Y,WIFI_W,WIFI_H=428,11,43,38
-WIFI_ATLAS_Y=970
+WIFI_ATLAS_Y=690
 WIFI_LEVELS=5
 
 
@@ -275,26 +276,31 @@ def render(source,preview):
     pictures=source/'pictures'
     assert (pictures/'picture-0003.png').is_file(), 'expected an editable RGB Home atlas'
     bg=make_background()
-    atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_LEVELS*WIFI_H),NAVY)
+    # The widest sprites are the two gauge strips (5 x 207 = 1035 px).
+    # All smaller assets are packed horizontally below the background.
+    atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)
     for state in range(5):
         for y,kind in ((0,'pH'),(150,'ORP')):
             im=gauge_sprite(bg,kind,state).resize((207,150),Image.Resampling.LANCZOS)
             atlas.paste(im,(state*207,y))
-        for frame in range(FAN_FRAMES):
-            turbine=fan_frame(bg,state,frame)
-            turbine=turbine.resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
-            atlas.paste(turbine,(frame*FAN_SIZE,FAN_ATLAS_Y+state*FAN_SIZE))
+        ring=ring_frame(bg,state).resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
+        atlas.paste(ring,(state*FAN_SIZE,FAN_RING_ATLAS_Y))
+    for frame in range(FAN_FRAMES):
+        core=blade_frame(frame).resize((FAN_CORE_SIZE,FAN_CORE_SIZE),Image.Resampling.LANCZOS)
+        atlas.paste(core,(FAN_CORE_ATLAS_X+frame*FAN_CORE_SIZE,FAN_RING_ATLAS_Y))
     for level in range(WIFI_LEVELS):
         tile=wifi_frame(bg,level).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS)
-        atlas.paste(tile,(0,WIFI_ATLAS_Y+level*WIFI_H))
+        atlas.paste(tile,(level*WIFI_W,WIFI_ATLAS_Y))
     atlas.paste(bg.resize((480,320),Image.Resampling.LANCZOS),(0,300))
     atlas.save(pictures/'picture-0003.png',optimize=True)
     demo=bg.resize((480,320),Image.Resampling.LANCZOS)
     demo.paste(atlas.crop((414,0,621,150)),(20,89))
     demo.paste(atlas.crop((414,150,621,300)),(253,89))
     # Preview frame is the same real turbine bitmap used by the Nextion timer.
-    demo.paste(fan_frame(bg,1,4).resize((70,70),Image.Resampling.LANCZOS),
+    demo.paste(ring_frame(bg,1).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
+    demo.paste(blade_frame(4).resize((48,48),Image.Resampling.LANCZOS),
+               (FAN_CORE_X,FAN_CORE_Y))
     demo.paste(wifi_frame(bg,4).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
                (WIFI_X,WIFI_Y))
     d=ImageDraw.Draw(demo)
@@ -309,7 +315,7 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
-    print('Home atlas=1035x1160: 5x11 turbine frames + 5 RSSI icon levels')
+    print('Home atlas=1035x728: 5 rings + 11 small turbine frames + 5 RSSI tiers')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
 
