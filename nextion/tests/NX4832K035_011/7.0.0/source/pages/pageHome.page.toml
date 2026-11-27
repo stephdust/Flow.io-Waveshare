@@ -332,8 +332,8 @@ h = 45
 [[component]]
 name = "m1"
 type = "hotspot"
-x = 207
-y = 244
+x = 205
+y = 239
 w = 70
 h = 70
 
