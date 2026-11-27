@@ -60,6 +60,20 @@ Avant de réessayer une mise à jour en échec, vérifier :
 Ne pas contourner les contrôles de compatibilité ou la réserve PSRAM :
 ils protègent l'écran d'une mise à jour partielle.
 
+## Commandes tactiles du Home 3,5″
+
+Les zones actives sont calées sur les icônes réelles : grille (configuration),
+turbine centrale (filtration), engrenage (équipements), alarme (alarmes).
+Le bouton « lecture », qui répétait la commande de filtration de la turbine,
+a été **retiré complètement** (image, composant `m2`, événement).
+La grille est recentrée dans le secteur gauche ainsi libéré.
+
+Les anciens boutons de navigation sont des hotspots transparents : leur
+redessin ne masque plus les images. Les indicateurs d'injection et de SWG
+restent au-dessus du bandeau. Un test statique vérifie les quatre zones
+tactiles, les événements et l'absence de recouvrement. Vérifier les appuis
+réels sur chaque icône avant diffusion.
+
 ## Contrôles de non-régression
 
 - Rafraîchissement au réveil : la page Home est rechargée pour redessiner le
