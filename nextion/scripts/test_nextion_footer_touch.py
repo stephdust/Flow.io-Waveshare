@@ -117,9 +117,11 @@ assert "fill=(7,100,172,255)" in art and "fill=(90,234,255,255)" in art, (
 assert "fill=(4,134,132,255)" in art and "fill=(237,190,69,255)" in art, (
     "jade gear and gold 3D bearing were lost"
 )
-assert "fill=(255,193,53,255)" in art and "fill=(129,49,26,255)" in art, (
-    "amber/bronze warning icon lost its faceted colours"
+assert "fill=(63,244,147,255)" in art and "fill=(6,107,71,255)" in art, (
+    "normal alarm icon must be emerald green, not amber"
 )
+assert "ALARM_ACTIVE_ATLAS_X=544" in art and "def alarm_active_sprite():" in art
+assert "fill=(255,83,104)" in art, "active alarm symbol must be red"
 assert "text(d,\'flow\',51,31,20" in art
 assert "text(d,\'.io\',101,31,20" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
@@ -130,6 +132,6 @@ assert "for tooth in range(10):" in art, "the gear must not revert to sun-like s
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
-print("PASS: 3D cyan/jade/amber nav icons at x=123/346/440")
+print("PASS: 3D cyan/jade/green nav icons at x=123/346/440, red when alarm active")
 print("PASS: 50px+ icon gaps from pump, centered rotor unchanged at x240")
 print("PASS: no footer button paints opaque rectangles over icons")
