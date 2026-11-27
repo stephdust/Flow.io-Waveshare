@@ -27,17 +27,18 @@ def main() -> None:
     gauges = get_event(source, "bUpdateGauge.down")
     assert re.search(r"(?m)^\s*wup=1\s*$", initial)
     assert re.search(r"(?m)^\s*wup=255\s*$", leaving)
-    assert "xpic 0,0,480,320,0,300,HomeGaugepic" in final
+    assert "xpic 0,0,480,320,0,150,HomeGaugepic" in final
     assert final.index("vaPrvpHPercen.val=-1") < final.index("click bUpdateGauge,1")
     assert final.index("vaPrvOrpPercen.val=-1") < final.index("click bUpdateGauge,1")
-    assert "xpic 20,89,207,150,sys1,0,HomeGaugepic" in gauges
-    assert "xpic 253,89,207,150,sys1,150,HomeGaugepic" in gauges
+    assert "xpic 20,89,207,150,0,0,HomeGaugepic" in gauges
+    assert "xpic 253,89,207,150,207,0,HomeGaugepic" in gauges
     assert "vaPrvWifiLevel.val=-1" in final
-    assert "xpic 423,11,43,38,sys1,690,HomeGaugepic" in gauges
+    assert "xpic 423,11,43,38,sys1,540,HomeGaugepic" in gauges
+    assert "xpic 63,57,378,30,63,207,HomeGaugepic" in gauges
     assert "vis tErrMessage,0" in initial
     assert not re.search(r"(?m)^\s*ref b[01]\s*$", final), "opaque footer buttons redrawn"
     assert "click bUpdateGauge,1" in tick
-    print("PASS: Home wake reloads and redraws xpic background + two gauge sprites")
+    print("PASS: Home wake reloads bg y150 and 2 unique pH/ORP atlas sprites")
     print("PASS: leaving Home restores wup=255; normal navigation is unchanged")
 
 
