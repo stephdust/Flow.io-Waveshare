@@ -86,12 +86,12 @@ def make_background():
         raise ValueError('official Flow.io waves are empty')
     wave=wave.crop(bbox)
     wave.thumbnail((57*S,33*S),Image.Resampling.LANCZOS)
-    image.paste(wave,(20*S,14*S+((33*S-wave.height)//2)),wave)
+    image.paste(wave,(32*S,14*S+((33*S-wave.height)//2)),wave)
     d=ImageDraw.Draw(image)
-    # Move the COMPLETE Flow.io mark +12px to centre its visual group
+    # Move the COMPLETE Flow.io mark +24px to centre its visual group
     # within the leftmost header segment; internal spacing is unchanged.
-    text(d,'flow',63,31,20,anchor='lm')
-    text(d,'.io',113,31,20,(11,212,248),anchor='lm')
+    text(d,'flow',75,31,20,anchor='lm')
+    text(d,'.io',125,31,20,(11,212,248),anchor='lm')
     # Water temperature: sharp small blue droplet with a RED thermometer.
     # No Gaussian halo and no thick overlapping white contours: crisp at
     # the actual 480x320 resolution and after RGB565 conversion.
