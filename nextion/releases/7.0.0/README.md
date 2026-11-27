@@ -16,11 +16,31 @@ Depuis la racine du dépôt :
 
 | Commande | Fonction |
 |---|---|
-| `pio run -e nextion` | Vérifie les sources, compile HMI et TFT avec nxwright, copie le TFT dans `binary/`, puis régénère `binary/manifest.json` |
-| `pio run -e nextion -t manifest` | Sans compilation : copie le TFT existant dans `binary/` et régénère seulement `binary/manifest.json` |
+| `pio run -e nextion` | Vérifie les sources, compile HMI et TFT avec nxwright dans `.pio/nextion-output/` (ignoré par Git), copie le TFT et le preview dans `binary/`, puis régénère `binary/manifest.json` |
+| `pio run -e nextion -t manifest` | Sans compilation : prend le TFT local de `.pio/nextion-output/` s'il existe, sinon celui de la release suivie par Git, et régénère `binary/manifest.json` |
 
 La version reste `7.0.0`. Aucun build ESP32/SPIFFS pour ces deux commandes.
 Le manifeste et le TFT doivent être publiés ensemble en cas de distribution HTTP.
+
+## Séparation des builds locaux et des releases suivies par Git
+
+Une compilation locale **ne modifie plus** les fichiers de release suivis
+par Git : les HMI/TFT, le `preview.png` et le
+`source/pictures/picture-0003.png`. Le projet nxwright est copié dans
+un dossier temporaire sous `.pio/` avant la génération des images et le
+compilateur travaille exclusivement dans cette copie. L'export final
+local est conservé dans `.pio/nextion-output/` et `binary/`, tous deux
+ignorés par Git.
+
+Seul le workflow GitHub Actions, **après réussite des tests, de la
+compilation et d'un contrôle `git diff --exit-code`**, recopie les
+images et le TFT validés dans les fichiers de release versionnés et
+effectue le commit. Cela permet d'utiliser `git pull` après un build
+local sans conflit sur ces quatre artefacts.
+
+La prévisualisation locale est accessible dans
+`.pio/nextion-output/preview.png` ou `binary/nextion-preview.png`.
+Le TFT utilisable pour une OTA se trouve dans `binary/`.
 
 ## Diffusion HTTP et OTA Nextion 3,5″
 
