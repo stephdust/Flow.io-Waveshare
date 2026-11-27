@@ -56,14 +56,17 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
     assert cases == list(range(21)), (
         f"{field} must have exactly the 21 cursor positions 0..20: {cases}"
     )
-    # ESP32 normalizes around its configured setpoint:
-    # centre=140 on a 0..280 gauge, so the central green sector is active.
-    assert f"sys0={field}.val+35" in section
-    assert "sys0=sys0/70" in section
+    # The pH and ORP dial backgrounds NEVER vary by live reading:
+    # each is a single static 207x150 tile with 5 colored sectors.
+    # Only the native needle depends on ESP32 0..280 percent.
+    src_x = 0 if field == "vapHPercent" else 207
+    assert f"xpic {destination_x},89,207,150,{src_x},0,HomeGaugepic" in section
+    assert "sys1=sys0*207" not in section, (
+        "five redundant backgrounds must not be selected at runtime"
+    )
     assert f"sys2={field}.val" in section
     assert "sys2+=7" in section and "sys2=sys2/14" in section
-    xpic = f"xpic {destination_x},89,207,150"
-    assert xpic in section
+    assert (f"xpic {destination_x},89,207,150,") in section
     # Verify the real 3D needle instead of the obsolete 22px rim cursor.
     # Every Nextion position has four layered strokes from the dial centre
     # to the measured angle: shadow, blue side, cyan side, white highlight.
@@ -127,6 +130,7 @@ assert "draw_preview_gauge_cursor(demo, 253, 144)" in art
 # Existing touch/callback IDs must remain unchanged.
 assert byname["tpH"]["x"] == 87 and byname["tORP"]["x"] == 321
 assert "m2" not in byname
+print("PASS: only 2 unique static pH/ORP dial tiles, not 10 duplicates")
 print("PASS: original-style danger/attention/good/attention/danger gauge colours")
 print("PASS: 21 full-length layered 3D needles and bearings on each dial (0..280)")
 print("PASS: no static setpoint arrows, both gauge endpoint labels moved down 7px")
