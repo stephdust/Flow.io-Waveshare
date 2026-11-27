@@ -100,6 +100,14 @@ def refresh_manifest() -> None:
 def compile_nextion() -> None:
     check_source()
     nx = nxwright_path()
+    # Use the same isolated Python that installed nxwright (and Pillow).
+    # All Home artwork is regenerated deterministically from the source script.
+    # Pump blades are *never* drawn into its background pictures.
+    renderer = ROOT / "nextion/scripts/render_nx_home.py"
+    preview = ROOT / "nextion/tests" / MODEL / VERSION / "preview.png"
+    python = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    execute(str(python), str(renderer), "--source", str(SOURCE),
+            "--preview", str(preview))
     RELEASE.mkdir(parents=True, exist_ok=True)
     (ROOT / ".pio").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="nextion-build-", dir=ROOT / ".pio") as folder:

@@ -153,6 +153,16 @@ def modernize(source: Path, logo: Path, preview: Path) -> None:
     old.unlink()
     refresh_spinner_images(source,atlas)
     edit_home_text(source)
+    # Editable 7.0.0 source now uses separate pH/ORP strips and artwork rows.
+    home_file = source/'pages/pageHome.nx'
+    script = home_file.read_text(encoding='utf-8')
+    script = script.replace('xpic 0,0,480,320,0,150,HomeGaugepic',
+                            'xpic 0,0,480,320,0,300,HomeGaugepic')
+    script = script.replace('xpic 253,89,207,150,sys1,0,HomeGaugepic',
+                            'xpic 253,89,207,150,sys1,150,HomeGaugepic')
+    home_file.write_text(script, encoding='utf-8')
+    from render_nx_home import render as render_polished
+    render_polished(source,preview)
     if hashlib.sha256((source/'program.nx').read_bytes()).hexdigest()!=before_program:
         raise ValueError('global protocol constants changed unexpectedly')
     print('MODERNIZED NXWRIGHT SOURCE',source)

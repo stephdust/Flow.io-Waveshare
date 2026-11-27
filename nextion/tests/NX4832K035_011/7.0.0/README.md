@@ -42,3 +42,14 @@ recharge la page physique 1 (Home) et réexécute les commandes `xpic` de
 Sur `pageHome.unload`, `wup=255` restaure le comportement habituel des
 autres pages. Le test `nextion/scripts/test_nextion_wake.py` vérifie ce
 contrat. **Validation réelle après plusieurs veilles toujours requise.**
+
+## Habillage raffiné sans modifier l'animation
+
+Le logo de pompe **continue de tourner uniquement lorsque la filtration est
+active**, grâce à `tmAnim.timer`, `vaIconProp.txt` et la police native
+`Propeller_50`. Le nouveau rendu vectoriel génère seulement l'anneau
+coloré des images `picture-0020..24`, **jamais les pales fixes**.
+L'atlas `picture-0003.png` contient maintenant deux lignes distinctes
+(pH et ORP) et un fond haute définition, reproduisant les repères verts,
+les jauges multicolores, les cadres cyan et le bandeau du modèle graphique.
+Le comportement après veille reste à valider physiquement.

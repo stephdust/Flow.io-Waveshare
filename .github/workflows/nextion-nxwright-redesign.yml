@@ -8,6 +8,8 @@ on:
       - 'platformio.ini'
       - 'nextion/scripts/pio_nextion_targets.py'
       - 'nextion/scripts/run_nextion.py'
+      - 'nextion/scripts/render_nx_home.py'
+      - 'nextion/scripts/test_nextion_animation.py'
       - 'nextion/scripts/refresh_nextion_manifest.py'
       - 'nextion/tests/NX4832K035_011/7.0.0/source/**'
 permissions:
@@ -33,6 +35,7 @@ jobs:
       - name: Validate Home wake/redraw source contract
         run: |
           python nextion/scripts/test_nextion_wake.py
+          python nextion/scripts/test_nextion_animation.py
           python -m py_compile nextion/scripts/modernize_3p5_nxsource.py
       - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
         run: pio run -e nextion
@@ -75,12 +78,19 @@ jobs:
             nextion/tests/NX4832K035_011/7.0.0/preview.png
             binary/manifest.json
           retention-days: 14
-      - name: Commit only Nx4832K035 HMI/TFT changes on fork dev (no upstream PR)
+      - name: Commit NX4832K035 source images + preview + HMI/TFT on fork dev
         shell: bash
         run: |
           set -euo pipefail
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0020.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0021.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0022.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0023.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0024.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/preview.png
           if git diff --cached --quiet; then
             echo "Both generated HMI and TFT match the current fork dev."
           else

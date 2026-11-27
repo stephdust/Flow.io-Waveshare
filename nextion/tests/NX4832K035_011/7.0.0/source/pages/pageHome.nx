@@ -13,7 +13,7 @@ on pageHome.loadend:
   // Leave native component IDs, timers and touch events unchanged.
   vis tPHTitle,0
   vis tOrpTitle,0
-  xpic 0,0,480,320,0,150,HomeGaugepic
+  xpic 0,0,480,320,0,300,HomeGaugepic
   // Force BOTH gauge sprites to be redrawn after every page load/wake.
   vaPrvpHPercen.val=-1
   vaPrvOrpPercen.val=-1
@@ -124,7 +124,7 @@ on bUpdateGauge.down:
       sys0=4
     }
     sys1=sys0*207
-    xpic 253,89,207,150,sys1,0,HomeGaugepic
+    xpic 253,89,207,150,sys1,150,HomeGaugepic
     if(sys0==0||sys0==4)
     {
       tORP.bco=132
