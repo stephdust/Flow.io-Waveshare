@@ -5,6 +5,7 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/nextion-nxwright-source-roundtrip.yml'
+      - 'nextion/scripts/compile_nxwright_test.sh'
 
 permissions:
   contents: read
@@ -49,14 +50,14 @@ jobs:
           echo "This is an experimental NX4832K035 build, not a release artifact."
           echo "Archived TFT uses Nextion Editor 1.68.1; nxwright 0.5.6 requires the official 1.68.2 firmware."
           echo "Explicitly allow nxwright to download the matching 1.68.2 editor firmware on this ephemeral runner."
-          nxwright compile "$RUNNER_TEMP/nx-source" "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-            --download \
+          bash nextion/scripts/compile_nxwright_test.sh \
+            "$RUNNER_TEMP/nx-source" \
+            "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
             2>&1 | tee "$RUNNER_TEMP/nxwright-compile.log"
-          test -s "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft"
           sha256sum "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-            | tee "$RUNNER_TEMP/nxwright-compiled-sha256.txt"
+            > "$RUNNER_TEMP/nxwright-compiled-sha256.txt"
           nxwright tft-read "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-            2>&1 | tee "$RUNNER_TEMP/nxwright-tft-inspection.txt"
+            > "$RUNNER_TEMP/nxwright-tft-inspection.txt"
           echo "Experimental TFT compiled and parsed; real Nextion Editor/device validation still required." >> "$GITHUB_STEP_SUMMARY"
       - name: Archive experimental TFT and compile diagnostics (NOT a release)
         if: always()
