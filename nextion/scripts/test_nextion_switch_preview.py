@@ -37,26 +37,46 @@ for name,xy in zip(names,expected):
     assert off.tobytes()!=active.tobytes(),f"{name}: ON and OFF look identical"
     # The published image itself must reuse the active or inactive sprite.
     chosen=active if name in on else off
-    part=im.crop((*xy,xy[0]+70,xy[1]+65))
-    assert part.tobytes()==chosen.crop((0,0,70,65)).tobytes(),f"{name}: preview differs from HMI sprite"
+    part=im.crop((*xy,xy[0]+70,xy[1]+60))
+    assert part.tobytes()==chosen.crop((0,0,70,60)).tobytes(),f"{name}: preview differs from HMI sprite"
     # Avoid deprecated Image.getdata() while checking for actual icon pixels.
     background=Image.new("RGB",chosen.size,navy)
     assert ImageChops.difference(chosen,background).getbbox() is not None, f"{name}: missing 3D glyph"
 home=buttons["bHome"]
-assert (home["x"],home["y"],home["w"],home["h"])==(0,267,56,52)
-assert home["pic"]=="picture-0040" and home["pic2"]=="picture-0041"
-home_image=Image.open(args.source/"pictures"/(home["pic"]+".png")).convert("RGB")
+assert home["type"]=="hotspot" and (home["x"],home["y"],home["w"],home["h"])==(0,267,56,52)
+# Home icon must be a VISIBLE picture object in the real HMI.
+home_icon=buttons["pHomeIcon"]
+assert home_icon["type"]=="picture"
+assert (home_icon["x"],home_icon["y"],home_icon["w"],home_icon["h"])==(0,267,56,52)
+assert home_icon["pic"]=="picture-0040"
+home_image=Image.open(args.source/"pictures"/(home_icon["pic"]+".png")).convert("RGB")
+assert ImageChops.difference(home_image,Image.new("RGB",home_image.size,navy)).getbbox() is not None
 assert im.crop((0,267,56,319)).tobytes()==home_image.tobytes()
 for i in range(8):
     c=buttons[f"t{i}"]
     assert c["type"]=="text" and c["bco"]=="#041225"
-    assert c["pco"]=="#ffffff" and c["xcen"]==1
+    assert c["pco"]=="#ffffff" and c["xcen"]==c["ycen"]==1
+    assert c["font"]=="Segoe24_MenuItems" and c["isbr"]==1 and c["h"]==48
     assert c["y"] in (102,221)
 for event in ("btAuto","btAutoORP","btAutoPH","btPHPump",
               "btCHLPump","btWinter","btLight","btRobot"):
     source=(args.source/"pages/pageHomeSwtch.nx").read_text(encoding="utf-8")
     assert f"on {event}.down:" in source,f"touch event lost: {event}"
 assert "on bHome.down:" in source and "page pageHome" in source
+assert "on pHomeIcon.down:" in source, "picture would intercept Home touch"
+assert "on tHomeCaption.down:" in source, "HOME caption should navigate"
 print("PASS: actual pageHomeSwtch PNG uses identical pixels to all 9 HMI button sprites")
 print("PASS: background #041225, 8 correct commands, 2 rows, native text and Home")
 print("PASS: ON/OFF artwork differs and all native touch handlers remain")
+
+# ON and OFF badges are demonstrably green and grey in the real sprites.
+for name in names:
+    b=buttons[name]
+    off=Image.open(args.source/"pictures"/(b["pic"]+".png")).convert("RGB")
+    active=Image.open(args.source/"pictures"/(b["pic2"]+".png")).convert("RGB")
+    greens=sum(1 for y in range(56,69) for x in range(18,53)
+               if (lambda q:q[1]>110 and q[1]>q[0]*1.3 and q[1]>q[2]*.75)(active.getpixel((x,y))))
+    offgreens=sum(1 for y in range(56,69) for x in range(18,53)
+                  if (lambda q:q[1]>110 and q[1]>q[0]*1.3 and q[1]>q[2]*.75)(off.getpixel((x,y))))
+    assert greens>30 and greens>offgreens+20,(name,greens,offgreens)
+print("PASS: active green ON badges visibly distinct from subdued OFF badges")

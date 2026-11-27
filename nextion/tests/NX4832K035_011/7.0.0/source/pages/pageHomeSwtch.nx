@@ -85,3 +85,9 @@ on bUpdateBt.down:
 
 on tmUpdateBt.timer:
   click bUpdateBt,1
+
+on pHomeIcon.down:
+  page pageHome
+
+on tHomeCaption.down:
+  page pageHome

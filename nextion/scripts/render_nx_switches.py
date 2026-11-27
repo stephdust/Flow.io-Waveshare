@@ -72,6 +72,26 @@ def make_sprite(kind, on, w=70, h=75):
         poly([(cx-16,cy-2),(cx,cy-17),(cx+16,cy-2),(cx+13,cy+1),(cx+13,cy+15),(cx-13,cy+15),(cx-13,cy+1)],(225,241,247),(120,223,250))
         poly([(cx-18,cy-1),(cx,cy-19),(cx+18,cy-1),(cx+15,cy+2),(cx,cy-12),(cx-15,cy+2)],(29,172,244),(202,250,255))
         rect((cx-4,cy+5,cx+5,cy+15),(7,85,139),1)
+    # Persistent ON/OFF artwork is rendered into the actual Nextion sprites.
+    if kind != "home":
+        if not on:
+            im=Image.blend(im,Image.new("RGB",im.size,NAVY),0.40)
+        d=ImageDraw.Draw(im)
+        badge=(cx-19,cy+17,cx+19,cy+32)
+        d.rounded_rectangle(coords(badge),radius=6*S,
+                            fill=(5,124,75) if on else (47,59,73),
+                            outline=(102,254,163) if on else (123,142,160),
+                            width=2*S)
+        try:
+            badge_font=ImageFont.truetype("DejaVuSans-Bold.ttf",10*S)
+        except OSError:
+            badge_font=ImageFont.load_default()
+        d.text((round(cx*S),round((cy+24.5)*S)),
+               "ON" if on else "OFF",font=badge_font,
+               fill=(244,255,247) if on else (224,231,237),anchor="mm")
+        if on:
+            d.arc(coords((cx-r+1,cy-r+1,cx+r-1,cy+r-1)),
+                  190,345,fill=(73,255,160),width=3*S)
     return im.resize((w,h),Image.Resampling.LANCZOS)
 
 def main():
@@ -101,12 +121,13 @@ def main():
             sprite=Image.open(dst/(c[which]+".png")).convert("RGB")
             assert sprite.size==(c["w"],c["h"]),(name,sprite.size)
             canvas.paste(sprite,(c["x"],c["y"]))
-        home=components["bHome"]
+        home=components["pHomeIcon"]
         sprite=Image.open(dst/(home["pic"]+".png")).convert("RGB")
         assert sprite.size==(home["w"],home["h"])
         canvas.paste(sprite,(home["x"],home["y"]))
         draw=ImageDraw.Draw(canvas)
-        font_candidates=("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        font_candidates=("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+                         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
                          "C:/Windows/Fonts/arialbd.ttf","DejaVuSans.ttf")
         def font(size):
             for path in font_candidates:
@@ -120,12 +141,12 @@ def main():
             linebreaks=c["txt"].replace(chr(13)+chr(10), chr(10)).replace(chr(13), "").replace("   ","").replace("  ","").strip()
             cx=c["x"]+c["w"]/2
             draw.multiline_text((cx,c["y"]+c["h"]/2),linebreaks,
-                font=font(16),fill=(255,255,255),anchor="mm",
+                font=font(24),fill=(255,255,255),anchor="mm",
                 align="center",spacing=0)
         # HOME caption is an actual Nextion text component, not preview-only artwork.
         caption=components["tHomeCaption"]
         draw.text((caption["x"]+caption["w"]/2,caption["y"]+caption["h"]/2),
-                  caption["txt"],font=font(16),fill=(255,255,255),anchor="mm")
+                  caption["txt"],font=font(24),fill=(255,255,255),anchor="mm")
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         canvas.save(args.preview,optimize=True)
         print("[NEXTION] Switch preview from actual generated sprite images:",args.preview)

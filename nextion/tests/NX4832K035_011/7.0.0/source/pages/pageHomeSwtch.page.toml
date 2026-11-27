@@ -9,20 +9,11 @@ bco = "#041225"
 
 [[component]]
 name = "bHome"
-type = "button"
+type = "hotspot"
 x = 0
 y = 267
 w = 56
 h = 52
-style = 0
-font = "Home_Icons_32"
-pic = "picture-0040"
-bco = "#041225"
-pic2 = "picture-0041"
-bco2 = "#041225"
-pco = "#c6c3c6"
-pco2 = "#0092d6"
-txt = ""
 
 [[component]]
 name = "btAuto"
@@ -193,134 +184,151 @@ val = 140
 [[component]]
 name = "t0"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 22
-y = 102
-w = 100
-h = 36
+x = 14
+y = 101
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\nFiltration"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t1"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 134
-y = 102
-w = 100
-h = 36
+x = 127
+y = 101
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\nORP"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t2"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 246
-y = 102
-w = 100
-h = 36
+x = 240
+y = 101
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\npH"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t3"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 358
-y = 102
-w = 100
-h = 36
+x = 353
+y = 101
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Pompe\r\npH"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t4"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 362
-y = 221
-w = 100
-h = 36
+x = 353
+y = 219
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Pompe\r\nChlore"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t5"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 248
-y = 221
-w = 100
-h = 36
+x = 240
+y = 219
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Robot"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t6"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 134
-y = 221
-w = 100
-h = 36
+x = 127
+y = 219
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Eclairage"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "t7"
 type = "text"
-font = "SegoeUI_16"
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
-x = 20
-y = 221
-w = 100
-h = 36
+x = 14
+y = 219
+w = 112
+h = 48
 bco = "#041225"
 pco = "#ffffff"
 txt = "Hivernage"
 txt_maxl = 20
+isbr = 1
 
 [[component]]
 name = "tHomeCaption"
 type = "text"
 x = 58
-y = 278
-w = 66
-h = 25
-font = "SegoeUI_16"
+y = 275
+w = 70
+h = 34
+font = "Segoe24_MenuItems"
 xcen = 1
 ycen = 1
 bco = "#041225"
 pco = "#ffffff"
 txt = "HOME"
 txt_maxl = 8
+
+[[component]]
+name = "pHomeIcon"
+type = "picture"
+x = 0
+y = 267
+w = 56
+h = 52
+pic = "picture-0040"
