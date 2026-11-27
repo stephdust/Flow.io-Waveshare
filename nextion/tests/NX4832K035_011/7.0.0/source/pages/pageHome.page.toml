@@ -161,12 +161,12 @@ txt_maxl = 6
 [[component]]
 name = "tpHInject"
 type = "text"
-x = 104
-y = 275
-w = 36
-h = 36
+x = 161
+y = 226
+w = 33
+h = 34
 font = "HomeIcons_35"
-bco = "#041c35"
+bco = "#041225"
 pco = "#004152"
 ycen = 0
 txt = "╈"
@@ -175,12 +175,12 @@ txt_maxl = 3
 [[component]]
 name = "tChlInject"
 type = "text"
-x = 323
-y = 275
-w = 36
-h = 36
+x = 307
+y = 226
+w = 33
+h = 34
 font = "HomeIcons_35"
-bco = "#041c35"
+bco = "#041225"
 pco = "#004152"
 ycen = 0
 txt = "╍"
@@ -194,12 +194,12 @@ val = 2
 [[component]]
 name = "tSWGRunning"
 type = "text"
-x = 359
-y = 275
-w = 36
-h = 36
+x = 390
+y = 226
+w = 33
+h = 34
 font = "HomeIcons_35"
-bco = "#041c35"
+bco = "#041225"
 pco = "#004152"
 ycen = 0
 txt = "▭"
@@ -264,19 +264,11 @@ txt_maxl = 3
 
 [[component]]
 name = "b0"
-type = "button"
-x = 4
+type = "hotspot"
+x = 8
 y = 268
-w = 48
-h = 50
-style = 0
-font = "Home_Icons_37"
-bco = "#041c35"
-bco2 = "#041c35"
-pco = "#ffffff"
-pco2 = "#0092d6"
-txt = "Z"
-txt_maxl = 1
+w = 72
+h = 45
 
 [[component]]
 name = "bDateTime"
@@ -332,34 +324,26 @@ txt_maxl = 31
 [[component]]
 name = "m0"
 type = "hotspot"
-x = 305
+x = 309
 y = 268
-w = 82
-h = 46
+w = 78
+h = 45
 
 [[component]]
 name = "m1"
 type = "hotspot"
-x = 192
-y = 195
-w = 97
-h = 98
+x = 207
+y = 210
+w = 70
+h = 70
 
 [[component]]
 name = "b1"
-type = "button"
-x = 428
+type = "hotspot"
+x = 412
 y = 268
-w = 48
-h = 50
-style = 0
-font = "Home_Icons_37"
-bco = "#041c35"
-bco2 = "#041c35"
-pco = "#ffffff"
-pco2 = "#0092d6"
-txt = "f"
-txt_maxl = 1
+w = 62
+h = 45
 
 [[component]]
 name = "vaPrvWifiLevel"
@@ -380,3 +364,11 @@ pco = "#ffffff"
 ycen = 0
 txt = "__._°C"
 txt_maxl = 20
+
+[[component]]
+name = "m2"
+type = "hotspot"
+x = 103
+y = 268
+w = 81
+h = 46
