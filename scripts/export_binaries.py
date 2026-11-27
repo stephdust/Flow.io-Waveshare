@@ -461,9 +461,12 @@ if env.subst("$PIOENV") == _WAVESHARE_ENV:
 
     # platformio.ini defaults to 'buildprog, nextion'. A separate target
     # avoids skipping HMI changes when firmware.bin itself is up to date.
+    # An explicit dependency makes the HTTP-release manifest publish last.
     env.AddCustomTarget(
         name="nextion",
-        dependencies=None,
+        # Ensure firmware/SPIFFS export completes before the final
+        # Nextion manifest is published (also when SCons is parallel).
+        dependencies="$BUILD_DIR/${PROGNAME}.bin",
         actions=_compile_nextion_for_firmware,
         title="Nextion HMI + TFT + manifest",
         description="Build the 3.5in Nextion and publish TFT + manifest into binary/",
