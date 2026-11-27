@@ -29,6 +29,8 @@ SOURCE = ROOT / "nextion" / "tests" / MODEL / VERSION / "source"
 RELEASE = ROOT / "nextion" / "releases" / VERSION
 HMI_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.HMI"
 TFT_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.tft"
+# Match the HMI name exactly, changing only the extension.
+PREVIEW_NAME = Path(HMI_NAME).with_suffix(".png").name
 NXWRIGHT_COMMIT = "e9443a409cc9deb866db7486854fa962d382accc"
 VENV = ROOT / ".pio" / "nextion-nxwright-venv"
 # All regular build outputs are ignored by Git. Tracked releases/previews and
@@ -36,10 +38,11 @@ VENV = ROOT / ".pio" / "nextion-nxwright-venv"
 OUTPUT = ROOT / ".pio" / "nextion-output"
 # Keep each screen's preview in an isolated model/version path. This can
 # coexist with NX8048P050/NX8048P070 previews when their builds are added.
-PREVIEW_OUTPUT = OUTPUT / MODEL / VERSION / "preview.png"
+PREVIEW_OUTPUT = OUTPUT / MODEL / VERSION / PREVIEW_NAME
 LEGACY_PREVIEWS = (
     ROOT / "binary" / "nextion-preview.png",
     OUTPUT / "preview.png",
+    OUTPUT / MODEL / VERSION / "preview.png",
 )
 
 
@@ -144,7 +147,7 @@ def compile_nextion() -> None:
         scratch = Path(folder)
         work_source = scratch / "source"
         shutil.copytree(SOURCE, work_source)
-        work_preview = scratch / "preview.png"
+        work_preview = scratch / PREVIEW_NAME
         staged_hmi = scratch / HMI_NAME
         staged_tft = scratch / TFT_NAME
         readback = scratch / "hmi-check"
