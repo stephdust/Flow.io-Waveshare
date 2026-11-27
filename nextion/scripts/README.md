@@ -1,68 +1,38 @@
-# Outils de compilation et validation Nextion
+# Outils Nextion maintenus
 
-Tous les scripts HMI spécifiques au projet Nextion sont regroupés ici.
+Sur le fork `stephdust/Flow.io-Waveshare:dev`, **seul nxwright** est utilisé
+pour reconstruire le Nextion `NX4832K035_011` (480 × 320), version `7.0.0`.
+L'ancien chemin Nextion2Text + patchage binaire HMI a été supprimé.
 
-| Script | Usage |
+## Commandes uniques (depuis la racine)
+
+```bash
+pio run -e nextion             # nxwright → HMI + TFT → binary/ + manifest.json
+pio run -e nextion -t manifest # TFT existant → binary/ + manifest.json
+```
+
+La commande complète vérifie les sources `nextion/tests/NX4832K035_011/7.0.0/source/`,
+reconstruit le HMI, le réextrait pour vérification, compile le TFT, puis
+publie les deux fichiers sous `nextion/releases/7.0.0/`. Les deux commandes
+actualisent `binary/manifest.json` sans compiler l'ESP32 ni le SPIFFS.
+
+## Fichiers utiles
+
+| Script | Rôle |
 |---|---|
-| `build_3p5_v7_hmi.py` | Générateur historique 6.0.0 vers 7.0.0 ; ne pas le publier sur la version moderne |
-| `build_3p5_v7_modern.py` | **Bibliothèque de rendu d'images uniquement.** Ne plus lancer son patchage binaire HMI : l'ancienne méthode a produit un HMI invalide |
-| `validate_3p5_v7_modern.py` | Vérification de l'intégrité de la version 7.0.0 moderne |
-| `compare_3p5_hmi.py` | Comparaison historique HMI 6.0.0 / 7.0.0 |
-| `audit_3p5_nxwright.py` | Audit nxwright en lecture seule : extraction, contrôles et reconstruction |
-| `modernize_3p5_nxsource.py` | Modifier les textes et images d'un projet NX4832K035 *extrait par nxwright* ; sans patchage binaire |
-| `pio_nextion_targets.py` / `run_nextion.py` | Cibles PlatformIO : `nextion` (compiler HMI/TFT) et `manifest` (export rapide) |
+| `pio_nextion_targets.py` | Déclare les cibles PlatformIO `nextion` et `manifest` |
+| `run_nextion.py` | Séquence nxwright unique, isolation Python et publication |
+| `render_nx_home.py` | Images de fond, jauges pH/ORP et anneau de pompe |
+| `refresh_nextion_manifest.py` | Export du TFT et manifeste via le mécanisme existant |
+| `test_nextion_wake.py` | Test de non-régression sur le réveil / `xpic` |
+| `test_nextion_animation.py` | Test de non-régression sur la rotation de la pompe |
 
-**Périmètre unique :** Nextion NX4832K035_011 (480 × 320), version 7.0.0.
-Ne jamais modifier les sources ou TFT des Nextion 5″/7″ via ces outils.
+La chaîne principale est testée par
+[`nextion-nxwright-redesign.yml`](../../.github/workflows/nextion-nxwright-redesign.yml)
+et l'export rapide par
+[`nextion-platformio-fast.yml`](../../.github/workflows/nextion-platformio-fast.yml).
 
-Les scripts sont lancés depuis la racine du dépôt. Leurs imports Python mutuels
-restent valides puisque tous les scripts ont été déplacés ensemble.
-
-Les workflows correspondants restent dans `.github/workflows/` (exigence GitHub Actions).
-Le hook général de packaging `scripts/export_binaries.py` demeure à sa place pour
-la compilation Waveshare/OTA ; il lit `nextion/releases/<version>/*.tft` sans compiler de HMI.
-
-L'ancien HMI patché en binaire est abandonné. La compilation officielle **sur notre fork de développement** passe maintenant exclusivement par `pio run -e nextion`, depuis les sources nxwright éditables. [Compilation et export manifest vérifiés par GitHub Actions](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46010307421). Les HMI/TFT sont committés dans la release 7.0.0 sur notre fork uniquement ; validation sur matériel toujours nécessaire.
-
-
-## Entrée PlatformIO de compilation Nextion
-
-`platformio.ini` possède une section isolée **`[env:nextion]`** :
-
-```bash
-pio run -e nextion
-```
-
-Cette commande exécute uniquement la chaîne du **NX4832K035_011, 480 × 320, version 7.0.0** :
-`nxwright check` → `nxwright build` → réextraction et validation du HMI →
-`nxwright compile --download` → vérification TFT → copie dans
-`nextion/releases/7.0.0/` → export dans `binary/` → régénération
-de `binary/manifest.json`.
-
-Pour simplement republier le **TFT déjà compilé et le manifeste**, sans
-installer nxwright, sans compilation ni SPIFFS :
-
-```bash
-pio run -e nextion -t manifest
-```
-
-Ces deux cibles utilisent **le même environnement PlatformIO**, avec une seule
-implémentation dans `nextion/scripts/` :
-`pio_nextion_targets.py` → `run_nextion.py` →
-`refresh_nextion_manifest.py` (appel interne à l'exporteur existant).
-
-Lors de la première compilation Nextion complète, une installation isolée de
-nxwright à un commit Git précis dans `.pio/nextion-nxwright-venv/` et le
-téléchargement du firmware système Nextion Editor peuvent nécessiter Internet.
-Les compilations suivantes réutilisent l'environnement. Aucun code C++
-ESP32 ni image SPIFFS n'est construit.
-
-La version reste `7.0.0`. Sur notre fork `dev`, les HMI/TFT sont
-expérimentaux jusqu'aux tests réels. La branche amont de Christophe et les
-modèles Nextion 5″/7″ ne sont pas modifiés.
-
-**Mise à jour à distance :** après la commande rapide, il faut publier le TFT
-**et** `binary/manifest.json` ensemble au même emplacement HTTP. Sinon Flow.io
-peut afficher `Nextion artifact HTTP response invalid` malgré un manifeste
-local correct. Les manifests `flowio-release-*.json` / `release.json` et le
-ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
+Les fichiers des écrans Nextion 5″ et 7″, le firmware ESP32, SPIFFS et
+la branche de Christophe ne sont **pas concernés**. La version reste `7.0.0`
+jusqu'au PR. La compilation automatique ne dispense pas de valider le TFT sur
+l'écran réel.

@@ -51,19 +51,25 @@ noms ambigus ou les doublons modèle/version.
 ## Organisation des ressources Nextion
 
 - `releases/<version>/` : HMI et TFT par version et modèle, avec éventuelles prévisualisations.
-- `scripts/` : générateurs HMI, scripts de comparaison, de validation et d'audit nxwright.
-- `docs/` : procédures Nextion et rapports d'audit.
+- `scripts/` : compilation nxwright, rendu graphique Home et tests de non-régression.
+- `tests/NX4832K035_011/7.0.0/source/` : sources nxwright éditables (pages, images, polices).
 - `.github/workflows/nextion-*.yml` (hors `nextion/`) : lanceurs GitHub Actions obligatoirement situés dans le répertoire reconnu par GitHub.
 
 La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `platformio.ini` et le point d'entrée partagé `scripts/export_binaries.py`. Celui-ci lit les `.tft` dans `nextion/releases/<version>/`, et ne compile ni ne modifie les HMI. Il reste sous `scripts/` pour ne pas casser les hooks PlatformIO d'autres sous-systèmes. Les tests OTA firmware restent sous `scripts/tests/`.
 
-### Tester nxwright : audit HMI et génération expérimentale de TFT
+### Chaîne nxwright actuellement maintenue
 
-Voir [la procédure et ses limites](docs/nxwright-7-0-audit.md) ; l'audit compare uniquement le HMI 7.0.0 du `NX4832K035_011` à sa source sauvegardée. Les HMI/TFT des Nextion 5″ et 7″ ne doivent pas être modifiés.
+L'ancien décompilateur Nextion2Text, les scripts de patchage binaire HMI et
+leurs workflows expérimentaux ont été retirés. Une **seule méthode** reste
+active : modifier directement les sources nxwright dans
+[`tests/NX4832K035_011/7.0.0/source/`](tests/NX4832K035_011/7.0.0/source/),
+puis utiliser `pio run -e nextion` ou `pio run -e nextion -t manifest`.
 
-
-La source nxwright de la nouvelle Home se trouve dans `nextion/tests/NX4832K035_011/7.0.0/source/` et a été préparée avec `modernize_3p5_nxsource.py`. Sa compilation passe **uniquement par `[env:nextion]` dans PlatformIO** : elle produit le HMI/TFT dans `nextion/releases/7.0.0/` puis exporte `binary/manifest.json` sur notre fork `dev`. Le firmware système officiel est récupéré par nxwright lors du premier build. Rien n'est encore proposé à Christophe.
-
+Le générateur d'images actuel est `scripts/render_nx_home.py`. Les scripts
+`scripts/test_nextion_wake.py` et `scripts/test_nextion_animation.py`
+vérifient respectivement le redessin après veille et la rotation de la pompe.
+Les sources HMI 7.0.0 précédemment validées restent accessibles dans
+`backup/nextion-v7-validated-20261127` et la release 6.0.0 est conservée.
 
 ## Compilation Nextion via PlatformIO (méthode unique)
 

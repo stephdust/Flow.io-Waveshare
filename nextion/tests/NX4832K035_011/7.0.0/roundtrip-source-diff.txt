@@ -1,1 +1,0 @@
-No differences between /home/runner/work/_temp/nx-modern-source and /home/runner/work/_temp/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI

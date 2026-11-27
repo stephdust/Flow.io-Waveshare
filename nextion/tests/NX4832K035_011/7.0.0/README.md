@@ -1,66 +1,38 @@
-# Nextion NX4832K035_011 — laboratoire 7.0.0 sur le fork `stephdust/dev`
+# Laboratoire nxwright Nextion NX4832K035_011 / 7.0.0
 
-Ce dossier contient les **sources modifiables nxwright** et les diagnostics d'une version
-graphique expérimentale du Nextion Enhanced `NX4832K035_011` (480 × 320).
+Ce dossier conserve le **projet nxwright éditable** (`source/`) et la
+prévisualisation (`preview.png`). Le projet vise uniquement le Nextion
+`NX4832K035_011` 480 × 320.
 
-La **référence amont est `christophebelmont/Flow.io-Waveshare:dev`**. Les modifications
-sont développées et testées dans `stephdust/Flow.io-Waveshare:dev`, **sans PR pour le
-moment**. Le modèle 5″ `NX8048P050_011` et le 7″ `NX8048P070_011` sont exclus.
+La référence amont est `christophebelmont/Flow.io-Waveshare:dev` ;
+nous développons et testons sur `stephdust/dev` avant tout PR.
 
-## Génération reproductible
+## Méthode maintenue
 
-Le workflow [Nextion nxwright redesign](../../../../.github/workflows/nextion-nxwright-redesign.yml)
-effectue les opérations :
+Éditer `source/pages/pageHome.nx`, `source/pages/pageHome.page.toml` et,
+si besoin, les ressources graphiques. Puis, depuis la racine :
 
-1. Lire le HMI 7.0.0 fonctionnel sauvegardé sur
-   `backup/nextion-v7-validated-20261127`.
-2. `nxwright extract`, modifier les fichiers de la source extraite via
-   `nextion/scripts/modernize_3p5_nxsource.py`, puis `nxwright check`.
-3. `nxwright build` et réextraction pour vérifier le HMI.
-4. `nxwright compile --download` pour générer un vrai TFT NX4832K035
-   avec le firmware officiel de Nextion Editor 1.68.2.
-5. Commiter sur **notre fork `dev` seulement** les sources éditables, la
-   prévisualisation, le rapport de compilation, ainsi que les fichiers
-   `FlowIO_Nextion_NX4832K035_011-7.0.0.HMI` et
-   `FlowIO_Nextion_NX4832K035_011-7.0.0.tft` dans `nextion/releases/7.0.0/`
-   pour les tests locaux.
+```bash
+pio run -e nextion             # HMI + TFT + manifeste
+pio run -e nextion -t manifest # copie TFT existant + manifeste
+```
 
-`source/` contient les fichiers `app.toml`, `pages/*.nx`, `pages/*.page.toml`,
-`pictures/` et `fonts/`. Le numéro de version reste strictement **7.0.0**.
+La compilation nxwright est orchestrée par `nextion/scripts/run_nextion.py`.
+Le rendu graphique Home est maintenu par
+`nextion/scripts/render_nx_home.py` et les tests par
+`test_nextion_wake.py` et `test_nextion_animation.py`.
+Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
 
-**Important :** ce TFT est une version expérimentale sur notre branche `dev`.
-La compilation nxwright réussie ne valide pas l'affichage physique, les jauges,
-le retour après veille ou les événements série/tactiles. Aucun PR amont avant
-validation matérielle. Les sources HMI fonctionnelles précédentes sont sauvegardées
-sur la branche de référence `backup/nextion-v7-validated-20261127`.
+## Points à valider physiquement
 
-## Correction de la veille — 7.0.0 (27/11/2026)
+Le réveil Nextion recharge `pageHome` (page 1) pour redessiner les jauges
+`xpic`, puis `wup=255` est restauré en quittant la page. La pompe
+tourne grâce à sa police native `Propeller_50` et au timer de 50 ms lorsque
+la filtration est active ; à l'arrêt, le symbole reste immobile.
 
-Home définit `wup=1` dans `pageHome.load` : après mise en veille, le Nextion
-recharge la page physique 1 (Home) et réexécute les commandes `xpic` de
-`pageHome.loadend` ainsi que l'invalidation du cache des deux jauges.
-Sur `pageHome.unload`, `wup=255` restaure le comportement habituel des
-autres pages. Le test `nextion/scripts/test_nextion_wake.py` vérifie ce
-contrat. **Validation réelle après plusieurs veilles toujours requise.**
+La compilation et les tests statiques ne remplacent pas la validation réelle :
+vérifier les jauges, les transitions veille/réveil, les valeurs dynamiques,
+l'animation de la pompe, le tactile et les messages série.
 
-## Habillage raffiné sans modifier l'animation
-
-Le logo de pompe **continue de tourner uniquement lorsque la filtration est
-active**, grâce à `tmAnim.timer`, `vaIconProp.txt` et la police native
-`Propeller_50`. Le nouveau rendu vectoriel génère seulement l'anneau
-coloré des images `picture-0020..24`, **jamais les pales fixes**.
-L'atlas `picture-0003.png` contient maintenant deux lignes distinctes
-(pH et ORP) et un fond haute définition, reproduisant les repères verts,
-les jauges multicolores, les cadres cyan et le bandeau du modèle graphique.
-Le comportement après veille reste à valider physiquement.
-
-## Compilation du nouveau design sur la branche dev
-
-Le [workflow PlatformIO Nextion](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46013144134)
-a produit les fichiers HMI/TFT compilés avec nxwright après les changements
-visuels et le correctif de réveil. Les images du bandeau, les arcs pH/ORP,
-les gradients cyan et le fond de l'anneau de pompe sont générés par
-`nextion/scripts/render_nx_home.py`. Le caractère dynamique de pompe est
-**inchangé** : timer 50 ms, bit 0 de filtration et police Propeller native.
-Le prochain test réel doit vérifier la sortie de veille, la rotation de la
-pompe et les valeurs dynamiques. Ne pas ouvrir de PR avant validation.
+La branche sauvegardée `backup/nextion-v7-validated-20261127` reste disponible.
+**Aucune modification des Nextion 5″/7″ ou de `christophebelmont/dev`.**

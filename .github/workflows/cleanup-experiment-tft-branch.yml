@@ -1,0 +1,38 @@
+name: One-shot remove obsolete TFT experiment branch
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/cleanup-experiment-tft-branch.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prune:
+    if: github.repository == 'stephdust/Flow.io-Waveshare' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork dev only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Delete only named obsolete experiment branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='experiment/tft-unified-three-pages-20261126'
+          test "${GITHUB_REPOSITORY}" = 'stephdust/Flow.io-Waveshare'
+          test "${GITHUB_REF}" = 'refs/heads/dev'
+          # Refuse to delete a branch with any OPEN PR referencing its head.
+          open_prs="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&head=stephdust:${branch}" --jq 'length')"
+          test "${open_prs}" = "0" || { echo "Open PRs found; refusing deletion"; exit 1; }
+          current="$(git ls-remote origin "refs/heads/${branch}")"
+          if test -z "${current}"; then
+            echo "Branch already absent."
+            exit 0
+          fi
+          echo "Deleting only ${branch}: ${current}"
+          git push origin --delete "${branch}"
+          test -z "$(git ls-remote origin "refs/heads/${branch}")"
+          echo "Obsolete experiment branch removed." >> "$GITHUB_STEP_SUMMARY"
