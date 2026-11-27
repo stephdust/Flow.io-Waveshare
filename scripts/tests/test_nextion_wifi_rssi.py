@@ -36,10 +36,10 @@ assert re.search(r"return 4U;",hmi)
 assert "sys0=globals.vaStates.val/65536" in home
 assert "sys0=sys0%8" in home
 assert "sys1=sys0*43" in home
-assert "xpic 423,11,43,38,sys1,690,HomeGaugepic" in home
-assert "WIFI_ATLAS_Y=690" in art and "WIFI_LEVELS=5" in art
+assert "xpic 423,11,43,38,sys1,540,HomeGaugepic" in home
+assert "WIFI_ATLAS_Y=540" in art and "WIFI_LEVELS=5" in art
 assert "WIFI_X,WIFI_Y,WIFI_W,WIFI_H=423,11,43,38" in art
-assert "atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)" in art
+assert "atlas=Image.new('RGB',(812,WIFI_ATLAS_Y+WIFI_H),NAVY)" in art
 assert "def wifi_frame(bg,level):" in art
 assert "vis tWifiState,0" in home
 
