@@ -32,15 +32,16 @@ assert "m2" not in byname, "redundant play hotspot must stay removed"
 assert "vaWaterTemp" in global_components and "vaAirTemp" in global_components
 assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
-assert water["x"] == air["x"] == 187
-assert water["w"] == air["w"] == 109
-assert water["font"] == air["font"] == "SegoeUI_16"
+assert water["x"] == air["x"] == 185
+assert water["w"] == air["w"] == 113
+assert water["font"] == air["font"] == "SegoeUI_24_Keyboard"
 assert water["bco"] == air["bco"] == "#031a34"
-assert 154 < water["x"] and water["x"] + water["w"] < 300
-assert 154 < air["x"] and air["x"] + air["w"] < 300
-assert water["y"] == 10 and water["h"] == 19
-assert air["y"] == 32 and air["h"] == 19
-assert water["y"] + water["h"] < air["y"]
+assert water["ycen"] == air["ycen"] == 1
+assert 154 < water["x"] and water["x"] + water["w"] <= 300
+assert 154 < air["x"] and air["x"] + air["w"] <= 300
+assert water["y"] == 5 and water["h"] == 25
+assert air["y"] == 30 and air["h"] == 25
+assert water["y"] + water["h"] <= air["y"]
 assert air["y"] + air["h"] <= 58
 for field in ("tTime", "tDate", "tWifiState"):
     other = byname[field]
@@ -52,10 +53,12 @@ assert "ref tWaterTemp" in post and "ref tAirTemp" in post
 assert "tWaterTemp.txt=globals.vaWaterTemp.txt" in update
 assert "tAirTemp.txt=globals.vaAirTemp.txt" in update
 assert "click bUpdateGauge,1" in post, "refresh both values after wake"
-assert "drop=[(171,9)" in renderer
-assert "d.arc((163*S,33*S,171*S,41*S)" in renderer
-assert "d.text((187,20),'27.3°C'" in renderer
-assert "d.text((187,42),'7.3°C'" in renderer
+assert "water_drop=[" in renderer and "(171,6),(176,13)" in renderer
+assert "sun=(175,39)" in renderer
+assert "cloud=(3,26,52,255)" in renderer
+assert "d.text((185,18),'27.3°C',font=preview_font(23)" in renderer
+assert "d.text((185,43),'7.3°C',font=preview_font(23)" in renderer
+assert "d.text((187,20),'27.3°C'" not in renderer
 print("PASS: water/outdoor temperatures use existing ESP32 globals")
-print("PASS: two readable rows fit the Home header without moving time/date/Wi-Fi")
+print("PASS: two 24px rows fit the Home header without moving time/date/Wi-Fi")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
