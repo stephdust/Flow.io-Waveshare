@@ -10,7 +10,7 @@ Tous les scripts HMI spécifiques au projet Nextion sont regroupés ici.
 | `compare_3p5_hmi.py` | Comparaison historique HMI 6.0.0 / 7.0.0 |
 | `audit_3p5_nxwright.py` | Audit nxwright en lecture seule : extraction, contrôles et reconstruction |
 | `modernize_3p5_nxsource.py` | Modifier les textes et images d'un projet NX4832K035 *extrait par nxwright* ; sans patchage binaire |
-| `compile_nxwright_test.sh` | Compiler un TFT de test depuis les sources, avec blocages de nom/version/modèle et firmware Nextion 1.68.2 |
+| `pio_nextion_targets.py` / `run_nextion.py` | Cibles PlatformIO : `nextion` (compiler HMI/TFT) et `manifest` (export rapide) |
 
 **Périmètre unique :** Nextion NX4832K035_011 (480 × 320), version 7.0.0.
 Ne jamais modifier les sources ou TFT des Nextion 5″/7″ via ces outils.
@@ -22,7 +22,7 @@ Les workflows correspondants restent dans `.github/workflows/` (exigence GitHub 
 Le hook général de packaging `scripts/export_binaries.py` demeure à sa place pour
 la compilation Waveshare/OTA ; il lit `nextion/releases/<version>/*.tft` sans compiler de HMI.
 
-L'audit nxwright continue de signaler que **l'ancien HMI graphique patché en binaire** n'est pas entièrement reconnu. Le **nouveau workflow nxwright texte → HMI → TFT** est au contraire compatible et réussi : [résultats du workflow](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Il utilise uniquement le HMI 7.0.0 fonctionnel comme base et n'écrit pas dans la release officielle. Validation sur matériel encore nécessaire.
+L'ancien HMI patché en binaire est abandonné. La compilation officielle **sur notre fork de développement** passe maintenant exclusivement par `pio run -e nextion`, depuis les sources nxwright éditables. [Compilation et export manifest vérifiés par GitHub Actions](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46010307421). Les HMI/TFT sont committés dans la release 7.0.0 sur notre fork uniquement ; validation sur matériel toujours nécessaire.
 
 
 ## Entrée PlatformIO de compilation Nextion

@@ -39,13 +39,27 @@ et les objets du protocole série avant de permettre à nxwright de compiler
 un TFT Flow.io. Les HMI reconstruits lors de cet audit ne sont **jamais**
 utilisés pour le déploiement.
 
-## Nouvelle voie de compilation expérimentale (27 novembre 2026)
+## Chaîne de compilation nxwright via PlatformIO (27 novembre 2026)
 
-Le [workflow de redesign nxwright](../../.github/workflows/nextion-nxwright-redesign.yml) :
-- part de la 7.0.0 validée, jamais de l'ancien HMI patché en binaire ;
-- extrait les sources, adapte `pages/pageHome.nx`, `pages/pageHome.page.toml`, les images des jauges et du ventilateur ;
-- reconstruit le HMI avec `nxwright build`, le réextrait et passe `nxwright check` ;
-- compile un TFT expérimental avec `nxwright compile --download` et le firmware officiel de **Nextion Editor 1.68.2** ;
-- publie le HMI et le TFT 7.0.0 dans `nextion/releases/7.0.0/` et les sources éditables dans `nextion/tests/NX4832K035_011/7.0.0/`, uniquement sur le fork `stephdust/dev` ; conserve aussi un artefact Actions.
+Le [workflow de compilation NX4832K035](../../.github/workflows/nextion-nxwright-redesign.yml)
+utilise désormais **la même commande que sur le poste local** :
 
-[Résultat de la compilation source → HMI → TFT : réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Compilation et commit de test réussis sur le fork `dev` : [exécution de publication](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46007533865). La branche **`christophebelmont/dev` reste la référence avant PR**. Aucune validation sur l'écran réel à ce stade, et aucun changement aux modèles 5″/7″.
+```bash
+pio run -e nextion
+```
+
+La source modifiable est `nextion/tests/NX4832K035_011/7.0.0/source/`.
+Cette commande effectue : `nxwright check`, reconstruction HMI, réextraction,
+`nxwright compile --download`, vérification TFT, copie du HMI/TFT dans
+`nextion/releases/7.0.0/`, et régénération de `binary/manifest.json`.
+
+Pour mettre à jour uniquement l'export TFT et le manifeste sans compiler :
+
+```bash
+pio run -e nextion -t manifest
+```
+
+[L'exécution CI complète a réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46010307421).
+Le développement reste sur `stephdust/dev`, sans PR vers `christophebelmont/dev`
+avant la validation physique. Les Nextion 5″/7″ restent strictement inchangés.
+Le manifeste généré localement doit être publié avec le TFT sur le serveur HTTP.

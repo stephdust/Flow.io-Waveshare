@@ -62,7 +62,7 @@ La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `p
 Voir [la procédure et ses limites](docs/nxwright-7-0-audit.md) ; l'audit compare uniquement le HMI 7.0.0 du `NX4832K035_011` à sa source sauvegardée. Les HMI/TFT des Nextion 5″ et 7″ ne doivent pas être modifiés.
 
 
-La compilation nxwright de la nouvelle Home utilise `nextion/scripts/modernize_3p5_nxsource.py` et `nextion/scripts/compile_nxwright_test.sh`. Le firmware système Nextion Editor 1.68.2 est acquis par `nxwright compile --download` dans un runner temporaire. Le HMI et le TFT expérimentaux sont désormais committés dans `nextion/releases/7.0.0/` **sur notre fork `dev` uniquement**. Lors des builds PlatformIO de ce fork, le TFT peut être exporté dans `binary/` pour essai. Rien n'est encore proposé à Christophe.
+La source nxwright de la nouvelle Home se trouve dans `nextion/tests/NX4832K035_011/7.0.0/source/` et a été préparée avec `modernize_3p5_nxsource.py`. Sa compilation passe **uniquement par `[env:nextion]` dans PlatformIO** : elle produit le HMI/TFT dans `nextion/releases/7.0.0/` puis exporte `binary/manifest.json` sur notre fork `dev`. Le firmware système officiel est récupéré par nxwright lors du premier build. Rien n'est encore proposé à Christophe.
 
 
 ## Compilation Nextion via PlatformIO (méthode unique)

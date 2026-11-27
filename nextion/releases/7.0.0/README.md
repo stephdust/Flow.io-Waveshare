@@ -20,7 +20,7 @@ Le numéro de version reste `7.0.0`, et aucun PR n'est envoyé automatiquement.
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
 - Source de référence existante : [FlowIO_Nextion_NX4832K035_011-6.0.0.HMI (6.0.0)](../6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI).
 - **HMI 7.0.0 modernisé de test sur notre fork (validation réelle en attente) :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) : 480 × 320 uniquement, jauges modernisées, logo officiel, thermomètre de piscine rouge, Wi-Fi coloré et redessin après veille. Version précédente sauvegardée sur la branche indiquée ci-dessus.
-- Nouvelle chaîne de génération : [`modernize_3p5_nxsource.py`](../../scripts/modernize_3p5_nxsource.py) et [`compile_nxwright_test.sh`](../../scripts/compile_nxwright_test.sh), orchestrés par [`nextion-nxwright-redesign.yml`](../../../.github/workflows/nextion-nxwright-redesign.yml). La modification directe des blocs binaires HMI est abandonnée.
+- Chaîne de génération unique : `pio run -e nextion`, pilotée par [`platformio.ini`](../../../platformio.ini) et [`run_nextion.py`](../../scripts/run_nextion.py). Elle utilise les sources éditables nxwright du dossier `nextion/tests/NX4832K035_011/7.0.0/source/` puis reconstruit HMI et TFT. La modification directe des blocs binaires HMI est abandonnée.
 - **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
 - Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
 
