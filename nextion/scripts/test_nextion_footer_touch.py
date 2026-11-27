@@ -70,7 +70,7 @@ assert "d.polygon([(143*S,273*S)" not in art
 assert "d.arc((130*S,300*S,161*S,314*S)" not in art
 assert "for xx in (88,104):" in art
 assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
-assert "# Minimal footer, as requested:" in art
+assert "# Two bottom frames:" in art
 assert "image=panel(image,(5,262,196,315),13,(3,25,48),(6,202,246))" in art
 assert "image=panel(image,(289,262,475,315),13,(3,25,48),(6,202,246))" in art
 assert "image=panel(image,(5,262,475,315)" not in art
