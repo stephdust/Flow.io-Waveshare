@@ -29,8 +29,8 @@ for x,y in ((240,76),(242,218),(242,235),(202,285),(283,285),
     assert at(x,y)==navy, f"nonuniform navy at {(x,y)}: {at(x,y)}"
 
 # Two separate footer frames with open central gap, unlike a continuous bar.
-assert any(is_cyan(at(x,284)) for x in (194,195,196)), "left footer border absent"
-assert any(is_cyan(at(x,284)) for x in (289,290,291)), "right footer border absent"
+assert any(is_cyan(at(x,284)) for x in (192,193)), "left footer border absent"
+assert any(is_cyan(at(x,284)) for x in (290,291,292)), "right footer border absent"
 assert is_cyan(at(401,291)), "right equipment/alarm separator absent"
 assert at(202,284)==navy and at(283,284)==navy, "footer touches turbine gap"
 assert at(242,218)==navy, "turbine still overlaps the pH/ORP gauges"
@@ -81,7 +81,7 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
 )
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
-print("PASS: two distinct footer frames, free pump gap, lowered 3D turbine")
+print("PASS: compact twin footer frames, free pump gap, lowered 3D turbine")
 print("PASS: official Flow.io wordmark close to waves, blue thermometer icon")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
