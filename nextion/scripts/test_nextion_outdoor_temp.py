@@ -54,7 +54,7 @@ for field in ("tTime", "tDate", "tWifiState"):
     other = byname[field]
     assert other["x"] >= 304, f"{field} overlaps temperature column"
 assert byname["tTime"]["x"] == 304 and byname["tTime"]["w"] == 106
-assert byname["tDate"]["x"] == 300 and byname["tDate"]["w"] == 112
+assert byname["tDate"]["x"] == 304 and byname["tDate"]["w"] == 109
 assert byname["tTime"]["y"] + byname["tTime"]["h"] <= byname["tDate"]["y"]
 assert byname["tDate"]["y"] + byname["tDate"]["h"] <= 58
 assert byname["tDate"]["x"] + byname["tDate"]["w"] < 413
