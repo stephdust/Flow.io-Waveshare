@@ -63,10 +63,10 @@ grid = colored_pixels(102,145,272,311,
 gear = colored_pixels(322,371,269,312,
     lambda q: q[1]>110 and q[1]>q[0]*1.18 and q[1]>q[2]*0.85)
 alarm = colored_pixels(417,466,269,312,
-    lambda q: q[0]>155 and q[1]>70 and q[2]<155 and q[0]>q[2]*1.4)
+    lambda q: q[1]>100 and q[1]>q[0]*1.25 and q[1]>q[2]*1.08)
 assert len(grid)>35, f"cyan glass grid not visible: {len(grid)} pixels"
 assert len(gear)>35, f"jade 3D gear not visible: {len(gear)} pixels"
-assert len(alarm)>35, f"amber warning triangle not visible: {len(alarm)} pixels"
+assert len(alarm)>35, f"green normal-state warning triangle not visible: {len(alarm)} pixels"
 for name,px,target in (("grid",grid,123),("gear",gear,346),("alert",alarm,440)):
     center=(min(x for x,y in px)+max(x for x,y in px))/2
     assert abs(center-target)<=3.5, (
@@ -137,7 +137,7 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
 )
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
-print("PASS: frameless footer with 3 distinct raised cyan, jade and amber icons")
+print("PASS: frameless footer with cyan, jade and GREEN normal-state 3D icons")
 print("PASS: icon centres x123/346/440, 50px+ gap to pump and neighbour")
 print("PASS: 70px turbine correctly centered between gauges")
 print("PASS: both temperature icons paired at x194 with 3px clearance to native text")
