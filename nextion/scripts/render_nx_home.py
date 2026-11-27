@@ -3,7 +3,7 @@
 
 HomeGaugepic atlas (logical picture #3) is compact: gauges at y=0..299,
 flat-background Home at y=300..619, five 70x70 pressure rings plus eleven
-48x48 turbine centres packed in a single row at y=620..689, and five 43x38
+42x42 turbine centres packed in a single row at y=620..689, and five 43x38
 RSSI icons in a single row at y=690..727.
 tmAnim.timer stays at 50ms; the ring redraws only if pressure status changes
 while a separate, shared 10-phase core animates on every tick.
@@ -166,7 +166,7 @@ def gauge_sprite(bg,kind,active):
 
 FAN_X,FAN_Y,FAN_SIZE=207,210,70
 FAN_RING_ATLAS_Y=620
-FAN_CORE_SIZE=48
+FAN_CORE_SIZE=42
 FAN_CORE_X=FAN_X+(FAN_SIZE-FAN_CORE_SIZE)//2
 FAN_CORE_Y=FAN_Y+(FAN_SIZE-FAN_CORE_SIZE)//2
 FAN_CORE_ATLAS_X=350
@@ -187,21 +187,21 @@ def ring_frame(bg,status):
     colors=((152,176,195),(107,248,44),(246,216,40),
             (248,146,30),(245,71,81))
     active=colors[status]
-    rect=(3*S,3*S,67*S,67*S)
-    im=halo(im,lambda d:d.ellipse(rect,outline=(*AQUA,150),width=3*S),3)
+    # Keep the coloured ring entirely outside the 42x42 opaque centre.
+    # Square corners are at radius ~29.7; the status ring begins at 31px.
+    rect=(1*S,1*S,69*S,69*S)
+    im=halo(im,lambda d:d.ellipse(rect,outline=(*AQUA,150),width=2*S),2)
     d=ImageDraw.Draw(im)
     d.ellipse(rect,fill=(4,24,44,255),outline=(*AQUA,255),width=S)
-    d.ellipse((6*S,6*S,64*S,64*S),
+    d.ellipse((4*S,4*S,66*S,66*S),
               fill=(3,17,31,255),outline=(111,158,188,255),width=S)
-    d.arc((5*S,5*S,65*S,65*S),5,170,
-          fill=(185,205,222,255),width=4*S)
-    d.arc((5*S,5*S,65*S,65*S),187,338,
-          fill=(*active,255),width=4*S)
+    d.arc(rect,5,170,fill=(185,205,222,255),width=3*S)
+    d.arc(rect,187,338,fill=(*active,255),width=3*S)
     return im.convert('RGB')
 
 
 def blade_frame(frame):
-    """One pressure-independent 48x48 turbine core, 0=OFF, 1..10=rotation.
+    """One pressure-independent 42x42 turbine core, 0=OFF, 1..10=rotation.
 
     The centre has a solid fill matching the inner ring and never overlaps
     the outer status arcs. Symmetric four blades repeat after 90 degrees.
@@ -221,12 +221,12 @@ def blade_frame(frame):
         angle=phase+blade*math.pi/2
         co,si=math.cos(angle),math.sin(angle)
         outline=[pt for c in curves for pt in _cubic(*c)]
-        coords=[((cx+.72*(u*co-v*si))*S,(cy+.72*(u*si+v*co))*S)
+        coords=[((cx+.65*(u*co-v*si))*S,(cy+.65*(u*si+v*co))*S)
                 for u,v in outline]
         d.polygon(coords,fill=(23,195,244,255))
         d.line(coords+[coords[0]],fill=(228,252,255,255),width=S)
         highlights=[(-6,-21),(1,-26),(8,-25)]
-        d.line([((cx+.72*(u*co-v*si))*S,(cy+.72*(u*si+v*co))*S)
+        d.line([((cx+.65*(u*co-v*si))*S,(cy+.65*(u*si+v*co))*S)
                 for u,v in highlights],
                fill=(144,235,255,255),width=S)
     d.ellipse(((cx-3)*S,(cy-3)*S,(cx+3)*S,(cy+3)*S),
@@ -299,7 +299,7 @@ def render(source,preview):
     # Preview frame is the same real turbine bitmap used by the Nextion timer.
     demo.paste(ring_frame(bg,1).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
-    demo.paste(blade_frame(4).resize((48,48),Image.Resampling.LANCZOS),
+    demo.paste(blade_frame(4).resize((42,42),Image.Resampling.LANCZOS),
                (FAN_CORE_X,FAN_CORE_Y))
     demo.paste(wifi_frame(bg,4).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
                (WIFI_X,WIFI_Y))
