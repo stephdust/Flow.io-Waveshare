@@ -245,11 +245,6 @@ type = "variable"
 val = -1
 
 [[component]]
-name = "vaPrvWifiLevel"
-type = "variable"
-val = -1
-
-[[component]]
 name = "vaPrvPSINid"
 type = "variable"
 
@@ -365,3 +360,8 @@ pco = "#ffffff"
 pco2 = "#0092d6"
 txt = "f"
 txt_maxl = 1
+
+[[component]]
+name = "vaPrvWifiLevel"
+type = "variable"
+val = -1
