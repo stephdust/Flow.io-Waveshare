@@ -126,6 +126,19 @@ jobs:
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git commit -m 'test(nextion): compile NX4832K035 7.0.0 via PlatformIO nxwright [skip ci]'
+            # A documentation/artifact-only commit can land while CI builds.
+            # Incorporate it rather than failing non-fast-forward. However,
+            # NEVER publish binaries built from outdated Nextion source.
+            git fetch origin dev
+            if ! git diff --quiet "$GITHUB_SHA" origin/dev -- \
+              .github/workflows/nextion-nxwright-redesign.yml \
+              platformio.ini nextion/scripts/ \
+              nextion/tests/NX4832K035_011/7.0.0/source/ \
+              scripts/tests/test_nextion_wifi_rssi.py; then
+              echo "::error::Nextion build inputs changed during CI; refuse stale release promotion."
+              exit 1
+            fi
+            git rebase origin/dev
             git push origin HEAD:dev
           fi
           echo "Nextion PlatformIO build succeeded; no production hardware validation claimed." >> "$GITHUB_STEP_SUMMARY"
