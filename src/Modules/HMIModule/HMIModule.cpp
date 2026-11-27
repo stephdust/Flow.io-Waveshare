@@ -2013,6 +2013,9 @@ void HMIModule::handleDriverEvent_(const HmiEvent& e)
         if (alarmPageActive_ || configMenuActive_) {
             viewDirty_ = true;
         } else if (homePageVisible_) {
+            // Nextion wup=255 refreshes components but not the cache of
+            // xpic gauge arcs in pageHomeSimple's timer script.
+            (void)nextion_.requestHomeGaugeRedraw();
             resetClockPublishStamps_();
             queueHomePublish_(kHomePublishAll);
         }
