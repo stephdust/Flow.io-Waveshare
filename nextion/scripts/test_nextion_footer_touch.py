@@ -25,10 +25,10 @@ targets = {
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
-    "b0": (88, 273, 114, 298),
+    "b0": (93, 276, 122, 305),
     "m1": (207, 244, 277, 314),
-    "m0": (333, 274, 365, 306),
-    "b1": (433, 276, 467, 304),
+    "m0": (332, 273, 366, 307),
+    "b1": (427, 276, 457, 304),
 }
 
 def bounds(name):
@@ -68,13 +68,13 @@ assert "m2" not in components
 assert "on m2.down:" not in source
 assert "d.polygon([(143*S,273*S)" not in art
 assert "d.arc((130*S,300*S,161*S,314*S)" not in art
-assert "for xx in (88,104):" in art
+assert "for xx in (93,110):" in art
 assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
 assert "# Two bottom frames:" in art
-assert "image=panel(image,(5,262,196,315),13,(3,25,48),(6,202,246))" in art
-assert "image=panel(image,(289,262,475,315),13,(3,25,48),(6,202,246))" in art
+assert "image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))" in art
+assert "image=panel(image,(291,269,470,311),11,(3,25,48),(6,180,216))" in art
 assert "image=panel(image,(5,262,475,315)" not in art
-assert "line(d,[(401,272),(401,305)]" in art, "right frame divider missing"
+assert "line(d,[(401,278),(401,302)]" in art, "right frame divider missing"
 assert "FAN_X,FAN_Y,FAN_SIZE=207,244,70" in art
 assert "d.polygon([(143*S,273*S)" not in art, "removed play glyph came back"
 
@@ -105,7 +105,9 @@ assert "gear_x,gear_y=349,290" in art
 assert "text(d,\'flow\',51,31,20" in art
 assert "text(d,\'.io\',101,31,20" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
-assert "line(d,[(450,276),(433,304),(467,304),(450,276)]" in art
+assert "line(d,[(442,276),(427,304),(457,304),(442,276)]" in art
+assert "gear_points=[]" in art, "the equipment button must have real gear teeth"
+assert "for tooth in range(10):" in art, "the gear must not revert to sun-like spokes"
 
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
