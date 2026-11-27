@@ -8,6 +8,8 @@ logic with a tiny stub PlatformIO environment; it does not compile ESP32/SPIFFS.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
 import runpy
 import sys
@@ -69,8 +71,41 @@ def main() -> None:
     manifest = binary_dir / "manifest.json"
     assert destination.read_bytes() == source.read_bytes(), "TFT copy mismatch"
     assert manifest.is_file(), "manifest.json not created"
-    print(f"OK: {destination.relative_to(root)} ({destination.stat().st_size} bytes)")
-    print(f"OK: {manifest.relative_to(root)} updated with TFT SHA-256")
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    candidates = [
+        item for item in payload.get("artifacts", {}).get("nextion", [])
+        if item.get("path") == filename
+    ]
+    if len(candidates) != 1:
+        raise RuntimeError(f"Nextion TFT missing or duplicated in manifest: {filename}")
+    artifact = candidates[0]
+    size = destination.stat().st_size
+    with destination.open("rb") as stream:
+        sha256 = hashlib.file_digest(stream, "sha256").hexdigest()
+    if (artifact.get("size") != size
+            or artifact.get("sha256") != sha256
+            or artifact.get("version") != args.version
+            or artifact.get("display_compatibility") != "NX4832K035_011"
+            or artifact.get("target") != "nextion"
+            or artifact.get("kind") != "nextion-tft"):
+        raise RuntimeError("Nextion manifest entry does not match the published TFT")
+    print(f"OK: {destination.relative_to(root)} ({size} bytes)")
+    print(f"OK: {manifest.relative_to(root)}; Nextion entry, size and SHA-256 verified")
+    # ESP32-S3 has 8 MiB PSRAM, and the Nextion OTA staging policy reserves
+    # at least 2 MiB. This bound is optimistic: runtime allocations and
+    # fragmentation further reduce the largest contiguous allocation.
+    maximum_ota_size = 6 * 1024 * 1024
+    if size >= maximum_ota_size:
+        print(
+            "WARNING: TFT >= 6 MiB; PSRAM-preverified Nextion OTA is "
+            "not feasible on the ESP32-S3 with its 2 MiB reserve.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "NOTE: Nextion OTA additionally requires available contiguous "
+            "PSRAM >= TFT size and 2 MiB free reserve at runtime."
+        )
     print("No ESP32/SPIFFS compile; paired OTA release ZIP remains unchanged.")
     print("If using a separate HTTP server, upload both the TFT and manifest.json there.")
 
