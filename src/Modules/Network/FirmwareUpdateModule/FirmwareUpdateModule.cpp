@@ -74,8 +74,8 @@ private:
 // a multi-megabyte single free block.
 class SegmentedNextionPsram {
 public:
-    static constexpr size_t kChunkBytes = 128U * 1024U;
-    static constexpr size_t kMaxChunks = 48U; // up to 6 MiB, 2 MiB reserved
+    static constexpr size_t kChunkBytes = 64U * 1024U;
+    static constexpr size_t kMaxChunks = 96U; // up to 6 MiB, 2 MiB reserved
 
     SegmentedNextionPsram() = default;
     SegmentedNextionPsram(const SegmentedNextionPsram&) = delete;
@@ -2260,6 +2260,10 @@ bool FirmwareUpdateModule::runNextionUpdate_(const UpdateJob& job, char* errOut,
     SegmentedNextionPsram staged;
     if (!staged.allocate(expected))
         return writeSimpleError_(errOut, errOutLen, "Nextion PSRAM segmented image allocation failed");
+    // Enforce the reserve AFTER allocator metadata and segment bookkeeping.
+    if (heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) <
+        OtaPsramPolicy::kReserveBytes)
+        return writeSimpleError_(errOut, errOutLen, "Nextion PSRAM reserve exhausted after staging");
     LOGI("[NEXTION-OTA] op=%lu stage=psram_segmented_ready bytes=%lu chunk=%lu largest_before=%lu free_after=%lu",
          (unsigned long)job.operationId, (unsigned long)expected,
          (unsigned long)SegmentedNextionPsram::kChunkBytes,
