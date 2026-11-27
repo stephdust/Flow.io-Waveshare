@@ -28,11 +28,17 @@ for x,y in ((240,76),(242,218),(242,235),(202,285),(283,285),
             (10,110),(469,110),(242,317)):
     assert at(x,y)==navy, f"nonuniform navy at {(x,y)}: {at(x,y)}"
 
-# Two separate footer frames with open central gap, unlike a continuous bar.
-assert any(is_cyan(at(x,284)) for x in (192,193)), "left footer border absent"
-assert any(is_cyan(at(x,284)) for x in (290,291,292)), "right footer border absent"
-# The one-pixel divider is deliberately dim. Source tests verify its position;
-# avoid false negatives from JPEG-like downsampling of thin RGB565 strokes.
+# The top and bottom have no border, filled trays or separators.
+# Sample known empty coordinates and protect the floating-icon layout.
+for x,y in (
+    (5,31),(240,5),(475,31),  # no header perimeter
+    (154,23),(300,24),(413,24),  # no header dividers
+    (29,290),(193,290),(291,290),(470,290),  # no footer trays
+    (401,290),  # no gear/alarm divider
+):
+    assert at(x,y)==navy, (
+        f"frame, separator or non-uniform background at {(x,y)}: {at(x,y)}"
+    )
 assert at(202,284)==navy and at(283,284)==navy, "footer touches turbine gap"
 assert at(242,218)==navy, "turbine still overlaps the pH/ORP gauges"
 assert at(240,274)!=navy, "turbine not present at the true gauge midpoint"
@@ -91,31 +97,9 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
     "pH gauge lost its white scale graduations"
 )
 
-# Optional comparison is required on each graphic build. It must remove
-# ONLY the cyan contour of the top header, not shift widgets or alter TFT.
-comparison_path=args.preview.with_name("preview-header-borderless.png")
-assert comparison_path.is_file(), "missing borderless-header comparison PNG"
-with Image.open(comparison_path) as candidate:
-    borderless=candidate.convert("RGB")
-assert borderless.size==image.size
-# The 1px frame is anti-aliased at its edges. Compare a broad strip
-# instead of assuming one pixel in the 3x-downsampled border is pure cyan.
-edge_deltas = [at(x,y)[1] - borderless.getpixel((x,y))[1]
-               for x in range(60,420,9) for y in range(3,10)]
-assert max(edge_deltas)>10, "borderless comparison has no visible header difference"
-# Blank segment between the water thermometer and time has no icon:
-# check only that location, not the nearby cyan waves/thermometer.
-assert borderless.getpixel((240,5))[1]<75, (
-    "borderless comparison still has the top cyan frame at x=240"
-)
-assert (borderless.crop((0,60,480,320)).tobytes() ==
-        image.crop((0,60,480,320)).tobytes()), (
-    "borderless comparison also changed the gauges/footer"
-)
-
 print("PASS: generated preview.png is 480x320 with uniform navy")
-print("PASS: compact twin footer frames, free pump gap, lowered 3D turbine")
-print("PASS: separate borderless-header comparison, identical gauges and footer")
+print("PASS: frameless header/footer without separators, independent floating icons")
+print("PASS: 70px turbine correctly centered between gauges")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
