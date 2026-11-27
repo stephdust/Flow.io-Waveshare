@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Regression gate: each visible Home control has its own matching touch zone.
+"""Regression gate: four useful Home touch zones match the visible artwork.
 
-All coordinates are in native NX4832K035_011 480x320 pixels. This is a
-static contract check; physical calibration must still be tested on hardware.
+NX4832K035_011 uses 480x320 coordinates. Physical touch accuracy still
+requires confirmation on the actual Nextion display.
 """
 from pathlib import Path
 import re
@@ -18,16 +18,14 @@ components = {c["name"]: c for c in page["component"]}
 # x/y/width/height: visible hit zones, tuned to the drawn icon plus finger
 # margin. No zone should capture a neighbouring button or a gauge.
 targets = {
-    "b0": (8, 268, 72, 45),       # grid / configuration
-    "m2": (103, 268, 81, 47),     # triangle / filtration
-    "m1": (207, 210, 70, 70),     # central pump / filtration
+    "b0": (64, 268, 72, 45),      # centered grid / configuration
+    "m1": (207, 210, 70, 70),     # central pump / filtration toggle
     "m0": (309, 268, 78, 45),     # gear / equipment switches
     "b1": (412, 268, 62, 45),     # triangle alarm / alarms page
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
-    "b0": (23, 273, 49, 298),
-    "m2": (130, 273, 161, 314),
+    "b0": (88, 273, 114, 298),
     "m1": (207, 210, 277, 280),
     "m0": (333, 274, 365, 306),
     "b1": (433, 276, 467, 304),
@@ -35,9 +33,9 @@ drawings = {
 
 def bounds(name):
     c = components[name]
-    return (int(c["x"]), int(c["y"]), int(c["w"]), int(c["h"]))
+    return int(c["x"]), int(c["y"]), int(c["w"]), int(c["h"])
 
-def overlap(a, b):
+def overlaps(a, b):
     ax, ay, aw, ah = bounds(a)
     bx, by, bw, bh = bounds(b)
     return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
@@ -62,11 +60,16 @@ for name, expected in targets.items():
 
 for i, first in enumerate(targets):
     for second in list(targets)[i+1:]:
-        assert not overlap(first, second), f"{first} and {second} steal touches"
+        assert not overlaps(first, second), f"{first} and {second} steal touches"
 
-# The old 97x98 pump hotspot used to overlap both gauges. It must now be
-# exactly the full visual circle (x=207..277,y=210..280).
-assert bounds("m1") == (207, 210, 70, 70)
+# The central pump is the ONLY filtration control. Do not retain a redundant
+# play triangle, invisible touch area or firmware event.
+assert "m2" not in components
+assert "on m2.down:" not in source
+assert "d.polygon([(143*S,273*S)" not in art
+assert "d.arc((130*S,300*S,161*S,314*S)" not in art
+assert "for xx in (88,104):" in art
+assert "for x in (194,294,387):" in art
 
 # Native status glyphs used to paint opaque boxes ON the footer, obstructing
 # icons and intercepting touches. Keep them entirely above its top edge.
@@ -74,32 +77,28 @@ for name in ("tpHInject", "tChlInject", "tSWGRunning"):
     c = components[name]
     assert int(c["y"])+int(c["h"]) <= 262, f"{name} covers the footer"
     assert c["bco"] == "#041225"
-    for touched in ("b0", "m2", "m0", "b1"):
-        assert not overlap(name, touched), f"{name} overlays {touched}"
+    for touched in ("b0", "m0", "b1"):
+        assert not overlaps(name, touched), f"{name} overlays {touched}"
 
 # Hidden internal refresh buttons are NOT user touch targets.
 load = event("pageHome.load")
 for hidden in ("bUpdateGauge", "bDateTime", "bInjectUpdt"):
     assert f"vis {hidden},0" in load
 
-# Controls keep existing action IDs: grid=config; gear=switches;
-# pump or play=filtration; alarm=alarms (never a second config action).
+# Existing actions: grid=config; gear=switches; centre pump=filtration;
+# alarm=alarms (never a second config action on release).
 assert "page pageCfgMenu" in event("b0.up")
 assert "page pageHomeSwtch" in event("m0.down")
 assert "printh 23 03 60 09 01" in event("m1.down")
-assert "printh 23 03 60 09 01" in event("m2.down")
 assert "page pageAlarms" in event("b1.down")
-assert "on b1.up:" not in source, "alarm release must not navigate elsewhere"
+assert "on b1.up:" not in source
 
-# The former footer arrow was ambiguous and has been replaced by a gear
-# centered on the equipment-switches touch area.
+# The old footer arrow has been replaced by a clear gear.
 assert "gear_x,gear_y=349,290" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
-assert "d.polygon([(143*S,273*S)" in art
 assert "line(d,[(450,276),(433,304),(467,304),(450,276)]" in art
-assert "FAN_X,FAN_Y,FAN_SIZE=207,210,70" in art
 
-print("PASS: 5 visible controls have aligned and nonoverlapping hotspots")
-print("PASS: status glyphs and refresh services do not steal footer touches")
-print("PASS: play and centre pump toggle filtration; alarm has one action")
-print("PASS: no footer button paints opaque rectangles over the icons")
+print("PASS: four visible controls have aligned, non-overlapping hotspots")
+print("PASS: play triangle and duplicate touch action have been removed")
+print("PASS: central turbine remains the only filtration toggle")
+print("PASS: no footer button paints opaque rectangles over icons")
