@@ -23,11 +23,20 @@ Le rendu graphique Home est maintenu par
 `test_nextion_wake.py` et `test_nextion_animation.py`.
 Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
 
+## Atlas compact
+
+Le fond est devenu uni, et l'atlas passe de 1035×1160 à **1035×728**
+pixels. Les 55 images de turbine complètes ont été remplacées par cinq
+couronnes PSI 70×70 et onze cœurs animés 48×48. Les coordonnées
+`xpic` sont mises à jour ensemble avec `render_nx_home.py`. Le
+test `nextion/scripts/test_nextion_animation.py` contrôle ce contrat.
+
 ## Points à valider physiquement
 
 Le réveil Nextion recharge `pageHome` (page 1) pour redessiner les jauges
 `xpic`, puis `wup=255` est restauré en quittant la page. La pompe
-tourne grâce à **10 images de turbine centrées** dessinées par `xpic`, au
+tourne grâce à **11 petits centres de turbine centrés** (dont un fixe)
+dessinés par `xpic`, indépendamment des **5 couronnes de pression**, au
 timer de 50 ms et au bit 0 de filtration. À l'arrêt, l'image 0 reste immobile.
 L'ancien composant `tProp` (police native `Propeller_50`) est conservé
 pour compatibilité, mais masqué pour éviter son décalage graphique.
