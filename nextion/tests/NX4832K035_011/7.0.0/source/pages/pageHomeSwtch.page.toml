@@ -19,7 +19,7 @@ font = "Home_Icons_32"
 pic = "picture-0040"
 bco = "#041225"
 pic2 = "picture-0041"
-bco2 = "#21557b"
+bco2 = "#041225"
 pco = "#c6c3c6"
 pco2 = "#0092d6"
 txt = ""
@@ -195,14 +195,14 @@ name = "t0"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 22
 y = 102
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
-txt = "   Auto\r\nFiltration"
+txt = "Auto\r\nFiltration"
 txt_maxl = 20
 
 [[component]]
@@ -210,11 +210,11 @@ name = "t1"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 134
 y = 102
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\nORP"
@@ -225,14 +225,14 @@ name = "t2"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 246
 y = 102
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
-txt = "Auto\r\n pH"
+txt = "Auto\r\npH"
 txt_maxl = 20
 
 [[component]]
@@ -240,14 +240,14 @@ name = "t3"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 358
 y = 102
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
-txt = "Pompe\r\n   PH"
+txt = "Pompe\r\npH"
 txt_maxl = 20
 
 [[component]]
@@ -255,11 +255,11 @@ name = "t4"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 362
 y = 221
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
 txt = "Pompe\r\nChlore"
@@ -270,11 +270,11 @@ name = "t5"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 248
 y = 221
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
 txt = "Robot"
@@ -285,11 +285,11 @@ name = "t6"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 134
 y = 221
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
 txt = "Eclairage"
@@ -300,11 +300,11 @@ name = "t7"
 type = "text"
 font = "SegoeUI_16"
 xcen = 1
-
+ycen = 1
 x = 20
 y = 221
 w = 100
-h = 30
+h = 36
 bco = "#041225"
 pco = "#ffffff"
 txt = "Hivernage"
