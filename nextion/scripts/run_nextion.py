@@ -132,7 +132,6 @@ def compile_nextion() -> None:
         work_source = scratch / "source"
         shutil.copytree(SOURCE, work_source)
         work_preview = scratch / "preview.png"
-        borderless_preview = scratch / "preview-header-borderless.png"
         staged_hmi = scratch / HMI_NAME
         staged_tft = scratch / TFT_NAME
         readback = scratch / "hmi-check"
@@ -155,14 +154,11 @@ def compile_nextion() -> None:
         publish_file(staged_hmi, OUTPUT / HMI_NAME)
         publish_file(staged_tft, OUTPUT / TFT_NAME)
         publish_file(work_preview, OUTPUT / "preview.png")
-        publish_file(borderless_preview, OUTPUT / "preview-header-borderless.png")
         publish_file(work_source / "pictures/picture-0003.png",
                      OUTPUT / "picture-0003.png")
         # Make the preview easy to inspect alongside the binary/TFT, also
         # on machines where the .pio directory is hidden in the file manager.
         publish_file(work_preview, ROOT / "binary" / "nextion-preview.png")
-        publish_file(borderless_preview, ROOT / "binary" /
-                     "nextion-preview-header-borderless.png")
         print("[NEXTION] HMI/TFT built in ignored .pio/nextion-output; "
               "tracked release files and source PNGs untouched.", flush=True)
     refresh_manifest(OUTPUT / TFT_NAME)
