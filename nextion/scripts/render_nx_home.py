@@ -70,13 +70,14 @@ def make_background():
     # native text, hot spots, gauge/turbine icons or screen coordinates.
     image=Image.new('RGBA',(480*S,320*S),(*NAVY,255))
     image=panel(image,(5,4,475,58),13,(3,26,52),(7,197,245))
-    image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))
+    # Two distinct touch frames with a full-width open gap for the turbine.
+    image=panel(image,(5,262,196,315),13,(3,25,48),(6,202,246))
+    image=panel(image,(289,262,475,315),13,(3,25,48),(6,202,246))
     d=ImageDraw.Draw(image)
     for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
-    # Minimal footer, as requested: one uninterrupted dark strip with a
-    # fine cyan frame, no dividing columns or unused 'play' space.
-    # Three actual footer icons only: configuration, switches, alarms.
-    # The centrally placed turbine remains the only filtration control.
+    # Two bottom frames: grid/config left, gear/switches and alarm right.
+    # Nothing crosses the turbine in the middle; no unused play button.
+    # A single separator belongs to the right-hand frame only.
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
     logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
@@ -91,25 +92,34 @@ def make_background():
     wave.thumbnail((57*S,33*S),Image.Resampling.LANCZOS)
     image.paste(wave,(8*S,14*S+((33*S-wave.height)//2)),wave)
     d=ImageDraw.Draw(image)
-    text(d,'flow',65,31,20,anchor='lm')
-    text(d,'.io',115,31,20,(11,212,248),anchor='lm')
-    # Two large live temperatures share the 154..300 header column.
-    # Icons are purpose-drawn at 3x for the 480x320 NX4832K035:
-    # blue water droplet (top), yellow sun + white cloud (bottom).
-    # Leave x>=185 clear for 24px native text in both rows.
+    # Tighten wordmark to the official waves, while staying left of x=154.
+    text(d,'flow',51,31,20,anchor='lm')
+    text(d,'.io',101,31,20,(11,212,248),anchor='lm')
+    # Upper temperature: a compact, polished *water-thermometer droplet*.
+    # A dark blue core and turquoise thermometer replace the oversized
+    # white solid teardrop, leaving the outdoor sun/cloud unchanged below.
     d=ImageDraw.Draw(image)
     water_drop=[
-        (171,6),(176,13),(180,19),(181,23),(179,27),
-        (176,30),(171,31),(166,30),(162,27),(160,23),
-        (161,19),(165,13)
+        (171,6),(175,11),(179,17),(181,21),(180,25),
+        (177,28),(171,29),(165,28),(162,25),(161,21),
+        (163,17),(167,11)
     ]
     d.polygon([(x*S,y*S) for x,y in water_drop],
-              fill=(9,137,231,255))
+              fill=(4,70,145,255))
     d.line([(x*S,y*S) for x,y in water_drop+[water_drop[0]]],
            fill=(216,249,255,255),width=2*S,joint='curve')
-    d.polygon([(168*S,14*S),(164*S,21*S),(165*S,25*S),
-               (168*S,26*S),(167*S,21*S)],fill=(165,240,255,255))
-    d.line([(165*S,27*S),(169*S,29*S)],fill=(55,220,255,255),width=S)
+    # A shaded left flank gives depth but never changes the flat navy header.
+    d.polygon([(166*S,19*S),(168*S,13*S),(171*S,9*S),
+               (168*S,21*S),(169*S,26*S),(165*S,24*S)],
+              fill=(8,170,235,255))
+    # Tiny thermometer and liquid bulb visible at 480x320.
+    d.rounded_rectangle((169*S,13*S,173*S,23*S),
+                        radius=2*S,fill=(10,190,242,255),
+                        outline=(231,253,255,255),width=S)
+    d.ellipse((167*S,20*S,175*S,28*S),
+              fill=(0,177,243,255),outline=(241,253,255,255),width=S)
+    d.line([(171*S,15*S),(171*S,24*S)],
+           fill=(231,253,255,255),width=S)
 
     # Sun behind the cloud: genuine cloud silhouette, not two tiny
     # disconnected curves that looked like a malformed symbol on hardware.
@@ -136,15 +146,15 @@ def make_background():
            fill=(232,250,255,255),width=2*S,joint='curve')
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
-    # Footer buttons are graphical only; the aligned Nextion hotspots b0,
-    # m0 and b1 stay invisible. No play icon, separators or black overlays.
-    # The pump remains a separate, centered touch target above this strip.
+    # Transparent touch targets b0/m0/b1 match these visible icons.
+    # No opaque play button. The 70px turbine fits the clear centre gap.
     for xx in (88,104):
         for yy in (273,288):
             d.rounded_rectangle((xx*S,yy*S,(xx+10)*S,(yy+10)*S),
                                 radius=2*S,outline=WHITE,width=2*S)
     # Home switches / controls. Use a recognizable gear, not the former
     # ambiguous curved arrow. Its hitbox is m0 (x=309..387, y=268..313).
+    line(d,[(401,272),(401,305)],(8,175,227),1)
     gear_x,gear_y=349,290
     for spoke in range(8):
         angle=spoke*math.pi/4
@@ -254,7 +264,7 @@ def draw_preview_gauge_cursor(image, origin_x, percent):
     d.ellipse((cx-2,cy-3,cx,cy-1),fill=WHITE)
 
 
-FAN_X,FAN_Y,FAN_SIZE=207,210,70
+FAN_X,FAN_Y,FAN_SIZE=207,244,70
 FAN_RING_ATLAS_Y=620
 FAN_CORE_SIZE=42
 FAN_CORE_X=FAN_X+(FAN_SIZE-FAN_CORE_SIZE)//2
@@ -419,7 +429,7 @@ def blade_frame(frame):
     return im.convert("RGB")
 
 
-WIFI_X,WIFI_Y,WIFI_W,WIFI_H=428,11,43,38
+WIFI_X,WIFI_Y,WIFI_W,WIFI_H=423,11,43,38
 WIFI_ATLAS_Y=690
 WIFI_LEVELS=5
 
