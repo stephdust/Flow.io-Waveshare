@@ -35,14 +35,20 @@ assert re.search(r"rssi <= -68.*return 3U;",hmi)
 assert re.search(r"return 4U;",hmi)
 assert "sys0=globals.vaStates.val/65536" in home
 assert "sys0=sys0%8" in home
-assert "xpic 428,11,43,38,0,sys1,HomeGaugepic" in home
-assert "WIFI_ATLAS_Y=970" in art and "WIFI_LEVELS=5" in art
+assert "sys1=sys0*43" in home
+assert "xpic 428,11,43,38,sys1,690,HomeGaugepic" in home
+assert "WIFI_ATLAS_Y=690" in art and "WIFI_LEVELS=5" in art
+assert "atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)" in art
 assert "def wifi_frame(bg,level):" in art
 assert "vis tWifiState,0" in home
 
 components=page["component"]
-assert components[-1]["name"]=="vaPrvWifiLevel", "must append to preserve old Nextion component IDs"
-assert components[-1]["val"]==-1
+# The original RSSI state variable stays intact; outdoor temperature was
+# appended later, so its physical list position is no longer the final one.
+by_name={item["name"]:item for item in components}
+assert "vaPrvWifiLevel" in by_name
+assert by_name["vaPrvWifiLevel"]["val"]==-1
+assert components[-1]["name"]=="tAirTemp", "new widgets must not reorder legacy IDs"
 names=[item["name"] for item in components]
 for preserved in ("tWifiState","tProp","tmAnim","b0","b1","m0","m1",
                   "tpH","tORP","bUpdateGauge","tErrMessage"):
