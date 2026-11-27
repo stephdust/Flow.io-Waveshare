@@ -79,11 +79,11 @@ assert 440+20<=480-15
 for x in (161,180,285,298,388,393,473):
     assert at(x,290)==navy, f"footer has unwanted frame or glow at x={x}"
 
-# The complete logo + wordmark moved as one 12px rightward group.
+# The complete logo + wordmark moved as one 24px rightward group.
 # Both temperature rows moved 10px right; check their joint placement
 # stays comfortably above the independently centered pump x=240.
 # The wordmark must begin soon after the official turquoise waves.
-wordmark=[at(x,y) for x in range(61,74) for y in range(19,40)]
+wordmark=[at(x,y) for x in range(75,90) for y in range(19,40)]
 assert sum(r>170 and g>170 and b>170 for r,g,b in wordmark)>8, (
     "Flow.io lettering not brought closer to the waves"
 )
