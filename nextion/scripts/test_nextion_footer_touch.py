@@ -20,15 +20,15 @@ components = {c["name"]: c for c in page["component"]}
 targets = {
     "b0": (89, 266, 68, 48),      # 3D grid centred exactly under pH (x=123)
     "m1": (205, 239, 70, 70),     # central pump / filtration toggle
-    "m0": (288, 266, 64, 48),     # jade gear centred at x=320
-    "b1": (369, 266, 62, 48),     # amber warning centred at x=400
+    "m0": (314, 266, 64, 48),     # jade gear centred at x=346
+    "b1": (409, 266, 62, 48),     # amber warning centred at x=440
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
     "b0": (108, 275, 138, 310),
     "m1": (205, 239, 275, 309),
-    "m0": (301, 271, 339, 310),
-    "b1": (380, 271, 420, 308),
+    "m0": (327, 271, 365, 310),
+    "b1": (420, 271, 460, 308),
 }
 
 def bounds(name):
@@ -105,11 +105,11 @@ assert "on b1.up:" not in source
 
 # The old footer arrow has been replaced by a clear gear.
 assert "grid_cx,grid_cy=123,290" in art
-assert "gear_x,gear_y=320,290" in art
-assert "alarm_x,alarm_y=400,290" in art
-assert 320-240 == 400-320 == 480-400, (
-    "gear and alarm must divide space from pump to right edge into three equal gaps"
-)
+assert "gear_x,gear_y=346,290" in art
+assert "alarm_x,alarm_y=440,290" in art
+assert (346-18)-(240+35)>=50, "gear too close to filtration rim"
+assert (440-20)-(346+18)>=50, "alarm too close to equipment gear"
+assert 440+20<=480-15, "alarm lacks its right-hand breathing space"
 assert 123 == 20+103, "grid must be directly under centred pH title"
 assert "fill=(7,100,172,255)" in art and "fill=(90,234,255,255)" in art, (
     "cyan/blue glass facets were lost from config icon"
@@ -130,6 +130,6 @@ assert "for tooth in range(10):" in art, "the gear must not revert to sun-like s
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
-print("PASS: floating 3D cyan/jade/amber nav icons at x=123/320/400")
-print("PASS: pH-aligned grid, evenly spaced right-side icons, centered rotor")
+print("PASS: 3D cyan/jade/amber nav icons at x=123/346/440")
+print("PASS: 50px+ icon gaps from pump, centered rotor unchanged at x240")
 print("PASS: no footer button paints opaque rectangles over icons")
