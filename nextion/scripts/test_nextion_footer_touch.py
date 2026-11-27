@@ -19,14 +19,14 @@ components = {c["name"]: c for c in page["component"]}
 # margin. No zone should capture a neighbouring button or a gauge.
 targets = {
     "b0": (64, 268, 72, 45),      # centered grid / configuration
-    "m1": (207, 244, 70, 70),     # central pump / filtration toggle
+    "m1": (205, 239, 70, 70),     # central pump / filtration toggle
     "m0": (309, 268, 78, 45),     # gear / equipment switches
     "b1": (412, 268, 62, 45),     # triangle alarm / alarms page
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
     "b0": (93, 276, 122, 305),
-    "m1": (207, 244, 277, 314),
+    "m1": (205, 239, 275, 309),
     "m0": (332, 273, 366, 307),
     "b1": (427, 276, 457, 304),
 }
@@ -75,7 +75,9 @@ assert "image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))" in art
 assert "image=panel(image,(291,269,470,311),11,(3,25,48),(6,180,216))" in art
 assert "image=panel(image,(5,262,475,315)" not in art
 assert "line(d,[(401,278),(401,302)]" in art, "right frame divider missing"
-assert "FAN_X,FAN_Y,FAN_SIZE=207,244,70" in art
+assert "FAN_X,FAN_Y,FAN_SIZE=205,239,70" in art
+assert abs((205+35)-(123+356)/2) < 1, "rotor must be centered between both gauges"
+assert 239 >= 89+150, "rotor should not overlap gauge image rectangles"
 assert "d.polygon([(143*S,273*S)" not in art, "removed play glyph came back"
 
 # Native status glyphs used to paint opaque boxes ON the footer, obstructing
