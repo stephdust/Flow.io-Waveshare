@@ -69,7 +69,10 @@ assert "on m2.down:" not in source
 assert "d.polygon([(143*S,273*S)" not in art
 assert "d.arc((130*S,300*S,161*S,314*S)" not in art
 assert "for xx in (88,104):" in art
-assert "for x in (194,294,387):" in art
+assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
+assert "# Minimal footer, as requested:" in art
+assert "image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))" in art
+assert "d.polygon([(143*S,273*S)" not in art, "removed play glyph came back"
 
 # Native status glyphs used to paint opaque boxes ON the footer, obstructing
 # icons and intercepting touches. Keep them entirely above its top edge.
@@ -101,4 +104,5 @@ assert "line(d,[(450,276),(433,304),(467,304),(450,276)]" in art
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
+print("PASS: simplified continuous footer with 3 icons and no separators")
 print("PASS: no footer button paints opaque rectangles over icons")
