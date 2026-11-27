@@ -99,6 +99,14 @@ def refresh_manifest() -> None:
 
 def compile_nextion() -> None:
     check_source()
+    # Fast host-side checks protect legacy IDs, Home wake redraw,
+    # packed turbine atlas and live outdoor-temperature layout.
+    for test_name in (
+        "test_nextion_wake.py",
+        "test_nextion_animation.py",
+        "test_nextion_outdoor_temp.py",
+    ):
+        execute(sys.executable, str(ROOT / "nextion" / "scripts" / test_name))
     nx = nxwright_path()
     # Use the same isolated Python that installed nxwright (and Pillow).
     # All Home artwork is regenerated deterministically from the source script.
