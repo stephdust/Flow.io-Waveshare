@@ -4,6 +4,8 @@ Voir [Modes PoolLogic et adaptation des écrans Nextion](../docs/integration/poo
 
 Les fichiers `.HMI` sont les sources éditables dans Nextion Editor. Les fichiers `.tft` sont les images compilées à transférer vers un écran précis.
 
+La préparation de la **version 7.0.0** est documentée dans [`releases/7.0.0/`](releases/7.0.0/). **Elle n'est pas encore installable** : aucun `.tft` 7.0.0 validé n'y est publié, et la version de production reste 6.0.0.
+
 La [version 6.0.0](releases/6.0.0/) correspond à la valeur `TFT_FIRMW=6.0.0` déclarée dans `platformio.ini`.
 
 | Modèle | Définition | Fichier compilé |
