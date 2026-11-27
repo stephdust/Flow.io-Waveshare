@@ -4,11 +4,13 @@ Voir [Modes PoolLogic et adaptation des écrans Nextion](../docs/integration/poo
 
 Les fichiers `.HMI` sont les sources éditables dans Nextion Editor. Les fichiers `.tft` sont les images compilées à transférer vers un écran précis.
 
-La préparation de la **version 7.0.0** est documentée dans [`releases/7.0.0/`](releases/7.0.0/). **Elle n'est pas encore installable** : aucun `.tft` 7.0.0 validé n'y est publié, et la version de production reste 6.0.0.
+Les fichiers Nextion sont rangés **uniquement par version** dans `releases/<version>/`. Les anciens `.tft` à la racine et le répertoire `src/` ont été supprimés pour éviter les doublons.
 
-La [version 6.0.0](releases/6.0.0/) correspond à la valeur `TFT_FIRMW=6.0.0` déclarée dans `platformio.ini`.
+La valeur de `common.nextion_firmware_version` dans [`platformio.ini`](../platformio.ini) est désormais **7.0.0**. Le HMI corrigé de test, qui s'ouvre et compile dans Nextion Editor, est disponible dans [`releases/7.0.0/`](releases/7.0.0/). **Attention : le TFT 7.0.0 compilé n'est pas encore présent sur GitHub** : le déposer dans ce dossier sous le nom `FlowIO_Nextion_NX4832K035_011-7.0.0.tft`, puis le commiter. En attendant, un clone propre échouera à l'étape d'export Nextion lors d'un build complet.
 
-| Modèle | Définition | Fichier compilé |
+La [version 6.0.0](releases/6.0.0/) reste archivée et intacte, avec ses sources et ses TFT ; elle n'est plus sélectionnée par `platformio.ini`.
+
+| Modèle | Définition | TFT de référence **6.0.0** (archives) |
 |---|---:|---|
 | NX4832K035 | 480×320 | [`FlowIO_Nextion_NX4832K035_011-6.0.0.tft`](releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.tft) |
 | NX8048P050-011R | 800×480 | [`FlowIO_Nextion_NX8048P050_011-6.0.0.tft`](releases/6.0.0/FlowIO_Nextion_NX8048P050_011-6.0.0.tft) |
