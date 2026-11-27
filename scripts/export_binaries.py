@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
 import zipfile
 
@@ -388,6 +389,21 @@ def _copy_if_exists(src_path, dst_name):
     _update_manifest()
 
 
+def _compile_nextion_for_firmware():
+    """Always rebuild Nextion before publishing firmware artifacts.
+
+    This reuses the same pinned nxwright pipeline as 'pio run -e nextion'.
+    A failure must stop the release rather than silently copy a stale TFT.
+    """
+    runner = _project_dir() / "nextion" / "scripts" / "run_nextion.py"
+    print("[export_binaries] compiling Nextion HMI/TFT for combined build", flush=True)
+    subprocess.run(
+        [sys.executable, str(runner), "compile"],
+        cwd=str(_project_dir()),
+        check=True,
+    )
+
+
 def _export_nextion_release():
     version = _resolve_define_version("TFT_FIRMW")
     release_dir = _project_dir() / "nextion" / "releases" / version
@@ -418,6 +434,7 @@ def _export_program_bin(source, target, env):
         _copy_if_exists(build_dir / "firmware.bin", f"flowios3-{fw_version}.bin")
         _write_release_package(fw_version)
         _assert_complete_release(fw_version)
+        _compile_nextion_for_firmware()
         _export_nextion_release()
 
 
