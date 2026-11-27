@@ -46,7 +46,10 @@ board = (SRC / "pages/pageKeyBoard.page.toml").read_text(encoding="utf-8")
 sw = (SRC / "pages/pageHomeSwtch.page.toml").read_text(encoding="utf-8")
 date = (SRC / "pages/pageSetTime.page.toml").read_text(encoding="utf-8")
 assert '"picture-0021"' in board
-assert '"picture-0024"' in sw and '"picture-0041"' in sw
+assert '"picture-0024"' in sw and '"picture-0040"' in sw
+assert 'name = "pHomeIcon"' in sw and 'type = "picture"' in sw, (
+    "Home must have an independently visible picture component"
+)
 assert '"picture-0005"' in date, "date/time page still uses picture 0005"
 assert '"picture-0025"' not in board
 assert '"picture-0031"' in sw and '"picture-0032"' in sw
