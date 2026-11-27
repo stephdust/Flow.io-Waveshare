@@ -93,7 +93,10 @@ def make_background():
     # Water temperature: sharp small blue droplet with a RED thermometer.
     # No Gaussian halo and no thick overlapping white contours: crisp at
     # the actual 480x320 resolution and after RGB565 conversion.
-    d=ImageDraw.Draw(image)
+    # Draw on a transparent layer so the two icons can be shifted as a
+    # matched pair without moving the logo or leaving artifacts behind.
+    weather_icons=Image.new('RGBA',(480*S,320*S),(0,0,0,0))
+    d=ImageDraw.Draw(weather_icons)
     water_drop=[
         (171,6),(174,10),(178,16),(180,20),(180,23),
         (177,27),(173,29),(168,29),(164,27),(162,23),
@@ -138,6 +141,15 @@ def make_background():
             (178*S,46*S),(181*S,49*S),(180*S,52*S),
             (162*S,52*S),(160*S,50*S),(162*S,49*S)],
            fill=(232,250,255,255),width=2*S,joint='curve')
+    # Group both temperature icons on the same x=194 vertical axis:
+    # water +23 px, outdoor-air +19 px. The right edge of each icon is
+    # <=205px, just BEFORE the native text widgets starting at x=207.
+    # This prevents Nextion text refresh from painting over the icons.
+    image.alpha_composite(
+        weather_icons.crop((159*S,5*S,184*S,30*S)),(182*S,5*S))
+    image.alpha_composite(
+        weather_icons.crop((157*S,30*S,186*S,55*S)),(176*S,30*S))
+    d=ImageDraw.Draw(image)
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
     # Exactly three independent 3D colour icons, floating on flat navy.
