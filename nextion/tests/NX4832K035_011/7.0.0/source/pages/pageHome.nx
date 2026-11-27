@@ -42,9 +42,9 @@ on pageHome.loadend:
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
-  // The background itself draws the footer icons.  Do not ref b0/b1
-  // (their opaque default button frames would cover the new artwork);
-  // they retain all native touch handlers and component IDs.
+  // The background draws footer artwork. b0/b1/m0/m2 are touch-only
+  // hotspots, aligned with the printed icons; never draw opaque buttons.
+  // The centre turbine hotspot m1 fits its 70x70 ring exactly.
   // Alarm text is shown by bUpdateGauge only while nonempty.
   // Update the values
   click bUpdateGauge,1
@@ -291,10 +291,13 @@ on m0.down:
   page pageHomeSwtch
 
 on m1.down:
+  // Touch the actual 70x70 spinning pump, not the surrounding gauges.
+  printh 23 03 60 09 01
+
+on m2.down:
+  // Footer play triangle: same filtration toggle as the pump.
   printh 23 03 60 09 01
 
 on b1.down:
+  // Alarm icon opens alarms only. Do not navigate to configuration on release.
   page pageAlarms
-
-on b1.up:
-  page pageCfgMenu
