@@ -166,72 +166,92 @@ def make_background():
     return image.convert('RGB')
 
 
+def _shade(rgb, intensity):
+    """3D illumination confined to a dial stroke, not the flat navy base."""
+    return tuple(max(0,min(255,round(value*intensity))) for value in rgb)
+
+
 def gauge_sprite(bg,kind,active):
-    x=20 if kind=='pH' else 253
-    image=bg.crop((x*S,89*S,(x+207)*S,239*S)).convert('RGBA')
-    # Create a smooth dark center with an exactly solid NAVY patch behind
-    # the live Nextion text backgrounds; no rounded capsule or white outline.
-    shade=Image.new('RGBA',image.size,(*NAVY,255))
-    mask=Image.new('L',image.size,0)
-    md=ImageDraw.Draw(mask)
-    md.ellipse((27*S,30*S,179*S,163*S),fill=255)
-    mask=mask.filter(ImageFilter.GaussianBlur(11*S))
-    image=Image.composite(shade,image,mask)
-    # Original safety semantics restored around the configured setpoint:
-    # centre (140/280) = GOOD green, shoulders = caution amber,
-    # extremes = alarm red. Never show orange/red at the target value.
+    """Five-colour 3D semicircle, without ANY gradient in the background.
+
+    Each frame deliberately starts from the same exact solid NAVY. Shading
+    affects only arc/scale strokes, preventing the visible rectangular patches
+    the earlier blurred gauge background created on the real Nextion.
+    """
+    assert kind in ('pH','ORP') and 0 <= active <= 4
+    image=Image.new('RGB',(207*S,150*S),NAVY)
+    d=ImageDraw.Draw(image)
+    # Original reference palette, symmetrical around the GOOD setpoint:
+    # red / yellow / green / yellow / red (not an alert at the centre).
     colors=((254,39,86),(255,212,32),(98,252,55),
             (255,212,32),(254,39,86))
     ring=tuple(q*S for q in (7,11,200,182))
-    image=halo(image,lambda d:[d.arc(ring,180+i*36+2,180+(i+1)*36-2,
-                                     fill=(*colors[i],150),width=13*S)
-                               for i in range(5)])
-    d=ImageDraw.Draw(image)
+    # Thin dark outer lip and blue inner recess: polished/raised 3D dial.
+    d.arc(tuple(q*S for q in (5,9,202,184)),180,360,
+          fill=(6,69,137),width=17*S)
+    d.arc(tuple(q*S for q in (6,10,201,183)),180,360,
+          fill=(8,133,203),width=2*S)
     for i,c in enumerate(colors):
-        start,end=180+i*36+2,180+(i+1)*36-2
-        d.arc(ring,start,end,fill=(*c,255),width=12*S)
-        d.arc(tuple(q*S for q in (7,8,200,179)),start+3,end-3,
-              fill=(*((250,251,255) if i==active else (80,196,219)),255),
-              width=(2 if i==active else 1)*S)
+        start,end=180+i*36+.5,180+(i+1)*36-.5
+        # The shadow, coloured body and specular highlight are contained
+        # entirely in the arc's 15px radial band. Background stays NAVY.
+        d.arc(ring,start,end,fill=_shade(c,.46),width=15*S)
+        d.arc(tuple(q*S for q in (10,13,197,179)),
+              start,end,fill=c,width=11*S)
+        d.arc(tuple(q*S for q in (12,15,195,177)),
+              start+1,end-1,fill=_shade(c,1.30),width=3*S)
+        # A fine inside rim provides depth between the arc and the dial.
+        d.arc(tuple(q*S for q in (19,24,188,169)),
+              start+1,end-1,fill=_shade(c,.52),width=S)
+    # Fine raised white scale ticks (same layout, subtler blue shadow).
     cx,cy=103,103
     for i in range(15):
         a=math.pi+i*math.pi/14
         co,si=math.cos(a),math.sin(a)
         r2=67 if i%3==0 else 71
+        line(d,[(cx+co*76+1,cy+si*76*.89+1),
+                (cx+co*r2+1,cy+si*r2*.89+1)],(5,102,171),
+             1.8 if i%3==0 else 1)
         line(d,[(cx+co*76,cy+si*76*.89),
-                (cx+co*r2,cy+si*r2*.89)],WHITE,1.3 if i%3==0 else .7)
-    # No capsule around the live values.  The 72x40 Nextion text boxes use
-    # NAVY bco, so blend the gauge center into that exact solid shade
-    # (softened toward the ring), with no visible rectangular frame.
-    # This preserves dynamic pH/ORP text on the real device.
+                (cx+co*r2,cy+si*r2*.89)],WHITE,
+             1.3 if i%3==0 else .7)
+    # Live measurements are native Nextion components; the needle is drawn
+    # by pageHome.nx only after the current gauge frame is blitted.
     text(d,kind,103,135,13)
-    # Range endpoints sit above the central turbine (which overlaps y=210..280).
     if kind=='pH':
         text(d,'6.8',21,109,16)
         text(d,'8.2',187,109,16)
     else:
         text(d,'600',21,109,15)
         text(d,'800',187,109,15)
-    return image.convert('RGB')
+    return image
 
+
+def gauge_needle_points(origin_x,index):
+    """Same 21-position geometry as pageHome.nx, 0..280 => 0..20."""
+    theta=math.pi+index*math.pi/20
+    cx,cy=origin_x+103,159
+    tx=round(cx+81*math.cos(theta))
+    ty=round(cy+59*math.sin(theta))
+    nx,ny=-math.sin(theta),math.cos(theta)
+    return cx,cy,tx,ty,nx,ny
 
 
 def draw_preview_gauge_cursor(image, origin_x, percent):
-    """Match the 21-position Nextion 'line' cursor on the static preview.
-
-    Runtime X/Y commands are compiled into pageHome.nx; this routine is
-    deliberately simple and separately asserted by the gauge regression gate.
-    """
-    idx = max(0, min(20, (int(percent)+7)//14))
-    theta = math.pi + idx*math.pi/20
-    x0 = round(origin_x + 103 + 77*math.cos(theta))
-    y0 = round(89 + 96.5 + 66*math.sin(theta))
-    x1 = round(origin_x + 103 + 99*math.cos(theta))
-    y1 = round(89 + 96.5 + 85*math.sin(theta))
-    d = ImageDraw.Draw(image)
-    for dx, colour in ((-1,(0,255,255)),(0,WHITE),(1,(0,255,255))):
-        d.line((x0+dx,y0,x1+dx,y1), fill=colour, width=1)
-
+    """Show the *long* 3D measurement needle and bearing, never a rim tick."""
+    idx=max(0,min(20,(int(percent)+7)//14))
+    cx,cy,tx,ty,nx,ny=gauge_needle_points(origin_x,idx)
+    d=ImageDraw.Draw(image)
+    d.line((cx+2,cy+2,tx+1,ty+1),fill=(2,41,97),width=4)
+    d.line((round(cx-2*nx),round(cy-2*ny),
+            round(tx-nx),round(ty-ny)),fill=(1,127,202),width=2)
+    d.line((round(cx+2*nx),round(cy+2*ny),
+            round(tx+nx),round(ty+ny)),fill=AQUA,width=2)
+    d.line((cx,cy,tx,ty),fill=(234,253,255),width=1)
+    d.ellipse((cx-6,cy-6,cx+6,cy+6),fill=(2,30,73))
+    d.ellipse((cx-5,cy-5,cx+5,cy+5),fill=AQUA)
+    d.ellipse((cx-3,cy-3,cx+3,cy+3),fill=(5,81,151))
+    d.ellipse((cx-2,cy-3,cx,cy-1),fill=WHITE)
 
 
 FAN_X,FAN_Y,FAN_SIZE=207,210,70
