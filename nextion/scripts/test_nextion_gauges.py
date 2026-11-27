@@ -72,16 +72,20 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
         a = math.pi+i*math.pi/20
         tx = round(cx + 81*math.cos(a))
         ty = round(cy + 59*math.sin(a))
-        # Isolate each phase, to ensure the ORP check cannot match pH lines.
-        match = re.search(
-            rf"(?m)^    if\\(sys2=={i}\\)\\n    \\{{\\n"
-            rf"(?P<block>(?:      line [^\\n]+\\n){{4}})    \\}}",
-            section,
+        # Exact block parsing avoids fragile multiline regex escaping and
+        # cannot accidentally match the other dial or a different phase.
+        marker = f"    if(sys2=={i})\\n    {{\\n".replace("\\n", "\n")
+        assert section.count(marker) == 1, (
+            f"missing or duplicate {field} 3D needle at position {i}"
         )
-        assert match, f"missing {field} 3D needle at position {i}"
+        block = section.split(marker, 1)[1].split("\n    }", 1)[0]
+        lines = [item.strip() for item in block.splitlines() if item.strip()]
+        assert len(lines) == 4 and all(item.startswith("line ") for item in lines), (
+            f"expected four 3D needle strokes for {field} phase {i}: {lines}"
+        )
         strokes = []
-        for line_text in match.group("block").strip().splitlines():
-            values = [int(x) for x in line_text.strip()[5:].split(",")]
+        for line_text in lines:
+            values = [int(x) for x in line_text[5:].split(",")]
             assert len(values) == 5, f"invalid needle stroke: {line_text}"
             strokes.append(values)
         assert [x[4] for x in strokes] == [841,2015,2047,65535], (
