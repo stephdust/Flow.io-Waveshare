@@ -19,10 +19,27 @@ parser.add_argument("--atlas", type=Path, default=(
 ATLAS = parser.parse_args().atlas
 with Image.open(ATLAS) as source:
     image = source.convert("RGB")
-assert image.size == (1035, 728), f"unexpected atlas size: {image.size}"
+assert image.size == (812, 578), f"unexpected deduplicated atlas size: {image.size}"
+# Exactly one static pH and ORP dial; neither requires a 5-level sprite.
+ph=image.crop((0,0,207,150))
+orp=image.crop((207,0,414,150))
+assert hashlib.sha256(ph.tobytes()).digest() != hashlib.sha256(orp.tobytes()).digest(), (
+    "pH and ORP must have distinct legends in their two unique sprites"
+)
+assert image.getpixel((600,90))==(4,18,37), "old redundant gauge copies remain"
+# Normal is glossy GREEN; any forwarded active alarm is glossy RED.
+normal=image.crop((500,0,544,40))
+active=image.crop((544,0,588,40))
+green=sum(1 for y in range(40) for x in range(44)
+          if (lambda q:q[1]>110 and q[1]>q[0]*1.3 and q[1]>q[2]*1.08)(normal.getpixel((x,y))))
+red=sum(1 for y in range(40) for x in range(44)
+        if (lambda q:q[0]>150 and q[0]>q[1]*1.4 and q[0]>q[2]*1.2)(active.getpixel((x,y))))
+assert green>35 and red>35, f"alarm state tiles not distinctly green/red: {green}/{red}"
+assert normal.tobytes()!=active.tobytes()
+
 
 # Five independent PSI rings (0..4), all with an uninterrupted cyan rim.
-rings = [image.crop((70*i,620,70*(i+1),690)) for i in range(5)]
+rings = [image.crop((70*i,470,70*(i+1),540)) for i in range(5)]
 assert len({hashlib.sha256(r.tobytes()).hexdigest() for r in rings}) == 5
 for i,ring in enumerate(rings):
     assert ring.getpixel((35,35)) == (3,17,31), "ring/core background seam"
@@ -41,7 +58,7 @@ for i,ring in enumerate(rings):
 
 # The OFF frame uses a muted metallic look. The 10 ON frames rotate by
 # 9 degrees per tick to cover a fourfold-symmetric quarter revolution.
-cores = [image.crop((350+42*i,620,392+42*i,662)) for i in range(11)]
+cores = [image.crop((350+42*i,470,392+42*i,512)) for i in range(11)]
 assert len({hashlib.sha256(c.tobytes()).hexdigest() for c in cores}) == 11, (
     "two turbine phases produced the same bitmap"
 )
@@ -67,4 +84,5 @@ for i, core in enumerate(cores[1:], 1):
 print("PASS: 5 full circular pressure bezels, no gaps")
 print("PASS: all 10 rotation phases plus muted OFF frame are distinct")
 print("PASS: 3D metallic highlights, curved rotor shading and centre preserved")
-print("PASS: 42px core, 70px ring and compact 1035x728 atlas unchanged")
+print("PASS: 2 distinct gauge tiles, green normal/red active alarms")
+print("PASS: 42px core, 70px ring, compact 812x578 atlas")
