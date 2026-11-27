@@ -23,6 +23,21 @@ Le rendu graphique Home est maintenu par
 `test_nextion_wake.py` et `test_nextion_animation.py`.
 Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
 
+## Température extérieure sur l'écran 480×320
+
+L'ESP32 envoie déjà `globals.vaWaterTemp.txt` et `globals.vaAirTemp.txt`.
+La Home utilise désormais les deux champs natifs `tWaterTemp` (eau, haut)
+et `tAirTemp` (air extérieur, bas) dans le bandeau x=154..300.
+Deux petites icônes goutte et soleil/nuage sont dessinées une seule fois
+dans l'atlas (sans animation supplémentaire). Le champ `tAirTemp` est
+ajouté **après tous les anciens composants** pour ne pas déplacer leurs IDs.
+
+Les valeurs sont mises à jour dans `bUpdateGauge.down` et redessinées
+à chaque `pageHome.loadend` après réveil. Vérifier la lisibilité et
+l'absence de recouvrement par la date et l'heure sur le vrai Nextion.
+Le test `nextion/scripts/test_nextion_outdoor_temp.py` est lancé par
+`pio run` / `pio run -e nextion` avant la compilation nxwright.
+
 ## Atlas compact
 
 Le fond est devenu uni, et l'atlas passe de 1035×1160 à **1035×728**
