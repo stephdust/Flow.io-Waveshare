@@ -6,13 +6,17 @@ This checks atlas dimensions, continuous illuminated rim, fourfold symmetry,
 real gradients and all eleven independent rotation/off frames.
 """
 from pathlib import Path
+import argparse
 import hashlib
 import math
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-ATLAS = (ROOT / "nextion/tests/NX4832K035_011/7.0.0/source"
-         / "pictures/picture-0003.png")
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--atlas", type=Path, default=(
+    ROOT / "nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png"
+), help="PNG atlas to inspect, including isolated build sources")
+ATLAS = parser.parse_args().atlas
 with Image.open(ATLAS) as source:
     image = source.convert("RGB")
 assert image.size == (1035, 728), f"unexpected atlas size: {image.size}"
