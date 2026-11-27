@@ -50,7 +50,12 @@ for core in cores:
     assert core.getpixel((41,41)) == (3,17,31)
 
 for i, core in enumerate(cores[1:], 1):
-    pixels = list(core.getdata())
+    # Avoid deprecated Image.getdata() (Pillow 12+, removed in Pillow 14).
+    # These 42x42 RGB sprites are tiny: per-pixel iteration is portable,
+    # does not need version checks, and preserves the exact pixel tuples.
+    pixels = [core.getpixel((x, y))
+              for y in range(core.height)
+              for x in range(core.width)]
     metal = [p for p in pixels if p[2] > 140 and p[1] > 75
              and p[2] > p[0]+15]
     assert len(metal) > 85, f"rotor {i} lost its four curved blades"
