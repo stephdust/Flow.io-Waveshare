@@ -127,9 +127,10 @@ def verify_changes(a: bytes, b: bytes, d: dict) -> list[str]:
 def register_ansi_alias() -> None:
     # The original tool is designed for Windows, where 'ansi' maps to the
     # active Windows codepage. Linux/Python has no such codec by default.
+    # ISO-8859-1 maps all byte values; Flow.io HMI includes bytes undefined in CP1252.
     def lookup(name):
         if name.replace('-', '_') in ('ansi', 'mbcs'):
-            return codecs.lookup('cp1252')
+            return codecs.lookup('latin-1')
         return None
     codecs.register(lookup)
 
