@@ -35,10 +35,10 @@ on pageHome.loadend:
   ref tFConnectState
   ref tpH
   ref tORP
-  // Paint the OFF pressure ring, then its independent central turbine.
+  // Paint the OFF pressure ring, now BELOW both gauges and in the footer gap.
   // The timer changes only the 42x42 centre on each 50ms tick.
-  xpic 207,210,70,70,0,620,HomeGaugepic
-  xpic 221,224,42,42,350,620,HomeGaugepic
+  xpic 207,244,70,70,0,620,HomeGaugepic
+  xpic 221,258,42,42,350,620,HomeGaugepic
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
@@ -84,11 +84,11 @@ on tmAnim.timer:
   {
     vaPrvPSINid.val=sys1
     sys0=sys1*70
-    xpic 207,210,70,70,sys0,620,HomeGaugepic
+    xpic 207,244,70,70,sys0,620,HomeGaugepic
   }
   sys0=temp*42
   sys0+=350
-  xpic 221,224,42,42,sys0,620,HomeGaugepic
+  xpic 221,258,42,42,sys0,620,HomeGaugepic
 
 on tmUpdate.timer:
   // Update the values
@@ -128,7 +128,7 @@ on bUpdateGauge.down:
   {
     vaPrvWifiLevel.val=sys0
     sys1=sys0*43
-    xpic 428,11,43,38,sys1,690,HomeGaugepic
+    xpic 423,11,43,38,sys1,690,HomeGaugepic
   }
   //// pH Gauge
   if(vapHPercent.val!=vaPrvpHPercen.val)
