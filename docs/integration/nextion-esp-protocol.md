@@ -92,6 +92,17 @@ Sémantique :
 - `globals.vaStates.val` : bitmap d'état compact
 - `globals.vaAlarms.val` : bitmap d'alarmes compact
 
+### Home Nextion 3,5″ : eau et air extérieur
+
+Le profil NX4832K035_011 (480×320) reprend désormais les deux mesures
+présentes sur les versions 5″/7″ : `tWaterTemp.txt` et
+`tAirTemp.txt` affichent les valeurs globales
+`globals.vaWaterTemp.txt` et `globals.vaAirTemp.txt`.
+La mise à jour est locale à la page Home via `bUpdateGauge.down`,
+notamment après le réveil. Le nouveau composant `tAirTemp` est
+ajouté en dernier, sans modifier les identifiants des composants
+existants ni le protocole série ESP32↔Nextion.
+
 ### Bitmap `globals.vaStates`
 
 Bits actuellement utilisés :
