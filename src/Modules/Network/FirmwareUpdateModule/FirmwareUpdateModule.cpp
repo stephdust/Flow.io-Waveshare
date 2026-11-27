@@ -68,6 +68,68 @@ private:
     bool acquired_ = false;
 };
 
+// Preallocate the *whole* TFT in bounded PSRAM chunks. The image is still
+// fully downloaded, SHA-256 verified and kept in RAM until the UART transfer
+// is finished; unlike a monolithic allocation, fragmentation does not require
+// a multi-megabyte single free block.
+class SegmentedNextionPsram {
+public:
+    static constexpr size_t kChunkBytes = 128U * 1024U;
+    static constexpr size_t kMaxChunks = 48U; // up to 6 MiB, 2 MiB reserved
+
+    SegmentedNextionPsram() = default;
+    SegmentedNextionPsram(const SegmentedNextionPsram&) = delete;
+    SegmentedNextionPsram& operator=(const SegmentedNextionPsram&) = delete;
+
+    ~SegmentedNextionPsram() { reset(); }
+
+    bool allocate(size_t bytes)
+    {
+        if (bytes == 0U || bytes > kMaxChunks * kChunkBytes) return false;
+        reset();
+        totalBytes_ = bytes;
+        const size_t count = (bytes + kChunkBytes - 1U) / kChunkBytes;
+        for (size_t i = 0U; i < count; ++i) {
+            const size_t remaining = bytes - i * kChunkBytes;
+            const size_t length = remaining < kChunkBytes ? remaining : kChunkBytes;
+            chunks_[i] = static_cast<uint8_t*>(
+                heap_caps_malloc(length, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+            if (!chunks_[i]) {
+                reset();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    uint8_t* at(size_t offset)
+    {
+        if (offset >= totalBytes_) return nullptr;
+        return chunks_[offset / kChunkBytes] + (offset % kChunkBytes);
+    }
+
+    size_t contiguousBytes(size_t offset) const
+    {
+        if (offset >= totalBytes_) return 0U;
+        const size_t inChunk = kChunkBytes - (offset % kChunkBytes);
+        const size_t remaining = totalBytes_ - offset;
+        return remaining < inChunk ? remaining : inChunk;
+    }
+
+private:
+    void reset()
+    {
+        for (auto& chunk : chunks_) {
+            if (chunk) heap_caps_free(chunk);
+            chunk = nullptr;
+        }
+        totalBytes_ = 0U;
+    }
+
+    uint8_t* chunks_[kMaxChunks]{};
+    size_t totalBytes_ = 0U;
+};
+
 class PartitionWriteStream final : public Stream {
 public:
     using ProgressCallback = void (*)(void* context, size_t writtenBytes);
@@ -2192,13 +2254,17 @@ bool FirmwareUpdateModule::runNextionUpdate_(const UpdateJob& job, char* errOut,
          (unsigned long)job.operationId, (unsigned long)expected,
          (unsigned long)freePsram, (unsigned long)largestPsram,
          (unsigned long)OtaPsramPolicy::kReserveBytes);
-    if (!OtaPsramPolicy::canStageImage(expected, freePsram, largestPsram))
+    if (!OtaPsramPolicy::canStageSegmentedImage(
+            expected, freePsram, largestPsram, SegmentedNextionPsram::kChunkBytes))
         return writeSimpleError_(errOut, errOutLen, "Nextion PSRAM insufficient (2 MiB reserve)");
-    std::unique_ptr<uint8_t, decltype(&heap_caps_free)> staged(
-        static_cast<uint8_t*>(heap_caps_malloc(expected, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)),
-        &heap_caps_free);
-    if (!staged)
-        return writeSimpleError_(errOut, errOutLen, "Nextion PSRAM image allocation failed");
+    SegmentedNextionPsram staged;
+    if (!staged.allocate(expected))
+        return writeSimpleError_(errOut, errOutLen, "Nextion PSRAM segmented image allocation failed");
+    LOGI("[NEXTION-OTA] op=%lu stage=psram_segmented_ready bytes=%lu chunk=%lu largest_before=%lu free_after=%lu",
+         (unsigned long)job.operationId, (unsigned long)expected,
+         (unsigned long)SegmentedNextionPsram::kChunkBytes,
+         (unsigned long)largestPsram,
+         (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
 
     setStatus_(UpdateState::Downloading, FirmwareUpdateTarget::Nextion, 0,
                "downloading Nextion TFT to PSRAM", job.operationId);
@@ -2276,9 +2342,10 @@ bool FirmwareUpdateModule::runNextionUpdate_(const UpdateJob& job, char* errOut,
                         continue;
                     }
                     size_t amount = available > 1024U ? 1024U : available;
-                    if (amount > expected - received) amount = expected - received;
+                    if (amount > staged.contiguousBytes(received))
+                        amount = staged.contiguousBytes(received);
                     const int got = stream->readBytes(
-                        reinterpret_cast<char*>(staged.get() + received), amount);
+                        reinterpret_cast<char*>(staged.at(received)), amount);
                     if (got <= 0) {
                         if (!http.connected() ||
                             (millis() - lastReadMs) > Limits::FirmwareUpdate::Http::StreamReadTimeoutMs) {
@@ -2334,9 +2401,11 @@ bool FirmwareUpdateModule::runNextionUpdate_(const UpdateJob& job, char* errOut,
     mbedtls_sha256_init(&hash);
     bool hashOk = mbedtls_sha256_starts(&hash, 0) == 0;
     for (size_t offset = 0U; hashOk && offset < expected;) {
-        const size_t count = expected - offset > 16U * 1024U
+        size_t count = expected - offset > 16U * 1024U
             ? 16U * 1024U : expected - offset;
-        hashOk = mbedtls_sha256_update(&hash, staged.get() + offset, count) == 0;
+        if (count > staged.contiguousBytes(offset))
+            count = staged.contiguousBytes(offset);
+        hashOk = mbedtls_sha256_update(&hash, staged.at(offset), count) == 0;
         offset += count;
         setOtaStage_("nextion_verify",
                      (uint8_t)(((uint64_t)offset * 100U) / expected));
@@ -2397,8 +2466,10 @@ bool FirmwareUpdateModule::runNextionUpdate_(const UpdateJob& job, char* errOut,
         uint8_t lastSentPct = 0U;
         size_t lastSentLog = 0U;
         while (sent < expected) {
-            const size_t count = expected - sent > 1024U ? 1024U : expected - sent;
-            if (!nextion.upload(staged.get() + sent, count)) {
+            size_t count = expected - sent > 1024U ? 1024U : expected - sent;
+            if (count > staged.contiguousBytes(sent))
+                count = staged.contiguousBytes(sent);
+            if (!nextion.upload(staged.at(sent), count)) {
                 LOGE("[NEXTION-OTA] op=%lu stage=uart_send_failed bytes=%lu/%lu reason=%s",
                      (unsigned long)job.operationId, (unsigned long)sent,
                      (unsigned long)expected, nextion.statusMessage.c_str());
