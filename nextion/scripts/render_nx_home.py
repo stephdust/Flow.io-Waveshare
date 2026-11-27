@@ -65,23 +65,14 @@ def panel(im,coords,r,fill,edge):
     return im
 
 
-def make_background(header_frame=True):
-    # Uniform dark base reduces encoded RGB565 variation without altering
-    # native text, hot spots, gauge/turbine icons or screen coordinates.
+def make_background():
+    # Entire page uses one uniform navy background. Both the header and
+    # footer have NO panels, borders, separators or contrast patches.
+    # The only cyan lines belong to the actual icons and circular pump.
     image=Image.new('RGBA',(480*S,320*S),(*NAVY,255))
-    # The comparison retains the dark header plate and removes only
-    # its outer cyan outline; the normal TFT stays framed.
-    image=panel(image,(5,4,475,58),13,(3,26,52),
-                (7,197,245) if header_frame else (3,26,52))
-    # Slim, balanced navigation trays: leave the center open for the
-    # raised, independent 70px turbine. Keep the navy canvas flat.
-    image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))
-    image=panel(image,(291,269,470,311),11,(3,25,48),(6,180,216))
     d=ImageDraw.Draw(image)
-    for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
-    # Two compact bottom frames: navigation grid on the left,
-    # genuine 3D-ish gear and alert on the right, with one subtle divider.
-    # No large empty cyan-bordered banners or overlapping hitboxes.
+    # Top fields are freely spaced without their previous frame/dividers.
+    # Footer controls remain invisible Nextion touch targets with floating icons.
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
     logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
@@ -159,8 +150,7 @@ def make_background(header_frame=True):
     # A small luminous mark provides depth without colouring the base.
     d.rounded_rectangle((95*S,278*S,100*S,283*S),
                         radius=S,fill=(5,211,247,255))
-    # Vertical divider belongs only to the right grouped tray.
-    line(d,[(401,278),(401,302)],(6,123,169),1)
+    # No vertical divider: gear and alarm are independent floating icons.
     # True 10-tooth gear silhouette instead of a crude spoke/sun glyph.
     gear_x,gear_y=349,290
     gear_points=[]
@@ -239,7 +229,7 @@ def gauge_sprite(bg,kind,active):
              1.3 if i%3==0 else .7)
     # Live measurements are native Nextion components; the needle is drawn
     # by pageHome.nx only after the current gauge frame is blitted.
-    text(d,kind,103,135,13)
+    text(d,kind,103,135,16)
     if kind=='pH':
         text(d,'6.8',21,116,16)
         text(d,'8.2',187,116,16)
@@ -519,9 +509,9 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((185,18),'27.3°C',font=preview_font(23),
+    d.text((185,18),'27.3°C',font=preview_font(18),
            fill=WHITE,anchor='lm')
-    d.text((185,43),'7.3°C',font=preview_font(23),
+    d.text((185,43),'7.3°C',font=preview_font(18),
            fill=WHITE,anchor='lm')
     d.text((360,22),'10:47',font=preview_font(20),
            fill=WHITE,anchor='mm')
@@ -529,27 +519,6 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
-    # Comparison ONLY: the unchanged firmware continues to use the bordered
-    # header. This extra image lets us decide visually before altering HMI.
-    borderless=demo.copy()
-    bg_no_frame=make_background(header_frame=False)
-    header_no_frame=bg_no_frame.resize((480,320),Image.Resampling.LANCZOS)
-    borderless.paste(header_no_frame.crop((0,0,480,60)),(0,0))
-    borderless.paste(
-        wifi_frame(bg_no_frame,4).resize(
-            (WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
-        (WIFI_X,WIFI_Y))
-    h=ImageDraw.Draw(borderless)
-    h.text((185,18),'27.3°C',font=preview_font(23),
-           fill=WHITE,anchor='lm')
-    h.text((185,43),'7.3°C',font=preview_font(23),
-           fill=WHITE,anchor='lm')
-    h.text((360,22),'10:47',font=preview_font(20),
-           fill=WHITE,anchor='mm')
-    h.text((360,42),'27/11/26',font=preview_font(12),
-           fill=WHITE,anchor='mm')
-    borderless.save(preview.with_name('preview-header-borderless.png'),
-                    optimize=True)
     print('Home atlas=1035x728: 5 rings + 11 small turbine frames + 5 RSSI tiers')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
