@@ -87,7 +87,7 @@ Documentation : [Nextion](../../README.md) ·
 Pour limiter la taille du TFT et conserver 10 positions d'animation,
 l'atlas Home passe de **1035×1160 à 1035×728 pixels**. Les 55 anciennes
 images de turbine complètes sont remplacées par **5 couronnes PSI
-statiques + 11 centres de turbine de 48×48 pixels** partagés.
+statiques + 11 centres de turbine de 42×42 pixels** partagés.
 Les quatre pales restent centrées et symétriques; seul le centre est
 redessiné à 50 ms, la couronne seulement lorsque l'état PSI change.
 
