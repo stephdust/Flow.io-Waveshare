@@ -1,0 +1,100 @@
+name: Build modern Nextion 7.0.0 via nxwright SOURCE (NX4832K035 only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/nextion-nxwright-redesign.yml'
+      - 'nextion/scripts/modernize_3p5_nxsource.py'
+      - 'nextion/scripts/compile_nxwright_test.sh'
+permissions:
+  contents: read
+concurrency:
+  group: flowio-nextion-nxwright-modern-7-0
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned nxwright + atlas dependencies
+        run: |
+          python -m pip install --no-cache-dir 'git+https://github.com/nixiewright/nxwright.git@e9443a409cc9deb866db7486854fa962d382accc' 'numpy>=1.26,<3'
+      - name: Extract working NX4832K035 HMI version 7.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin backup/nextion-v7-validated-20261127
+          git show FETCH_HEAD:nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI > "$RUNNER_TEMP/validated.HMI"
+          test "$(git hash-object "$RUNNER_TEMP/validated.HMI")" = 'ac941badd17a3f0b8d27da4a29cc5135d5a0986c'
+          nxwright extract "$RUNNER_TEMP/validated.HMI" "$RUNNER_TEMP/nx-modern-source"
+          nxwright check "$RUNNER_TEMP/nx-modern-source"
+      - name: Modernize Home from text and PNG files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python nextion/scripts/modernize_3p5_nxsource.py \
+            --source "$RUNNER_TEMP/nx-modern-source" \
+            --logo data/webinterface/logo-flowio.png \
+            --preview "$RUNNER_TEMP/preview-nxwright-modern-7.0.0.png"
+          nxwright check "$RUNNER_TEMP/nx-modern-source"
+      - name: Build modern HMI 7.0.0 in temporary workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          nxwright build "$RUNNER_TEMP/nx-modern-source" \
+            "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" --no-lock
+          nxwright diff "$RUNNER_TEMP/nx-modern-source" \
+            "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" --no-lock \
+            | tee "$RUNNER_TEMP/roundtrip-source-diff.txt"
+          nxwright extract "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" \
+            "$RUNNER_TEMP/modern-roundtrip-readback"
+          nxwright check "$RUNNER_TEMP/modern-roundtrip-readback"
+          sha256sum "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI"
+      - name: Compile experimental modern TFT directly with nxwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash nextion/scripts/compile_nxwright_test.sh \
+            "$RUNNER_TEMP/nx-modern-source" \
+            "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
+            2>&1 | tee "$RUNNER_TEMP/modern-tft-compile.log"
+          sha256sum "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft"
+      - name: Collect source, preview, HMI and test-only TFT
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .nxwright-experimental
+          for item in nx-modern-source FlowIO_Nextion_NX4832K035_011-7.0.0.HMI NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft preview-nxwright-modern-7.0.0.png roundtrip-source-diff.txt modern-tft-compile.log; do
+            if test -e "$RUNNER_TEMP/$item"; then
+              cp -a "$RUNNER_TEMP/$item" .nxwright-experimental/
+            fi
+          done
+          {
+            echo "## Nextion NX4832K035 7.0.0 — redesigned via nxwright source"
+            echo "This is **experimental** and isolated from release and production TFT."
+            echo "The known-good 7.0.0 branch is retained; no 5-inch/7-inch files are touched."
+            ls -lh .nxwright-experimental/
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload source, rebuilt HMI, experimental TFT and preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NX4832K035-7.0.0-NXWRIGHT-MODERN-EXPERIMENTAL
+          path: .nxwright-experimental/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Confirm no tracked repository modification
+        if: always()
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
