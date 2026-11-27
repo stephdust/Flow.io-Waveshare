@@ -5,7 +5,7 @@ x = 0
 y = 0
 w = 480
 h = 320
-bco = "#21557b"
+bco = "#041225"
 
 [[component]]
 name = "bHome"
@@ -16,13 +16,13 @@ w = 56
 h = 52
 style = 0
 font = "Home_Icons_32"
-pic = 40
-bco = "#21557b"
-pic2 = 41
+pic = "picture-0040"
+bco = "#041225"
+pic2 = "picture-0041"
 bco2 = "#21557b"
 pco = "#c6c3c6"
 pco2 = "#0092d6"
-txt = "N"
+txt = ""
 
 [[component]]
 name = "btAuto"
@@ -34,10 +34,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0024"
+pic2 = "picture-0025"
 pco = "#d6d7de"
-txt = "H"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -50,10 +50,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0026"
+pic2 = "picture-0027"
 pco = "#d6d7de"
-txt = "m"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -66,10 +66,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0028"
+pic2 = "picture-0029"
 pco = "#d6d7de"
-txt = "F"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -82,10 +82,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0030"
+pic2 = "picture-0031"
 pco = "#d6d7de"
-txt = "j"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -98,10 +98,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0032"
+pic2 = "picture-0033"
 pco = "#d6d7de"
-txt = "i"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -114,10 +114,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0034"
+pic2 = "picture-0035"
 pco = "#d6d7de"
-txt = "E"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -130,10 +130,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0036"
+pic2 = "picture-0037"
 pco = "#d6d7de"
-txt = "Q"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -146,10 +146,10 @@ h = 75
 sta = 2
 style = 0
 font = "Home_Icons_37"
-pic = "picture-0022"
-pic2 = "picture-0023"
+pic = "picture-0038"
+pic2 = "picture-0039"
 pco = "#d6d7de"
-txt = "J"
+txt = ""
 txt_maxl = 1
 
 [[component]]
@@ -173,7 +173,7 @@ y = 271
 w = 378
 h = 30
 font = "SegoeUI_28"
-bco = "#21557b"
+bco = "#041225"
 pco = "#f74d39"
 dis = 8
 tim = 100
@@ -193,11 +193,14 @@ val = 140
 [[component]]
 name = "t0"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 22
 y = 102
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "   Auto\r\nFiltration"
 txt_maxl = 20
@@ -205,11 +208,14 @@ txt_maxl = 20
 [[component]]
 name = "t1"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 134
 y = 102
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\nORP"
 txt_maxl = 20
@@ -217,11 +223,14 @@ txt_maxl = 20
 [[component]]
 name = "t2"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 246
 y = 102
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Auto\r\n pH"
 txt_maxl = 20
@@ -229,11 +238,14 @@ txt_maxl = 20
 [[component]]
 name = "t3"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 358
 y = 102
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Pompe\r\n   PH"
 txt_maxl = 20
@@ -241,11 +253,14 @@ txt_maxl = 20
 [[component]]
 name = "t4"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 362
 y = 221
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Pompe\r\nChlore"
 txt_maxl = 20
@@ -253,11 +268,14 @@ txt_maxl = 20
 [[component]]
 name = "t5"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 248
 y = 221
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Robot"
 txt_maxl = 20
@@ -265,11 +283,14 @@ txt_maxl = 20
 [[component]]
 name = "t6"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 134
 y = 221
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Eclairage"
 txt_maxl = 20
@@ -277,11 +298,14 @@ txt_maxl = 20
 [[component]]
 name = "t7"
 type = "text"
+font = "SegoeUI_16"
+xcen = 1
+
 x = 20
 y = 221
 w = 100
 h = 30
-bco = "#21557b"
+bco = "#041225"
 pco = "#ffffff"
 txt = "Hivernage"
 txt_maxl = 20
