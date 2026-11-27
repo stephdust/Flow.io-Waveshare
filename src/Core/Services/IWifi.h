@@ -27,4 +27,7 @@ struct WifiService {
     bool (*requestScan)(void* ctx, bool force);
     bool (*scanStatusJson)(void* ctx, char* out, size_t outLen);
     bool (*setStaRetryEnabled)(void* ctx, bool enabled);
+    // Station signal strength (dBm); -127 when disconnected. Optional for
+    // other WifiService providers; existing service ABI fields remain ordered.
+    int32_t (*getRssi)(void* ctx);
 };

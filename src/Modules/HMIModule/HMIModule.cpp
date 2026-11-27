@@ -100,6 +100,18 @@ static constexpr uint32_t kHomePublishAll = kHomePublishWaterTemp |
                                             kHomePublishErrorMessage |
                                             kHomePublishPsi;
 static constexpr uint32_t kClockPublishCheckMs = 1000U;
+// The standard Home state bitmap already crosses the ESP32/Nextion boundary.
+// Bits 16..18 are unused by existing HMI screens; old screens ignore them.
+// New NX4832K035 7.0.0: 0=offline, 1=weak, 2=fair, 3=good, 4=excellent.
+static constexpr uint8_t kHomeWifiRssiLevelShift = 16U;
+static uint8_t wifiRssiLevel_(int32_t rssi)
+{
+    if (rssi <= -127) return 0U;
+    if (rssi <= -85) return 1U;
+    if (rssi <= -76) return 2U;
+    if (rssi <= -68) return 3U;
+    return 4U;
+}
 static constexpr uint32_t kHomePeriodicRefreshPeriodMs = 10000U;
 static constexpr uint32_t kNextionPageProbeInitialPeriodMs = 1000U;
 static constexpr uint8_t kNextionPageProbeInitialAttempts = 10U;
@@ -1191,6 +1203,13 @@ uint32_t HMIModule::buildHomeStateBits_() const
         }
         if (isNetworkConnected_(dsSvc_)) bits |= (1UL << HMI_HOME_STATE_WIFI_READY);
         if (mqttReady(*dsSvc_->store)) bits |= (1UL << HMI_HOME_STATE_MQTT_READY);
+        // Keep bit 7 and bit 8 semantics unchanged for every older display.
+        // RSSI represents the actual ESP32 station signal, never Ethernet.
+        if (wifiSvc_ && wifiSvc_->isConnected &&
+            wifiSvc_->isConnected(wifiSvc_->ctx) && wifiSvc_->getRssi) {
+            const uint8_t level = wifiRssiLevel_(wifiSvc_->getRssi(wifiSvc_->ctx));
+            bits |= ((uint32_t)level << kHomeWifiRssiLevelShift);
+        }
     }
 
     (void)readPoolLogicModeFlags_(modes.autoMode, modes.winterMode, modes.phAutoMode, modes.orpAutoMode);

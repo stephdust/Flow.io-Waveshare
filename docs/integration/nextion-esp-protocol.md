@@ -109,6 +109,25 @@ Bits actuellement utilisés :
 - bit `11` : chauffage ON
 - bit `12` : remplissage ON
 
+**Nextion Enhanced NX4832K035_011 / 7.0.0 (RSSI Wi-Fi réel)** : les bits
+`16..18` de `globals.vaStates.val` portent un niveau de 0 à 4, calculé
+par l'ESP32 à partir de `WiFi.RSSI()`. L'ancien bit 7 (« réseau connecté »)
+et le bit 8 (« MQTT prêt ») restent inchangés :
+
+| Valeur | Mesure RSSI de la station | Couleur |
+|---|---|---|
+| 0 | Déconnecté / aucune mesure | Gris |
+| 1 | ≤ −85 dBm | Rouge |
+| 2 | −84 à −76 dBm | Jaune / ambre |
+| 3 | −75 à −68 dBm | Cyan |
+| 4 | ≥ −67 dBm | Vert |
+
+Le niveau est mis à jour via la publication périodique Home (10 secondes)
+et les événements de réseau, sans nouvelle commande série. Il reste à 0
+si le Wi-Fi n'est pas associé, même si Ethernet est disponible. La mise à
+jour visuelle nécessite **le firmware ESP32 et le TFT Nextion assortis** ;
+les écrans précédents ignorent ces bits libres.
+
 ### Bitmap `globals.vaAlarms`
 
 Bits actuellement utilisés :

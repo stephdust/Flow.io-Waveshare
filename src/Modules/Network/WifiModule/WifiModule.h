@@ -161,6 +161,7 @@ private:
     // service
     WifiState stateSvc_() const;
     bool isConnected_() const;
+    int32_t getRssi_() const;
     bool getIP_(char* out, size_t len) const;
     bool requestReconnect_();
     bool scanStatusJson_(char* out, size_t outLen);
@@ -194,6 +195,7 @@ private:
         ServiceBinding::bind<&WifiModule::requestReconnect_>,
         ServiceBinding::bind<&WifiModule::requestScan_>,
         ServiceBinding::bind<&WifiModule::scanStatusJson_>,
-        ServiceBinding::bind<&WifiModule::setStaRetryEnabled_>
+        ServiceBinding::bind<&WifiModule::setStaRetryEnabled_>,
+        ServiceBinding::bind<&WifiModule::getRssi_>
     };
 };

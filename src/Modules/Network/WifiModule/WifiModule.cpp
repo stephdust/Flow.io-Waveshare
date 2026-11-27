@@ -119,6 +119,10 @@ bool WifiModule::isConnected_() const {
     return WiFi.isConnected();
 }
 
+int32_t WifiModule::getRssi_() const {
+    return WiFi.isConnected() ? (int32_t)WiFi.RSSI() : -127;
+}
+
 bool WifiModule::getIP_(char* out, size_t len) const {
     if (!out || len == 0) return false;
 
