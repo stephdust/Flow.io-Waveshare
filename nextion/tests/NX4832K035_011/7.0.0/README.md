@@ -27,7 +27,7 @@ Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
 
 Le fond est devenu uni, et l'atlas passe de 1035×1160 à **1035×728**
 pixels. Les 55 images de turbine complètes ont été remplacées par cinq
-couronnes PSI 70×70 et onze cœurs animés 48×48. Les coordonnées
+couronnes PSI 70×70 et onze cœurs animés 42×42. Les coordonnées
 `xpic` sont mises à jour ensemble avec `render_nx_home.py`. Le
 test `nextion/scripts/test_nextion_animation.py` contrôle ce contrat.
 
