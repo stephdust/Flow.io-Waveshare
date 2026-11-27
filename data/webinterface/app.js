@@ -4766,14 +4766,24 @@
       return upgradeComponentDefs.map((def) => {
         const current = currentUpgradeVersionForComponent(def.key);
         const latest = latestUpgradeEntryForComponent(def.key, manifest, manifestUrl);
-        const recoveryRequired = def.key === 'nextion' && !nextionDisplayDetected;
+        // A responsive HMI or a readable application version is NOT proof
+        // that the physical Nextion model was identified. Only the backend
+        // manifest selection's identity can safely establish compatibility.
+        // Otherwise allow explicit model selection (firmware still validates
+        // the hardware identity before sending any bytes).
+        const backendNextion = upgradeManifestState && upgradeManifestState.nextion;
+        const nextionIdentityKnown = !!(backendNextion
+          && backendNextion.display_detected === true
+          && String(backendNextion.compatibility || '').trim());
+        const recoveryRequired = def.key === 'nextion' && hasManifest && !nextionIdentityKnown;
         const recoveryEntries = recoveryRequired
           ? nextionRecoveryEntries(manifest, manifestUrl)
           : [];
         const available = latest
           ? { version: latest.version, build: latest.buildDate }
           : { version: '-', build: '-' };
-        const nextionUnavailable = hasManifest && def.key === 'nextion' && nextionDisplayDetected && !latest;
+        const nextionUnavailable = hasManifest && def.key === 'nextion' && nextionIdentityKnown && !latest;
+        const missingRecoveryArtifacts = recoveryRequired && recoveryEntries.length === 0;
         const comparableCurrent = current.version && current.version !== '-';
         const comparableAvailable = available.version && available.version !== '-';
         const remoteNextionUpdateBlocked = def.key === 'nextion' && nextionDisplayRemote;
@@ -4785,9 +4795,11 @@
           : tr('updates.nextion.notDetected', 'Nextion non détecté');
         const statusMessage = remoteNextionUpdateBlocked
           ? tr('updates.nextion.remoteUpdateDisabled', 'Mise à jour indisponible pour un écran déporté')
-          : (recoveryRequired
-            ? tr('updates.nextion.manualSelection', 'Écran non détecté : sélectionnez son modèle')
-            : (nextionUnavailable ? unavailableMessage : ''));
+          : (missingRecoveryArtifacts
+            ? tr('updates.nextion.noTftInManifest', 'Aucun fichier TFT Nextion dans le manifeste')
+            : (recoveryRequired
+              ? tr('updates.nextion.manualSelection', 'Modèle Nextion non identifié : sélectionnez son modèle')
+              : (nextionUnavailable ? unavailableMessage : '')));
         const statusKnown = remoteNextionUpdateBlocked || recoveryRequired || hasManifest;
         return Object.assign({}, def, {
           subtitle: def.key === 'nextion'
@@ -4803,7 +4815,10 @@
           unavailableMessage: '',
           statusMessage: statusMessage,
           recoveryRequired: recoveryRequired,
-          actionDisabled: remoteNextionUpdateBlocked,
+          // An unavailable firmware with a KNOWN physical identity cannot
+          // be forced through the recovery selector. Do not silently repeat
+          // the manifest check when the user presses the Update button.
+          actionDisabled: remoteNextionUpdateBlocked || nextionUnavailable || missingRecoveryArtifacts,
           recoveryEntries: recoveryEntries,
           entry: recoveryRequired ? null : latest
         });
