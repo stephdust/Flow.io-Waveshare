@@ -163,6 +163,9 @@ def compile_nextion() -> None:
 
         execute(str(python), str(renderer), "--source", str(work_source),
                 "--preview", str(work_preview))
+        # Generate the 3D icons of pageHomeSwtch in the isolated build copy.
+        execute(str(python), str(ROOT / "nextion/scripts/render_nx_switches.py"),
+                "--source", str(work_source))
         # Never ship graphical changes without checking the generated PNG.
         execute(str(python), str(ROOT / "nextion/scripts/test_nextion_preview_layout.py"),
                 "--preview", str(work_preview))
