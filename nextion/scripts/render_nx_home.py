@@ -105,10 +105,8 @@ def make_background():
     d.arc((160*S,40*S,172*S,53*S),130,280,fill=WHITE,width=round(1.6*S))
     d.arc((169*S,37*S,181*S,51*S),188,356,fill=WHITE,width=round(1.6*S))
     line(d,[(162,50),(178,50)],WHITE,1.6)
-    # Nominal markers, WITHOUT colored value capsules.
-    for x,value in ((123,'7.5'),(357,'700')):
-        text(d,value,x,72,16,(94,249,50))
-        d.polygon([(x*S,87*S),((x-6)*S,78*S),((x+6)*S,78*S)],fill=WHITE)
+    # No static setpoint values/arrows: current pH and ORP are shown by
+    # their live readings and gauge indicators, never by fixed annotations.
     # Footer: four useful actions (grid/config, centre pump/filtration,
     # gear/switches and triangle/alarms). No redundant 'play' button.
     # Grid is centered in the freed left footer section, with a matching
