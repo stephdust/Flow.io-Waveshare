@@ -25,6 +25,7 @@ on pageHome.loadend:
   vaPrvpHPercen.val=-1
   vaPrvOrpPercen.val=-1
   vaPrvWifiLevel.val=-1
+  vaPrvPSINid.val=-1
   // Restore live native components that the background image covered.
   ref tWaterTemp
   ref tTime
@@ -33,8 +34,10 @@ on pageHome.loadend:
   ref tFConnectState
   ref tpH
   ref tORP
-  // Paint a stationary turbine immediately; tmAnim selects live frame and PSI colour.
+  // Paint the OFF pressure ring, then its independent central turbine.
+  // The timer changes only the 48x48 centre on each 50ms tick.
   xpic 207,210,70,70,0,620,HomeGaugepic
+  xpic 218,221,48,48,350,620,HomeGaugepic
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
@@ -55,29 +58,36 @@ on pageHome.unload:
   PreviousPage=dp
 
 on tmAnim.timer:
-  // 50 ms animation: filtration ON rotates centered four-blade turbine.
-  // OFF always displays stationary frame 0. No ESP32 protocol change.
+  // Ten shared core phases rotate four identical blades; independent from PSI.
+  // Repaint the 70x70 ring only when pressure severity changes.
   temp1=globals.vaStates.val>>0
   temp1=temp1&1
   if(temp1==1)
   {
     temp%=10
     temp+=1
-    sys0=temp*70
   }else
   {
     temp=0
-    sys0=0
   }
-  // Existing pressure severity 0..4 selects the animated sprite row.
   sys1=vaPSINiddle.val
   if(sys1>4)
   {
     sys1=4
   }
-  sys1*=70
-  sys1+=620
-  xpic 207,210,70,70,sys0,sys1,HomeGaugepic
+  if(sys1<0)
+  {
+    sys1=0
+  }
+  if(sys1!=vaPrvPSINid.val)
+  {
+    vaPrvPSINid.val=sys1
+    sys0=sys1*70
+    xpic 207,210,70,70,sys0,620,HomeGaugepic
+  }
+  sys0=temp*48
+  sys0+=350
+  xpic 218,221,48,48,sys0,620,HomeGaugepic
 
 on tmUpdate.timer:
   // Update the values
@@ -115,9 +125,8 @@ on bUpdateGauge.down:
   if(sys0!=vaPrvWifiLevel.val)
   {
     vaPrvWifiLevel.val=sys0
-    sys1=sys0*38
-    sys1+=970
-    xpic 428,11,43,38,0,sys1,HomeGaugepic
+    sys1=sys0*43
+    xpic 428,11,43,38,sys1,690,HomeGaugepic
   }
   //// pH Gauge
   if(vapHPercent.val!=vaPrvpHPercen.val)
