@@ -35,7 +35,7 @@ def main() -> None:
     assert "vaPrvWifiLevel.val=-1" in final
     assert "xpic 428,11,43,38,0,sys1,HomeGaugepic" in gauges
     assert "vis tErrMessage,0" in initial
-    assert not re.search(r"(?m)^\\s*ref b[01]\\s*$", final), "opaque footer buttons redrawn"
+    assert not re.search(r"(?m)^\s*ref b[01]\s*$", final), "opaque footer buttons redrawn"
     assert "click bUpdateGauge,1" in tick
     print("PASS: Home wake reloads and redraws xpic background + two gauge sprites")
     print("PASS: leaving Home restores wup=255; normal navigation is unchanged")
