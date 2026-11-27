@@ -105,6 +105,7 @@ def compile_nextion() -> None:
         "test_nextion_wake.py",
         "test_nextion_animation.py",
         "test_nextion_outdoor_temp.py",
+        "test_nextion_footer_touch.py",
     ):
         execute(sys.executable, str(ROOT / "nextion" / "scripts" / test_name))
     nx = nxwright_path()
