@@ -35,9 +35,9 @@ on pageHome.loadend:
   ref tpH
   ref tORP
   // Paint the OFF pressure ring, then its independent central turbine.
-  // The timer changes only the 48x48 centre on each 50ms tick.
+  // The timer changes only the 42x42 centre on each 50ms tick.
   xpic 207,210,70,70,0,620,HomeGaugepic
-  xpic 218,221,48,48,350,620,HomeGaugepic
+  xpic 221,224,42,42,350,620,HomeGaugepic
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
@@ -85,9 +85,9 @@ on tmAnim.timer:
     sys0=sys1*70
     xpic 207,210,70,70,sys0,620,HomeGaugepic
   }
-  sys0=temp*48
+  sys0=temp*42
   sys0+=350
-  xpic 218,221,48,48,sys0,620,HomeGaugepic
+  xpic 221,224,42,42,sys0,620,HomeGaugepic
 
 on tmUpdate.timer:
   // Update the values
