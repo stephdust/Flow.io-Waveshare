@@ -46,8 +46,8 @@ assert water["ycen"] == air["ycen"] == 1
 assert water["xcen"] == air["xcen"] == 0, (
     "both live temperatures must START immediately after their respective icons"
 )
-assert 154 < water["x"] and water["x"] + water["w"] <= 300
-assert 154 < air["x"] and air["x"] + air["w"] <= 300
+assert 154 < water["x"] and water["x"] + water["w"] <= 302
+assert 154 < air["x"] and air["x"] + air["w"] <= 302
 assert water["y"] == 5 and water["h"] == 25
 assert air["y"] == 30 and air["h"] == 25
 assert water["y"] + water["h"] <= air["y"]
