@@ -73,7 +73,7 @@ def make_background():
     image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))
     d=ImageDraw.Draw(image)
     for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
-    for x in (92,194,294,387):line(d,[(x,270),(x,307)],(7,155,209),.8)
+    for x in (194,294,387):line(d,[(x,270),(x,307)],(7,155,209),.8)
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
     logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
@@ -109,15 +109,14 @@ def make_background():
     for x,value in ((123,'7.5'),(357,'700')):
         text(d,value,x,72,16,(94,249,50))
         d.polygon([(x*S,87*S),((x-6)*S,78*S),((x+6)*S,78*S)],fill=WHITE)
-    # Footer: grid=config, play=filtration, gear=switches, triangle=alarms.
-    # All have invisible, individually bounded touch hotspots; no buttons painted.
-    for xx in (23,39):
+    # Footer: four useful actions (grid/config, centre pump/filtration,
+    # gear/switches and triangle/alarms). No redundant 'play' button.
+    # Grid is centered in the freed left footer section, with a matching
+    # transparent b0 hotspot. Icons never render opaque touch rectangles.
+    for xx in (88,104):
         for yy in (273,288):
             d.rounded_rectangle((xx*S,yy*S,(xx+10)*S,(yy+10)*S),
                                 radius=2*S,outline=WHITE,width=2*S)
-    d.polygon([(143*S,273*S),(132*S,293*S),(135*S,301*S),
-               (143*S,306*S),(152*S,301*S),(155*S,293*S)],fill=(9,214,254))
-    d.arc((130*S,300*S,161*S,314*S),180,352,fill=AQUA,width=2*S)
     # Home switches / controls. Use a recognizable gear, not the former
     # ambiguous curved arrow. Its hitbox is m0 (x=309..387, y=268..313).
     gear_x,gear_y=349,290
