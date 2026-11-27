@@ -1,16 +1,19 @@
-name: Build modern Nextion 7.0.0 via nxwright SOURCE (NX4832K035 only)
+name: Build Nextion 7.0.0 with PlatformIO nxwright (NX4832K035 only)
 on:
   workflow_dispatch:
   push:
     branches: [dev]
     paths:
       - '.github/workflows/nextion-nxwright-redesign.yml'
-      - 'nextion/scripts/modernize_3p5_nxsource.py'
-      - 'nextion/scripts/compile_nxwright_test.sh'
+      - 'platformio.ini'
+      - 'nextion/scripts/pio_nextion_targets.py'
+      - 'nextion/scripts/run_nextion.py'
+      - 'nextion/scripts/refresh_nextion_manifest.py'
+      - 'nextion/tests/NX4832K035_011/7.0.0/source/**'
 permissions:
   contents: write
 concurrency:
-  group: flowio-nextion-nxwright-modern-7-0
+  group: flowio-nextion-platformio-build-7-0
   cancel-in-progress: false
 
 jobs:
@@ -25,125 +28,61 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install pinned nxwright + atlas dependencies
-        run: |
-          python -m pip install --no-cache-dir 'git+https://github.com/nixiewright/nxwright.git@e9443a409cc9deb866db7486854fa962d382accc' 'numpy>=1.26,<3'
-      - name: Extract working NX4832K035 HMI version 7.0.0
+      - name: Install PlatformIO Core only
+        run: python -m pip install 'platformio>=6.2,<7'
+      - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
+        run: pio run -e nextion
+      - name: Validate release, manifest and model without touching ESP32/SPIFFS
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --depth=1 origin backup/nextion-v7-validated-20261127
-          git show FETCH_HEAD:nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI > "$RUNNER_TEMP/validated.HMI"
-          test "$(git hash-object "$RUNNER_TEMP/validated.HMI")" = 'ac941badd17a3f0b8d27da4a29cc5135d5a0986c'
-          nxwright extract "$RUNNER_TEMP/validated.HMI" "$RUNNER_TEMP/nx-modern-source"
-          nxwright check "$RUNNER_TEMP/nx-modern-source"
-      - name: Modernize Home from text and PNG files
-        shell: bash
-        run: |
-          set -euo pipefail
-          python nextion/scripts/modernize_3p5_nxsource.py \
-            --source "$RUNNER_TEMP/nx-modern-source" \
-            --logo data/webinterface/logo-flowio.png \
-            --preview "$RUNNER_TEMP/preview-nxwright-modern-7.0.0.png"
-          nxwright check "$RUNNER_TEMP/nx-modern-source"
-      - name: Build modern HMI 7.0.0 in temporary workspace
-        shell: bash
-        run: |
-          set -euo pipefail
-          nxwright build "$RUNNER_TEMP/nx-modern-source" \
-            "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" --no-lock
-          nxwright diff "$RUNNER_TEMP/nx-modern-source" \
-            "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" --no-lock \
-            | tee "$RUNNER_TEMP/roundtrip-source-diff.txt"
-          nxwright extract "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" \
-            "$RUNNER_TEMP/modern-roundtrip-readback"
-          nxwright check "$RUNNER_TEMP/modern-roundtrip-readback"
-          sha256sum "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI"
-      - name: Compile experimental modern TFT directly with nxwright
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash nextion/scripts/compile_nxwright_test.sh \
-            "$RUNNER_TEMP/nx-modern-source" \
-            "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-            2>&1 | tee "$RUNNER_TEMP/modern-tft-compile.log"
-          sha256sum "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft"
-      - name: Collect source, preview, HMI and test-only TFT
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p nextion-experimental-output
-          for item in nx-modern-source FlowIO_Nextion_NX4832K035_011-7.0.0.HMI NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft preview-nxwright-modern-7.0.0.png roundtrip-source-diff.txt modern-tft-compile.log; do
-            if test -e "$RUNNER_TEMP/$item"; then
-              cp -a "$RUNNER_TEMP/$item" nextion-experimental-output/
-            fi
-          done
-          {
-            echo "## Nextion NX4832K035 7.0.0 — redesigned via nxwright source"
-            echo "Experimental compiled 7.0.0 HMI and TFT are published on stephdust/dev only, pending physical validation."
-            echo "The known-good 7.0.0 branch is retained; no 5-inch/7-inch files are touched."
-            ls -lh nextion-experimental-output/
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload source, rebuilt HMI, experimental TFT and preview
-        if: always()
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          name = 'FlowIO_Nextion_NX4832K035_011-7.0.0.tft'
+          source_dir = Path('nextion/tests/NX4832K035_011/7.0.0/source')
+          release = Path('nextion/releases/7.0.0')
+          assert (source_dir / 'pages/pageHome.nx').is_file()
+          assert (release / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
+          tft = release / name
+          copied = Path('binary') / name
+          assert tft.stat().st_size > 1000000
+          assert tft.read_bytes() == copied.read_bytes()
+          entries = json.loads(Path('binary/manifest.json').read_text(encoding='utf-8'))['artifacts']['nextion']
+          assert len(entries) == 1
+          e = entries[0]
+          assert e['path'] == name and e['version'] == '7.0.0'
+          assert e['display_compatibility'] == 'NX4832K035_011'
+          assert e['size'] == tft.stat().st_size
+          assert e['sha256'] == hashlib.sha256(tft.read_bytes()).hexdigest()
+          assert not any(Path('binary').glob('*.bin'))
+          print('PASS: PlatformIO Nextion-only HMI/TFT compile and manifest')
+          PY
+          test -z "$(git diff --name-only -- 'nextion/releases/6.0.0/*NX8048*')"
+      - name: Store compiled nxwright Nextion outputs as test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NX4832K035-7.0.0-NXWRIGHT-MODERN-EXPERIMENTAL
-          path: nextion-experimental-output/
-          if-no-files-found: warn
+          name: NX4832K035-7.0.0-PLATFORMIO-NXWRIGHT
+          path: |
+            nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
+            nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
+            nextion/tests/NX4832K035_011/7.0.0/source/
+            nextion/tests/NX4832K035_011/7.0.0/preview.png
+            binary/manifest.json
           retention-days: 14
-      # User's fork dev is the test branch. Upstream christophebelmont/dev
-      # remains the reference until a separate reviewed PR is opened.
-      - name: Commit editable nxwright sources and compiled 7.0.0 HMI/TFT on fork dev
+      - name: Commit only Nx4832K035 HMI/TFT changes on fork dev (no upstream PR)
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_REPOSITORY}" = "stephdust/Flow.io-Waveshare"
-          git diff --exit-code
-          test -f "$RUNNER_TEMP/nx-modern-source/app.toml"
-          test -f "$RUNNER_TEMP/nx-modern-source/pages/pageHome.nx"
-          grep -Eq '^screen = "NX4832K035"$' "$RUNNER_TEMP/nx-modern-source/app.toml"
-          grep -Eq '^rotation = 90$' "$RUNNER_TEMP/nx-modern-source/app.toml"
-          test -s "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI"
-          test -s "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft"
-          test -s "$RUNNER_TEMP/preview-nxwright-modern-7.0.0.png"
-          test -s "$RUNNER_TEMP/modern-tft-compile.log"
-          test_dir=nextion/tests/NX4832K035_011/7.0.0
-          release_dir=nextion/releases/7.0.0
-          mkdir -p "$test_dir" "$release_dir"
-          rm -rf "$test_dir/source"
-          cp -a "$RUNNER_TEMP/nx-modern-source" "$test_dir/source"
-          cp "$RUNNER_TEMP/preview-nxwright-modern-7.0.0.png" "$test_dir/preview.png"
-          cp "$RUNNER_TEMP/modern-tft-compile.log" "$test_dir/modern-tft-compile.log"
-          cp "$RUNNER_TEMP/roundtrip-source-diff.txt" "$test_dir/roundtrip-source-diff.txt"
-          # Both HMI and real, directly compiled TFT become testable from fork dev.
-          cp "$RUNNER_TEMP/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" \
-             "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI"
-          cp "$RUNNER_TEMP/NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-             "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.tft"
-          # The 5-inch / 7-inch projects and files remain strictly untouched.
-          test -z "$(git diff --name-only -- 'nextion/releases/6.0.0/*NX8048*')"
-          git add -A -- "$test_dir/source" "$test_dir/preview.png" \
-             "$test_dir/roundtrip-source-diff.txt" \
-             "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" \
-             "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.tft"
-          git add -f -- "$test_dir/modern-tft-compile.log"
-          # Only explicitly allowed Nextion 3.5-inch test files may enter this commit.
-          while IFS= read -r changed; do
-            case "$changed" in
-              nextion/tests/NX4832K035_011/7.0.0/*|nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI|nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft) ;;
-              *) echo "Unexpected staged file: $changed" >&2; exit 1 ;;
-            esac
-          done < <(git diff --cached --name-only)
+          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
+          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
           if git diff --cached --quiet; then
-            echo "All generated NX4832K035 7.0.0 files already match dev."
+            echo "Both generated HMI and TFT match the current fork dev."
           else
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'test(nextion): commit nxwright modern 7.0.0 source HMI and TFT on fork dev [skip ci]'
+            git commit -m 'test(nextion): compile NX4832K035 7.0.0 via PlatformIO nxwright [skip ci]'
             git push origin HEAD:dev
           fi
-          sha256sum "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI" \
-             "$release_dir/FlowIO_Nextion_NX4832K035_011-7.0.0.tft"
-          echo "Published to fork dev only; upstream christophebelmont/dev remains unchanged." >> "$GITHUB_STEP_SUMMARY"
+          echo "Nextion PlatformIO build succeeded; no production hardware validation claimed." >> "$GITHUB_STEP_SUMMARY"
