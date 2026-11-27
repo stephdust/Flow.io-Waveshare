@@ -670,7 +670,24 @@ bool NextionDriver::wakeFromSleep()
     if (!started_) return false;
     if (!sendCmd_("sleep=0")) return false;
     sleeping_ = false;
+    // Serial-initiated wake does not emit the Nextion 0x87 event. Reset
+    // the local gauge caches here as well as in the automatic wake path.
+    (void)requestHomeGaugeRedraw();
     return true;
+}
+
+bool NextionDriver::requestHomeGaugeRedraw()
+{
+    // HomeSimple draws both gauge arcs with xpic only when its saved
+    // previous percentage differs. wup=255 refreshes page components
+    // without invalidating those local variables, hiding both arcs.
+    // The timer script will then repaint with the actual current values.
+    if (!started_ || sleeping_ || !currentPageKnown_ ||
+        currentPage_ != cfg_.homePageId) return false;
+
+    bool ok = sendCmd_("vaPrvpHPercen.val=65535");
+    ok = sendCmd_("vaPrvOrpPercen.val=65535") && ok;
+    return ok;
 }
 
 bool NextionDriver::readRtc(HmiRtcDateTime& out, uint16_t timeoutMs)
