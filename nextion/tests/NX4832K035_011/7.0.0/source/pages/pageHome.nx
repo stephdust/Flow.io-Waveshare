@@ -28,6 +28,7 @@ on pageHome.loadend:
   vaPrvPSINid.val=-1
   // Restore live native components that the background image covered.
   ref tWaterTemp
+  ref tAirTemp
   ref tTime
   ref tDate
   // WiFi and FlowConnect legacy glyphs are hidden (new RSSI xpic).
@@ -113,6 +114,7 @@ on bUpdateGauge.down:
   tORP.txt=globals.vaOrpValue.txt
   tpH.txt=globals.vaPhValue.txt
   tWaterTemp.txt=globals.vaWaterTemp.txt
+  tAirTemp.txt=globals.vaAirTemp.txt
   // Pump ring severity is read by tmAnim. Legacy tProp stays hidden.
   // Real RSSI 0..4, encoded by ESP32 in Home state bits 16..18.
   // Previous WiFi/MQTT state bits 7/8 remain available to legacy screens.
