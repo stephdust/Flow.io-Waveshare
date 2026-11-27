@@ -125,28 +125,60 @@ def main():
         sprite=Image.open(dst/(home["pic"]+".png")).convert("RGB")
         assert sprite.size==(home["w"],home["h"])
         canvas.paste(sprite,(home["x"],home["y"]))
-        draw=ImageDraw.Draw(canvas)
-        font_candidates=("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-                         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                         "C:/Windows/Fonts/arialbd.ttf","DejaVuSans.ttf")
-        def font(size):
-            for path in font_candidates:
-                try: return ImageFont.truetype(path,size)
-                except OSError: pass
-            return ImageFont.load_default()
-        # Text is rendered at the 480x320 target resolution for audit,
-        # with original Nextion text component rectangles and coordinates.
+        # The PNG renderer is only a preview: actual fonts are embedded in
+        # Nextion. Do not select host-installed fonts here. Linux hosts without
+        # Liberation Sans fell back to DejaVu Sans Bold, whose 'p' descender in
+        # "Auto\\npH" was painted onto the Robot sprite on the row below.
+        # This made identical HMI sources pass CI and fail on another machine.
+        #
+        # Draw each caption into its own native Nextion component rectangle.
+        # Center the *ink* (not the font ascent), and reject text that cannot
+        # fit. This makes the PNG deterministic and prevents neighboring
+        # buttons from being repainted by a host-dependent fallback font.
+        def draw_caption(component, content, target_size=24):
+            width, height = component["w"], component["h"]
+            text_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            text_draw = ImageDraw.Draw(text_layer)
+            for size in range(target_size, 13, -1):
+                preview_font = ImageFont.load_default(size=size)
+                box = text_draw.multiline_textbbox(
+                    (0, 0), content, font=preview_font, anchor="mm",
+                    align="center", spacing=0)
+                if box[2]-box[0] <= width-2 and box[3]-box[1] <= height-2:
+                    break
+            else:
+                raise RuntimeError(
+                    f"Nextion preview caption does not fit: {component['name']}"
+                )
+            x = (width-box[0]-box[2])/2
+            y = (height-box[1]-box[3])/2
+            ink = text_draw.multiline_textbbox(
+                (x, y), content, font=preview_font, anchor="mm",
+                align="center", spacing=0)
+            if not (0 <= ink[0] <= ink[2] <= width and
+                    0 <= ink[1] <= ink[3] <= height):
+                raise RuntimeError(
+                    f"Nextion preview caption exceeds its rectangle: "
+                    f"{component['name']} {ink}"
+                )
+            text_draw.multiline_text(
+                (x, y), content, font=preview_font, anchor="mm",
+                align="center", spacing=0, fill=(255, 255, 255, 255))
+            # Nextion text components have an opaque navy bco background.
+            # Clip both this background and glyphs to the component bounds.
+            canvas.paste(Image.new("RGB", (width, height), NAVY),
+                         (component["x"], component["y"]))
+            canvas.paste(text_layer, (component["x"], component["y"]),
+                         text_layer)
+
         for i in range(8):
-            c=components[f"t{i}"]
-            linebreaks=c["txt"].replace(chr(13)+chr(10), chr(10)).replace(chr(13), "").replace("   ","").replace("  ","").strip()
-            cx=c["x"]+c["w"]/2
-            draw.multiline_text((cx,c["y"]+c["h"]/2),linebreaks,
-                font=font(24),fill=(255,255,255),anchor="mm",
-                align="center",spacing=0)
-        # HOME caption is an actual Nextion text component, not preview-only artwork.
-        caption=components["tHomeCaption"]
-        draw.text((caption["x"]+caption["w"]/2,caption["y"]+caption["h"]/2),
-                  caption["txt"],font=font(24),fill=(255,255,255),anchor="mm")
+            c = components[f"t{i}"]
+            label = (c["txt"].replace(chr(13)+chr(10), chr(10))
+                     .replace(chr(13), "").strip())
+            draw_caption(c, label)
+        # HOME caption is also a native Nextion text component.
+        caption = components["tHomeCaption"]
+        draw_caption(caption, caption["txt"])
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         canvas.save(args.preview,optimize=True)
         print("[NEXTION] Switch preview from actual generated sprite images:",args.preview)
