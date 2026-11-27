@@ -59,8 +59,10 @@ assert "tWaterTemp.txt=globals.vaWaterTemp.txt" in update
 assert "tAirTemp.txt=globals.vaAirTemp.txt" in update
 assert "click bUpdateGauge,1" in post, "refresh both values after wake"
 assert "water_drop=[" in renderer and "(171,6),(175,11)" in renderer
-assert "Tiny thermometer and liquid bulb" in renderer
-assert "d.rounded_rectangle((169*S,13*S,173*S,23*S)" in renderer
+assert "White glass tube, red mercury column and a distinct red bulb." in renderer
+assert "d.rounded_rectangle((169*S,12*S,173*S,24*S)" in renderer
+assert "fill=(242,48,62,255)" in renderer
+assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
 assert "cloud=(3,26,52,255)" in renderer
 assert "d.text((185,18),'27.3°C',font=preview_font(23)" in renderer
