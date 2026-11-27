@@ -1,149 +1,171 @@
 #!/usr/bin/env python3
-"""Build experimental Nextion NX4832K035_011 HMI v7 from the versioned v6 HMI.
+"""Safely patch NX4832K035 Nextion HMI 7.0.0 *in place*.
 
-This is not a TFT compiler. The produced HMI must be opened/compiled with Nextion Editor.
+This does not add/append or resize any HMI resources. Directory, component sizes,
+file length and content addresses are unchanged. Page CRCs are recalculated.
+Nextion Editor must still open and compile the result before deployment.
 """
 from pathlib import Path
-import hashlib
-import re
 import struct
-import sys
+import re
+import hashlib
 
 SOURCE = Path('nextion/releases/6.0.0/Flowio_Enhanced_480x320.HMI')
-TARGET = Path('nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_TEST.HMI')
+TARGET = Path('nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI')
 
 
 def crc(page):
-    table = []
+    t = []
     for i in range(256):
         x = i << 24
         for _ in range(8):
-            x = ((x << 1) ^ (0x04C11DB7 if x & 0x80000000 else 0)) & 0xffffffff
-        table.append(x)
-    seed = 0xffffffff
+            x = ((x << 1) ^ (0x04C11DB7 if x & 0x80000000 else 0)) & 0xFFFFFFFF
+        t.append(x)
+    seed = 0xFFFFFFFF
     for part in (page[4:], page[4:8], page[12:16], page[20:21], page[21:22]):
         for v in part:
             seed ^= v
             for _ in range(4):
-                seed = ((seed << 8) & 0xffffffff) ^ table[seed >> 24]
+                seed = ((seed << 8) & 0xFFFFFFFF) ^ t[seed >> 24]
     return seed
 
 
-def pages(b):
-    count = struct.unpack_from('<I', b)[0]
-    rows = []
+def entries(buf):
+    count = struct.unpack_from('<I', buf)[0]
+    assert 20 < count < 400
+    mirror_len = 4 + 28 * count
+    assert buf[:mirror_len] == buf[0x80000:0x80000+mirror_len], 'directory mirrors differ'
+    data = {}
     for i in range(count):
-        n, start, size, deleted, *_ = struct.unpack_from('<16sIIBBBB', b, 4 + 28 * i)
-        rows.append((n.split(b'\0')[0].decode('ascii', 'replace'), start, size, deleted, i))
-    assert b[:4 + 28 * count] == b[0x80000:0x80000 + 4 + 28 * count], 'directory mirrors mismatch'
-    return count, rows
+        name, at, size, deleted, *_ = struct.unpack_from('<16sIIBBBB', buf, 4 + 28*i)
+        name = name.split(b'\0')[0].decode('ascii','replace')
+        if deleted == 0:
+            assert at + size <= len(buf), (name, at, size)
+            if name in data:
+                raise ValueError(f'duplicate live {name}')
+            data[name] = (at, size)
+    return data
 
 
-def replace_page(b, count, entry, page):
-    start = len(b)
-    b.extend(page)
-    for base in (0, 0x80000):
-        off = base + 4 + 28 * entry
-        struct.pack_into('<II', b, off + 16, start, len(page))
-        b[off + 24] = 0
-        b[off + 25:off + 28] = (len(page) >> 8).to_bytes(3, 'little')
-    assert b[:4 + 28 * count] == b[0x80000:0x80000 + 4 + 28 * count]
-    assert crc(page) == struct.unpack_from('<I', page)[0]
+def components(page):
+    num = struct.unpack_from('<I', page, 12)[0]
+    out = []
+    for i in range(num):
+        off, size, extra = struct.unpack_from('<III', page, 56 + 12*i)
+        assert extra == 0
+        out.append((56 + off, size))
+    assert sum(sz for _, sz in out) == len(page) - 56 - 12*num
+    return out
 
 
 def commands(c, kind):
     m = re.search((kind + r'-(\d+)').encode(), c)
-    assert m, f'missing event {kind}'
+    assert m, f'missing {kind}'
     pos = m.end()
     result = []
     for _ in range(int(m.group(1))):
-        length = struct.unpack_from('<I', c, pos)[0]
+        n = struct.unpack_from('<I', c, pos)[0]
         pos += 4
-        result.append(c[pos:pos + length].decode())
-        pos += length
-    return result
+        result.append(c[pos:pos+n].decode('utf-8'))
+        pos += n
+    return m, result, pos
 
 
-def patch_event(c, kind, before, after):
-    token = f'{kind}-{len(before)}'.encode()
-    assert c.count(token) == 1, (kind, c.count(token))
-    i = c.index(token)
-    e = i + len(token)
-    enc = lambda lines: b''.join(struct.pack('<I', len(s.encode())) + s.encode() for s in lines)
-    old = enc(before)
-    assert c[e:e + len(old)] == old
-    new_token = f'{kind}-{len(after)}'.encode()
-    assert struct.unpack_from('<I', c, i - 4)[0] == len(token)
-    return c[:i - 4] + struct.pack('<I', len(new_token)) + new_token + enc(after) + c[e + len(old):]
-
-
-def patch_attr(c, key, new):
-    pat = rb'([\x11-\x1e])\x00{3}' + key.encode() + b'\0' * (16 - len(key))
-    ms = list(re.finditer(pat, c))
-    assert len(ms) == 1, (key, len(ms))
-    m = ms[0]
+def patch_attr(c, name, value):
+    pat = rb'([\x11-\x1e])\x00{3}' + name.encode() + b'\0' * (16 - len(name))
+    matches = list(re.finditer(pat,c))
+    assert len(matches) == 1, (name,len(matches))
+    m = matches[0]
     width = m.group(1)[0] & 15
-    assert 0 <= new < 1 << (width * 8)
-    return c[:m.end()] + new.to_bytes(width, 'little') + c[m.end() + width:]
+    old = int.from_bytes(c[m.end():m.end()+width], 'little')
+    assert 0 <= value < (1 << (width * 8)), (name, value, width)
+    c[m.end():m.end()+width] = value.to_bytes(width,'little')
+    return old
 
 
 def main():
     b = bytearray(SOURCE.read_bytes())
-    count, entries = pages(b)
-    name, start, size, deleted, entry = next(q for q in entries if q[0] == '19.pa' and q[3] == 0)
-    p = bytes(b[start:start + size])
-    assert p[24:40].split(b'\0')[0] == b'pageHome'
-    assert crc(p) == struct.unpack_from('<I', p)[0], 'base pageHome CRC mismatch'
-    n = struct.unpack_from('<I', p, 12)[0]
-    comps = []
-    for i in range(n):
-        off, size, unknown = struct.unpack_from('<III', p, 56 + 12 * i)
-        assert unknown == 0
-        comps.append(p[56 + off:56 + off + size])
-    assert b''.join(comps) == p[56 + 12 * n:]
-    old = commands(comps[0], 'codesload')
-    assert len(old) == 6, 'unrecognized pageHome initialize handler'
-    new = old + ['vaPrvpHPercen.val=65535', 'vaPrvOrpPercen.val=65535', 'click bDateTime,1', 'click bUpdateGauge,1']
-    comps[0] = patch_event(comps[0], 'codesload', old, new)
-    for index, attrs in ((14, {'x': 304, 'y': 5, 'w': 94, 'xcen': 1}),
-                         (21, {'x': 304, 'y': 31, 'w': 94, 'xcen': 1, 'txt_maxl': 9})):
-        for key, value in attrs.items():
-            comps[index] = patch_attr(comps[index], key, value)
-    comps[29] = patch_attr(comps[29], 'tim', 60000)
-    old = commands(comps[27], 'codesdown')
-    assert len(old) == 21 and old[11] == '// Build Date', 'unrecognized date handler'
-    new = old[:11] + [
-        '// Build Date DD/MM/YY', 'vaTmpDateTime.txt=""',
-        'covx rtc2,vaBuildDatTime.txt,2,0', 'vaTmpDateTime.txt+=vaBuildDatTime.txt',
-        'vaTmpDateTime.txt+="/"', 'covx rtc1,vaBuildDatTime.txt,2,0',
-        'vaTmpDateTime.txt+=vaBuildDatTime.txt', 'vaTmpDateTime.txt+="/"',
-        'sys0=rtc0%100', 'covx sys0,vaBuildDatTime.txt,2,0',
-        'vaTmpDateTime.txt+=vaBuildDatTime.txt', 'if(vaTmpDateTime.txt!=tDate.txt)',
-        '{', '  tDate.txt=vaTmpDateTime.txt', '}',
+    original_len = len(b)
+    before_dir = bytes(b[:4 + 28 * struct.unpack_from('<I',b)[0]])
+    dirs = entries(b)
+    assert '19.pa' in dirs and '5.pa' in dirs
+    start, size = dirs['19.pa']
+    page = bytearray(b[start:start+size]); assert page[24:40].split(b'\0')[0] == b'pageHome'
+    assert crc(page) == struct.unpack_from('<I',page)[0], 'base Home CRC mismatch'
+    offsets = components(page)
+
+    for index, values in ((14, {'x':304,'y':5,'w':94,'xcen':1}),
+                          (21, {'x':304,'y':31,'w':94,'xcen':1,'txt_maxl':9})):
+        off, sz = offsets[index]
+        c = bytearray(page[off:off+sz])
+        for k,v in values.items():patch_attr(c,k,v)
+        page[off:off+sz] = c
+
+    off, sz = offsets[29]
+    c = bytearray(page[off:off+sz])
+    assert patch_attr(c, 'tim', 60000) == 5000
+    page[off:off+sz] = c
+
+    # Replacement uses the original 21 command entries and EXACT original size.
+    # The new date is written from RTC as DD/MM/YY without changing any record sizes.
+    off, sz = offsets[27]
+    c = bytearray(page[off:off+sz])
+    marker, old, end = commands(c,'codesdown')
+    assert len(old)==21 and old[11]=='// Build Date', 'unknown Home date event'
+    date = [
+        '// Build Date DD/MM/YY',
+        'covx rtc2,tDate.txt,2,0',
+        'tDate.txt+="/"',
+        'covx rtc1,vaBuildDatTime.txt,2,0',
+        'tDate.txt+=vaBuildDatTime.txt',
+        'tDate.txt+="/"',
+        'sys0=rtc0%100',
+        'covx sys0,vaBuildDatTime.txt,2,0',
+        'tDate.txt+=vaBuildDatTime.txt',
+        '// Date from RTC',
     ]
-    comps[27] = patch_event(comps[27], 'codesdown', old, new)
-    page = bytearray(p[:56 + 12 * n])
-    offset = 12 * n
-    for i, c in enumerate(comps):
-        struct.pack_into('<III', page, 56 + i * 12, offset, len(c), 0)
-        offset += len(c)
-    page.extend(b''.join(comps))
-    struct.pack_into('<I', page, 4, len(page))
-    struct.pack_into('<I', page, 0, crc(page))
-    replace_page(b, count, entry, page)
-    name, start, size, deleted, entry = next(q for q in entries if q[0] == '5.pa' and q[3] == 0)
-    g = bytearray(b[start:start + size])
-    assert g[24:40].split(b'\0')[0] == b'globals' and g.count(b'6.0.0') == 1
-    assert crc(g) == struct.unpack_from('<I', g)[0]
-    g = g.replace(b'6.0.0', b'7.0.0')
-    struct.pack_into('<I', g, 0, crc(g))
-    replace_page(b, count, entry, g)
-    TARGET.parent.mkdir(parents=True, exist_ok=True)
+    new = old[:11] + date
+    assert len(new)==len(old)==21
+    oldtotal = sum(map(lambda s:len(s.encode()),old))
+    newtotal = sum(map(lambda s:len(s.encode()),new))
+    # Variable-length text lines may be rewritten provided the event keeps same size.
+    # Pad the trailing comment only, never executable code.
+    assert newtotal <= oldtotal, f'new lines too long by {newtotal-oldtotal} bytes'
+    new[-1] += ' '*(oldtotal-newtotal)
+    def pack_lines(lines):
+        return b''.join(struct.pack('<I',len(s.encode()))+s.encode() for s in lines)
+    p0, p1 = pack_lines(old), pack_lines(new)
+    assert len(p0)==len(p1)
+    assert c[marker.end():end] == p0
+    c[marker.end():end] = p1
+    assert len(c)==sz and commands(c,'codesdown')[1]==new
+    page[off:off+sz] = c
+    assert len(page)==size
+    struct.pack_into('<I',page,0,crc(page))
+    assert crc(page)==struct.unpack_from('<I',page)[0]
+    b[start:start+size] = page
+
+    # Same-length version stamp patch, preserving its page's CRC and directory.
+    start, size = dirs['5.pa']
+    page = bytearray(b[start:start+size])
+    assert page[24:40].split(b'\0')[0]==b'globals'
+    assert crc(page)==struct.unpack_from('<I',page)[0]
+    assert page.count(b'6.0.0')==1
+    page = page.replace(b'6.0.0',b'7.0.0')
+    assert len(page)==size
+    struct.pack_into('<I',page,0,crc(page))
+    b[start:start+size] = page
+
+    assert len(b)==original_len
+    assert bytes(b[:len(before_dir)]) == before_dir
+    assert entries(b)==dirs
+    for name in ('5.pa','19.pa'):
+        st,sz=dirs[name]; p=b[st:st+sz]
+        assert crc(p)==struct.unpack_from('<I',p)[0], name
+    TARGET.parent.mkdir(parents=True,exist_ok=True)
     TARGET.write_bytes(b)
-    assert crc(page) == struct.unpack_from('<I', page)[0]
-    print('Generated:', TARGET, 'bytes:', len(b), 'sha256:', hashlib.sha256(b).hexdigest())
-    print('WARNING: HMI format/CRC checks only. Nextion Editor must compile it before use.')
+    print('OUTPUT',TARGET,'size',len(b),'sha256',hashlib.sha256(b).hexdigest())
+    print('CRC valid; all directory offsets, mirrors, page sizes, and file length unchanged')
+    print('WARNING: still requires Nextion Editor open/compile check before use')
 
-
-if __name__ == '__main__':
-    main()
+if __name__=='__main__':main()
