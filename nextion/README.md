@@ -1,5 +1,8 @@
 # Ressources Nextion flow.io
 
+**Procédure obligatoire pour toute modification d'écran :** [processus de conception, simulation, contrôle des PNG et validation pré-commit](PROCESSUS_CONCEPTION_VALIDATION.md). Compiler **avant commit** avec `pio run -e nextion`, ouvrir les véritables PNG compilés et les comparer côte à côte à la référence validée. Un simple `PASS` CI ne prouve ni la conformité du dessin ni la compilation locale.
+
+
 Voir [Modes PoolLogic et adaptation des écrans Nextion](../docs/integration/poollogic-operating-modes.md).
 
 Les fichiers `.HMI` sont les sources éditables dans Nextion Editor. Les fichiers `.tft` sont les images compilées à transférer vers un écran précis.
