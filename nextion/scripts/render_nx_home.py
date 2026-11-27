@@ -200,18 +200,19 @@ def make_background():
     d.ellipse(((gear_x-2)*S,(gear_y-3)*S,
                (gear_x+1)*S,(gear_y)*S),fill=(255,254,233,255))
 
-    # 3. ALARMS — amber/bronze faceted triangle, ruby accent, light glyph.
+    # 3. ALARMS — emerald green = normal, bright ruby red = active alarm.
+    # This normal icon is also the source of the separate HMI xpic green tile.
     alarm_x,alarm_y=440,290
     alert_pts=[(alarm_x,271),(alarm_x-20,306),(alarm_x+20,306)]
     d.polygon([((x+1)*S,(y+2)*S) for x,y in alert_pts],
-              fill=(63,23,19,255))
+              fill=(1,42,37,255))
     d.polygon([(x*S,y*S) for x,y in alert_pts],
-              fill=(129,49,26,255))
+              fill=(6,107,71,255))
     d.line([(x*S,y*S) for x,y in alert_pts+[alert_pts[0]]],
-           fill=(255,193,53,255),width=3*S,joint='curve')
-    # A thin upper facet catches light without a large glow/halo.
-    line(d,[(alarm_x,275),(alarm_x-17,304)],(255,244,156),1)
-    line(d,[(alarm_x-15,305),(alarm_x+15,305)],(248,95,54),1)
+           fill=(63,244,147,255),width=3*S,joint='curve')
+    # Slight bevel and reflective upper facet, without any surrounding frame.
+    line(d,[(alarm_x,275),(alarm_x-17,304)],(200,255,215),1)
+    line(d,[(alarm_x-15,305),(alarm_x+15,305)],(8,166,91),1)
     d.rounded_rectangle(((alarm_x-2)*S,282*S,
                          (alarm_x+2)*S,295*S),radius=2*S,
                         fill=(255,251,231,255))
@@ -513,7 +514,7 @@ def wifi_frame(bg,level):
 
 
 # Red alert overlay is drawn in a separate atlas tile so HMI can switch
-# from static amber to active red using globals.vaAlarms, without redrawing
+# from normal green to active red using globals.vaAlarms, without redrawing
 # any gauges or altering their live cursor / temperature widgets.
 ALARM_X,ALARM_Y,ALARM_W,ALARM_H=418,269,44,40
 ALARM_NORMAL_ATLAS_X=500
@@ -553,7 +554,7 @@ def render(source,preview):
     orp=gauge_sprite('ORP').resize((207,150),Image.Resampling.LANCZOS)
     atlas.paste(ph,(0,0))
     atlas.paste(orp,(207,0))
-    # Static amber tile + red alarm tile from same 44x40 screen rectangle.
+    # Static GREEN tile + RED alarm tile from same 44x40 screen rectangle.
     # The Nextion chooses the tile using the ESP32's vaAlarms bit mask.
     atlas.paste(bg.crop((ALARM_X*S,ALARM_Y*S,
                          (ALARM_X+ALARM_W)*S,(ALARM_Y+ALARM_H)*S))
