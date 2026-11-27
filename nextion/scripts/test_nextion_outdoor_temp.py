@@ -46,6 +46,11 @@ assert air["y"] + air["h"] <= 58
 for field in ("tTime", "tDate", "tWifiState"):
     other = byname[field]
     assert other["x"] >= 304, f"{field} overlaps temperature column"
+assert byname["tTime"]["x"] == byname["tDate"]["x"] == 304
+assert byname["tTime"]["w"] == byname["tDate"]["w"] == 106
+assert byname["tTime"]["y"] + byname["tTime"]["h"] <= byname["tDate"]["y"]
+assert byname["tDate"]["y"] + byname["tDate"]["h"] <= 58
+assert byname["tDate"]["x"] + byname["tDate"]["w"] < 413
 
 post = event("pageHome.loadend")
 update = event("bUpdateGauge.down")
