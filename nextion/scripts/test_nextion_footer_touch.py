@@ -19,14 +19,14 @@ components = {c["name"]: c for c in page["component"]}
 # margin. No zone should capture a neighbouring button or a gauge.
 targets = {
     "b0": (64, 268, 72, 45),      # centered grid / configuration
-    "m1": (207, 210, 70, 70),     # central pump / filtration toggle
+    "m1": (207, 244, 70, 70),     # central pump / filtration toggle
     "m0": (309, 268, 78, 45),     # gear / equipment switches
     "b1": (412, 268, 62, 45),     # triangle alarm / alarms page
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
     "b0": (88, 273, 114, 298),
-    "m1": (207, 210, 277, 280),
+    "m1": (207, 244, 277, 314),
     "m0": (333, 274, 365, 306),
     "b1": (433, 276, 467, 304),
 }
@@ -71,7 +71,11 @@ assert "d.arc((130*S,300*S,161*S,314*S)" not in art
 assert "for xx in (88,104):" in art
 assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
 assert "# Minimal footer, as requested:" in art
-assert "image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))" in art
+assert "image=panel(image,(5,262,196,315),13,(3,25,48),(6,202,246))" in art
+assert "image=panel(image,(289,262,475,315),13,(3,25,48),(6,202,246))" in art
+assert "image=panel(image,(5,262,475,315)" not in art
+assert "line(d,[(401,272),(401,305)]" in art, "right frame divider missing"
+assert "FAN_X,FAN_Y,FAN_SIZE=207,244,70" in art
 assert "d.polygon([(143*S,273*S)" not in art, "removed play glyph came back"
 
 # Native status glyphs used to paint opaque boxes ON the footer, obstructing
@@ -98,11 +102,13 @@ assert "on b1.up:" not in source
 
 # The old footer arrow has been replaced by a clear gear.
 assert "gear_x,gear_y=349,290" in art
+assert "text(d,\'flow\',51,31,20" in art
+assert "text(d,\'.io\',101,31,20" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
 assert "line(d,[(450,276),(433,304),(467,304),(450,276)]" in art
 
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
-print("PASS: simplified continuous footer with 3 icons and no separators")
+print("PASS: separated footer panels, right divider and rotor clear of gauges")
 print("PASS: no footer button paints opaque rectangles over icons")
