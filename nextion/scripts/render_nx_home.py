@@ -140,39 +140,72 @@ def make_background():
            fill=(232,250,255,255),width=2*S,joint='curve')
     # No static setpoint values/arrows: current pH and ORP are shown by
     # their live readings and gauge indicators, never by fixed annotations.
-    # Invisible Nextion hotspots b0/m0/b1 remain untouched and aligned.
-    # Tight 2x2 square grid: 28x28, optically centered in the left tray.
-    for xx in (93,110):
-        for yy in (276,293):
-            d.rounded_rectangle((xx*S,yy*S,(xx+12)*S,(yy+12)*S),
-                                radius=3*S,fill=(4,36,68,255),
-                                outline=(230,251,255,255),width=2*S)
-    # A small luminous mark provides depth without colouring the base.
-    d.rounded_rectangle((95*S,278*S,100*S,283*S),
-                        radius=S,fill=(5,211,247,255))
-    # No vertical divider: gear and alarm are independent floating icons.
-    # True 10-tooth gear silhouette instead of a crude spoke/sun glyph.
-    gear_x,gear_y=349,290
+    # Exactly three independent 3D colour icons, floating on flat navy.
+    # Centres: config=123 (directly below pH); equipment=320; alarm=400.
+    # The latter two divide the distance from pump x=240 to right x=480
+    # into equal 80px steps. Native invisible hotspots match each one.
+    # Each small icon has its own dark bevel, colour body and highlight;
+    # absolutely no surrounding frame, panel or dividing line.
+
+    # 1. CONFIGURATION — four polished cyan/blue glass tiles.
+    grid_cx,grid_cy=123,290
+    for xx in (108,124):
+        for yy in (275,291):
+            d.rounded_rectangle(((xx+1)*S,(yy+3)*S,(xx+14)*S,(yy+16)*S),
+                                radius=3*S,fill=(1,35,74,255))
+            d.rounded_rectangle((xx*S,yy*S,(xx+13)*S,(yy+13)*S),
+                                radius=3*S,fill=(7,100,172,255),
+                                outline=(46,222,252,255),width=2*S)
+            d.rounded_rectangle(((xx+2)*S,(yy+2)*S,(xx+11)*S,(yy+6)*S),
+                                radius=2*S,fill=(90,234,255,255))
+            d.line([((xx+3)*S,(yy+11)*S),((xx+10)*S,(yy+11)*S)],
+                   fill=(3,62,132,255),width=S)
+    # Highlight on one tile is a specular reflection, not a notification.
+    d.ellipse((111*S,277*S,114*S,280*S),fill=(234,255,255,255))
+
+    # 2. EQUIPMENT — 10 machined teeth, jade/teal face, metallic gold hub.
+    gear_x,gear_y=320,290
     gear_points=[]
     for tooth in range(10):
-        for angle_offset,radius in ((-.40,13),(-.28,17),(.28,17),(.40,13)):
+        for angle_offset,radius in ((-.40,13),(-.28,18),(.28,18),(.40,13)):
             theta=2*math.pi*(tooth+angle_offset)/10-math.pi/2
             gear_points.append((round((gear_x+radius*math.cos(theta))*S),
                                 round((gear_y+radius*math.sin(theta))*S)))
-    d.polygon(gear_points,fill=(4,66,100,255))
-    d.line(gear_points+[gear_points[0]],fill=(228,251,255,255),
+    d.polygon([(x+S,y+2*S) for x,y in gear_points],
+              fill=(1,46,54,255))
+    d.polygon(gear_points,fill=(4,134,132,255))
+    d.line(gear_points+[gear_points[0]],fill=(117,255,225,255),
            width=2*S,joint='curve')
-    # Deliberate concentric bearing and polished cyan inner rim.
+    d.arc(((gear_x-12)*S,(gear_y-12)*S,(gear_x+12)*S,(gear_y+12)*S),
+          196,336,fill=(213,255,238,255),width=2*S)
     d.ellipse(((gear_x-9)*S,(gear_y-9)*S,
                (gear_x+9)*S,(gear_y+9)*S),
-              fill=(3,25,48,255),outline=(8,208,240,255),width=2*S)
-    d.ellipse(((gear_x-3)*S,(gear_y-3)*S,
-               (gear_x+3)*S,(gear_y+3)*S),
-              fill=(226,251,255,255))
-    # Calmer, lighter alert symbol, now genuinely centered in its half.
-    line(d,[(442,276),(427,304),(457,304),(442,276)],WHITE,2)
-    line(d,[(442,285),(442,294)],WHITE,2)
-    d.ellipse((440*S,297*S,444*S,301*S),fill=WHITE)
+              fill=(3,36,64,255),outline=(35,224,194,255),width=2*S)
+    d.ellipse(((gear_x-5)*S,(gear_y-5)*S,
+               (gear_x+5)*S,(gear_y+5)*S),
+              fill=(237,190,69,255),outline=(255,241,172,255),width=S)
+    d.ellipse(((gear_x-2)*S,(gear_y-3)*S,
+               (gear_x+1)*S,(gear_y)*S),fill=(255,254,233,255))
+
+    # 3. ALARMS — amber/bronze faceted triangle, ruby accent, light glyph.
+    alarm_x,alarm_y=400,290
+    alert_pts=[(alarm_x,271),(alarm_x-20,306),(alarm_x+20,306)]
+    d.polygon([((x+1)*S,(y+2)*S) for x,y in alert_pts],
+              fill=(63,23,19,255))
+    d.polygon([(x*S,y*S) for x,y in alert_pts],
+              fill=(129,49,26,255))
+    d.line([(x*S,y*S) for x,y in alert_pts+[alert_pts[0]]],
+           fill=(255,193,53,255),width=3*S,joint='curve')
+    # A thin upper facet catches light without a large glow/halo.
+    line(d,[(400,275),(383,304)],(255,244,156),1)
+    line(d,[(385,305),(415,305)],(248,95,54),1)
+    d.rounded_rectangle(((alarm_x-2)*S,282*S,
+                         (alarm_x+2)*S,295*S),radius=2*S,
+                        fill=(255,251,231,255))
+    d.ellipse(((alarm_x-3)*S,298*S,
+               (alarm_x+3)*S,304*S),fill=(255,250,231,255))
+    d.ellipse(((alarm_x-1)*S,299*S,
+               alarm_x*S,300*S),fill=(255,255,255,255))
     # Time, date, water and outdoor-air temperatures stay live widgets. Wi-Fi
     # signal tiers are drawn dynamically from atlas frames (RSSI from ESP32).
     return image.convert('RGB')
@@ -229,7 +262,7 @@ def gauge_sprite(bg,kind,active):
              1.3 if i%3==0 else .7)
     # Live measurements are native Nextion components; the needle is drawn
     # by pageHome.nx only after the current gauge frame is blitted.
-    text(d,kind,103,135,16)
+    text(d,kind,103,135,20)
     if kind=='pH':
         text(d,'6.8',21,116,16)
         text(d,'8.2',187,116,16)
@@ -509,10 +542,10 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((185,18),'27.3°C',font=preview_font(18),
-           fill=WHITE,anchor='lm')
-    d.text((185,43),'7.3°C',font=preview_font(18),
-           fill=WHITE,anchor='lm')
+    d.text((296,18),'27.3°C',font=preview_font(18),
+           fill=WHITE,anchor='rm')
+    d.text((296,43),'7.3°C',font=preview_font(18),
+           fill=WHITE,anchor='rm')
     d.text((360,22),'10:47',font=preview_font(20),
            fill=WHITE,anchor='mm')
     d.text((360,42),'27/11/26',font=preview_font(12),
