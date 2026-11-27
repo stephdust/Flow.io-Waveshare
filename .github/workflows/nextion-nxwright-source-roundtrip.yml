@@ -1,0 +1,55 @@
+name: Nextion 7.0.0 extract editable source (NX4832K035 only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/nextion-nxwright-source-roundtrip.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned nxwright
+        run: |
+          python -m pip install --no-cache-dir 'git+https://github.com/nixiewright/nxwright.git@e9443a409cc9deb866db7486854fa962d382accc'
+      - name: Read working Nextion 7.0.0 (backed up)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin backup/nextion-v7-validated-20261127
+          git show FETCH_HEAD:nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI > "$RUNNER_TEMP/validated.HMI"
+          test "$(git hash-object "$RUNNER_TEMP/validated.HMI")" = 'ac941badd17a3f0b8d27da4a29cc5135d5a0986c'
+      - name: Decompile validated working HMI to editable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          nxwright extract "$RUNNER_TEMP/validated.HMI" "$RUNNER_TEMP/nx-source"
+          nxwright check "$RUNNER_TEMP/nx-source"
+          nxwright build "$RUNNER_TEMP/nx-source" "$RUNNER_TEMP/roundtrip.HMI" --no-lock
+          nxwright diff "$RUNNER_TEMP/nx-source" "$RUNNER_TEMP/roundtrip.HMI" --no-lock > "$RUNNER_TEMP/roundtrip-diff.txt"
+          find "$RUNNER_TEMP/nx-source" -maxdepth 3 -type f | sort > "$RUNNER_TEMP/source-files.txt"
+          cat "$RUNNER_TEMP/nx-source/app.toml" > "$GITHUB_STEP_SUMMARY"
+          printf '\nNX4832K035 source extraction, check and rebuild successful. Not uploaded to any Nextion.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload extracted editable Nextion 7.0.0 project
+        uses: actions/upload-artifact@v4
+        with:
+          name: NX4832K035-7.0.0-NXWRIGHT-EXTRACTED-SOURCE
+          path: |
+            ${{ runner.temp }}/nx-source/
+            ${{ runner.temp }}/roundtrip-diff.txt
+            ${{ runner.temp }}/source-files.txt
+          retention-days: 14
+      - name: Ensure repository unchanged
+        run: git diff --exit-code
