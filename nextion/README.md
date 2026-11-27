@@ -96,10 +96,11 @@ Les fichiers résultants sont disponibles ici :
 
 - `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`
 - `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft`
-- `.pio/nextion-output/preview.png` (prévisualisation complète)
-- `binary/nextion-preview.png` (copie de la prévisualisation, plus visible)
+- `.pio/nextion-output/NX4832K035_011/7.0.0/preview.png` (prévisualisation locale complète, isolée par **modèle et version**)
 - `binary/FlowIO_Nextion_NX4832K035_011-7.0.0.tft` et
   `binary/manifest.json` (distribution OTA)
+
+**La prévisualisation ne va plus dans `binary/`.** La compilation supprime automatiquement l'ancienne copie `binary/nextion-preview.png` ainsi que le précédent `.pio/nextion-output/preview.png`. Les aperçus des futurs Nextion 5″ et 7″ pourront ainsi être rangés dans leurs propres sous-dossiers `.pio/nextion-output/<MODÈLE>/<VERSION>/preview.png`, sans mélanger les écrans. La CI publie aussi l'aperçu validé dans `nextion/tests/NX4832K035_011/7.0.0/preview.png` (suivi par Git), sans modifier les sources lors d'une compilation locale.
 
 **Pour simplement republier le TFT déjà compilé et son manifeste**,
 sans installer nxwright, sans compilation ni SPIFFS :
@@ -136,9 +137,10 @@ ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
 - **Turbine** : cinq couronnes colorées (70×70) indépendantes de onze petits
   centres rotatifs (42×42), au lieu de 55 images de turbine complètes.
   Le timer reste à 50 ms, les quatre pales tournent sur dix phases.
-- **Atlas compact** : `1035×728` au lieu de `1035×1160`, avec
-  repositionnement conjoint des appels `xpic`. Le RSSI conserve ses cinq
-  couleurs et les jauges pH/ORP leurs cinq états.
+- **Atlas compact** : `812×578`, avec seulement **un cadran pH** et
+  **un cadran ORP** (au lieu de cinq copies de chaque), tout en conservant
+  les 21 positions d'aiguille pilotées par Nextion, les cinq états de l'anneau
+  de filtration et les cinq niveaux de RSSI. Les appels `xpic` sont adaptés.
 - **OTA ESP32** : le TFT complet est maintenant préchargé dans des segments
   PSRAM de 64 KiB, vérifié par SHA-256 puis envoyé via UART. Il n'est plus
   nécessaire de réserver un seul bloc PSRAM de la taille du TFT. La réserve
