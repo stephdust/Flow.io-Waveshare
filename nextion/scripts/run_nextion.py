@@ -169,6 +169,9 @@ def compile_nextion() -> None:
         execute(str(python), str(ROOT / "nextion/scripts/render_nx_switches.py"),
                 "--source", str(work_source),
                 "--preview", str(work_switch_preview))
+        # Check the switch preview against the exact sprite files used by the HMI.
+        execute(str(python), str(ROOT / "nextion/scripts/test_nextion_switch_preview.py"),
+                "--source", str(work_source), "--preview", str(work_switch_preview))
         # Never ship graphical changes without checking the generated PNG.
         execute(str(python), str(ROOT / "nextion/scripts/test_nextion_preview_layout.py"),
                 "--preview", str(work_preview))
