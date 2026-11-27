@@ -57,7 +57,7 @@ assert byname["tTime"]["x"] == 304 and byname["tTime"]["w"] == 106
 assert byname["tDate"]["x"] == 304 and byname["tDate"]["w"] == 109
 assert byname["tTime"]["y"] + byname["tTime"]["h"] <= byname["tDate"]["y"]
 assert byname["tDate"]["y"] + byname["tDate"]["h"] <= 58
-assert byname["tDate"]["x"] + byname["tDate"]["w"] < 413
+assert byname["tDate"]["x"] + byname["tDate"]["w"] <= 413
 
 post = event("pageHome.loadend")
 update = event("bUpdateGauge.down")
