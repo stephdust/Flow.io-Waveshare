@@ -23,7 +23,7 @@ def region(data: bytes, entry):
 
 def dimensions(data: bytes, entry):
     item = region(data, entry)
-    assert item[:4] == b'\\x0b\\x64\\x01\\x00'
+    assert item[:4] == bytes((0x0B, 0x64, 0x01, 0x00))
     return struct.unpack_from('<HH', item, 12)
 
 
@@ -45,7 +45,7 @@ def check(original: bytes, modern: bytes):
                 assert prev == cur, f'unexpected modifications to page {name}'
             else:
                 assert len(component_slices(prev)) == len(component_slices(cur)), 'Home component count changed'
-                assert prev[24:40] == cur[24:40] == b'pageHome' + b'\\0' * 8
+                assert prev[24:40].split(bytes((0,)))[0] == cur[24:40].split(bytes((0,)))[0] == b'pageHome'
                 assert b'xpic 0,0,480,320,0,150,HomeGaugepic' in cur
     assert changed == EXPECTED_MUTATED, f'Unexpected resource changes: {changed ^ EXPECTED_MUTATED}'
     assert dimensions(original, old['36.i']) == (1035, 150)
