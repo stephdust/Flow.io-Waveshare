@@ -34,7 +34,15 @@ assert any(is_cyan(at(x,284)) for x in (290,291,292)), "right footer border abse
 assert is_cyan(at(401,291)), "right equipment/alarm separator absent"
 assert at(202,284)==navy and at(283,284)==navy, "footer touches turbine gap"
 assert at(242,218)==navy, "turbine still overlaps the pH/ORP gauges"
-assert at(242,279)!=navy, "turbine not present in the lower central gap"
+assert at(240,274)!=navy, "turbine not present at the true gauge midpoint"
+# Actual rendered 70px circular frame must have its visual centre at x=240,
+# matching the half-pixel midpoint of the pH and ORP gauge centres (239.5).
+rim = [x for x in range(202,279)
+       if any(is_cyan(at(x,y)) for y in range(272,277))]
+assert len(rim) >= 5, "filtration rim not visible on generated preview"
+assert abs((min(rim)+max(rim))/2 - 240) <= 1.5, (
+    f"turbine image shifted sideways: visible centre={(min(rim)+max(rim))/2}"
+)
 
 # The wordmark must begin soon after the official turquoise waves.
 wordmark=[at(x,y) for x in range(49,62) for y in range(19,40)]
