@@ -47,7 +47,13 @@ assert "FAN_X,FAN_Y,FAN_SIZE=207,210,70" in renderer
 assert "FAN_RING_ATLAS_Y=620" in renderer
 assert "FAN_CORE_SIZE=42" in renderer
 assert "FAN_CORE_ATLAS_X=350" in renderer and "FAN_FRAMES=11" in renderer
-assert ".65*" in renderer, "blades must remain reduced to 72% of prior size"
+assert "def _turn(" in renderer, "all four blades must share a precise rotation centre"
+assert "def _blend(" in renderer, "3D shading must use blended colours"
+assert "blade_curves = [" in renderer, "the blades need genuine curved profiles"
+assert "shadow_mask = Image.new(" in renderer, "3D blade drop shadows must be rendered"
+assert "local_x = rx*co+ry*si" in renderer, "metallic shading must rotate with the blades"
+assert "d.arc((4*S,4*S,66*S,66*S),194,325" in renderer, "continuous ring needs a glossy highlight"
+assert "d.ellipse((3*S,3*S,67*S,67*S)" in renderer, "the pressure ring must be complete"
 assert "ring_frame(bg,state)" in renderer
 assert "blade_frame(frame)" in renderer
 assert "fan_frame(bg,state,frame)" not in renderer, "55 full frames must be eliminated"
@@ -62,4 +68,5 @@ assert 690+38 == 728
 assert 221+42 == 263 and 224+42 == 266
 print("PASS: 70px rings + shared 42px turbine remain centered at 242,245")
 print("PASS: 11 shared cores instead of 55 full frames, ON -> 10, OFF -> 0")
+print("PASS: 3D curved blades, hub shading and continuous glossy pressure ring")
 print("PASS: ring pressure severity, legacy serial IDs and 1035x728 atlas preserved")
