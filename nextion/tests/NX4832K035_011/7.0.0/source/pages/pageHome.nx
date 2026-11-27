@@ -20,7 +20,7 @@ on pageHome.loadend:
   // Leave native component IDs, timers and touch events unchanged.
   vis tPHTitle,0
   vis tOrpTitle,0
-  xpic 0,0,480,320,0,300,HomeGaugepic
+  xpic 0,0,480,320,0,150,HomeGaugepic
   // Force BOTH gauge sprites to be redrawn after every page load/wake.
   vaPrvpHPercen.val=-1
   vaPrvOrpPercen.val=-1
@@ -37,8 +37,8 @@ on pageHome.loadend:
   ref tORP
   // Paint the OFF pressure ring, now BELOW both gauges and in the footer gap.
   // The timer changes only the 42x42 centre on each 50ms tick.
-  xpic 205,239,70,70,0,620,HomeGaugepic
-  xpic 219,253,42,42,350,620,HomeGaugepic
+  xpic 205,239,70,70,0,470,HomeGaugepic
+  xpic 219,253,42,42,350,470,HomeGaugepic
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
@@ -84,11 +84,11 @@ on tmAnim.timer:
   {
     vaPrvPSINid.val=sys1
     sys0=sys1*70
-    xpic 205,239,70,70,sys0,620,HomeGaugepic
+    xpic 205,239,70,70,sys0,470,HomeGaugepic
   }
   sys0=temp*42
   sys0+=350
-  xpic 219,253,42,42,sys0,620,HomeGaugepic
+  xpic 219,253,42,42,sys0,470,HomeGaugepic
 
 on tmUpdate.timer:
   // Update the values
@@ -104,7 +104,7 @@ on bUpdateGauge.down:
     if(tErrMessage.txt=="")
     {
       vis tErrMessage,0
-      xpic 63,57,378,30,63,357,HomeGaugepic
+      xpic 63,57,378,30,63,207,HomeGaugepic
     }else
     {
       vis tErrMessage,1
@@ -128,32 +128,16 @@ on bUpdateGauge.down:
   {
     vaPrvWifiLevel.val=sys0
     sys1=sys0*43
-    xpic 423,11,43,38,sys1,690,HomeGaugepic
+    xpic 423,11,43,38,sys1,540,HomeGaugepic
   }
   //// pH Gauge
   if(vapHPercent.val!=vaPrvpHPercen.val)
   {
     vaPrvpHPercen.val=vapHPercent.val
-    sys0=vapHPercent.val+35
-    sys0=sys0/70
-    if(sys0>4)
-    {
-      sys0=4
-    }
-    sys1=sys0*207
-    xpic 20,89,207,150,sys1,0,HomeGaugepic
-    if(sys0==0||sys0==4)
-    {
-      tpH.bco=132
-    }
-    if(sys0==1||sys0==3)
-    {
-      tpH.bco=132
-    }
-    if(sys0==2)
-    {
-      tpH.bco=132
-    }
+    // One static coloured dial is shared by all live needle positions.
+    // The full colour scale stays red/yellow/green/yellow/red.
+    xpic 20,89,207,150,0,0,HomeGaugepic
+    tpH.bco=132
     vis tpH,1
     // Real 3D measurement needle (21 positions), not a 22px rim tick.
     // Both dial sprites have a completely uniform navy background.
@@ -321,26 +305,10 @@ on bUpdateGauge.down:
   if(vaOrpPercent.val!=vaPrvOrpPercen.val)
   {
     vaPrvOrpPercen.val=vaOrpPercent.val
-    sys0=vaOrpPercent.val+35
-    sys0=sys0/70
-    if(sys0>4)
-    {
-      sys0=4
-    }
-    sys1=sys0*207
-    xpic 253,89,207,150,sys1,150,HomeGaugepic
-    if(sys0==0||sys0==4)
-    {
-      tORP.bco=132
-    }
-    if(sys0==1||sys0==3)
-    {
-      tORP.bco=132
-    }
-    if(sys0==2)
-    {
-      tORP.bco=132
-    }
+    // One static coloured dial is shared by all live needle positions.
+    // The full colour scale stays red/yellow/green/yellow/red.
+    xpic 253,89,207,150,207,0,HomeGaugepic
+    tORP.bco=132
     vis tORP,1
     // Real 3D measurement needle (21 positions), not a 22px rim tick.
     // Both dial sprites have a completely uniform navy background.
