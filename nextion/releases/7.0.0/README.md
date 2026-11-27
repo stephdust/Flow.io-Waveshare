@@ -34,3 +34,23 @@
 - Changer ensuite `common.nextion_firmware_version` dans `platformio.ini` et valider la génération de `binary/` / du manifeste.
 
 Références : [protocole ESP/Nextion](../../../docs/integration/nextion-esp-protocol.md) · [documentation hardware](../../../docs/hardware/nextion-displays.md).
+
+## Validation automatique Nextion2Text
+
+Un controle reproductible est lance sur la branche `dev` pour le NX4832K035_011 :
+
+- Workflow : [Validate Nextion 3.5in HMI 7.0.0](../../../.github/workflows/nextion-hmi-validate.yml).
+- Script : [compare_3p5_hmi.py](../../tools/compare_3p5_hmi.py).
+- Verification : signature `ver21234`, CRC du repertoire et de ses miroirs, CRC des 9 pages,
+  positions/longueurs des composants, et absence de changements dans les autres ressources.
+- Nextion2Text (`MMMZZZZ/Nextion2Text`, MPL-2.0) est telecharge et verifie a l'execution,
+  sans etre recopie dans ce depot. Il exporte les sources texte/JSON (positions et attributs inclus).
+- L'artefact **Nextion-NX4832K035-HMI-7.0.0-VALIDATION** contient
+  `VALIDATION.md`, `nextion2text.diff`, `v6/` et `v7/` (conservation 14 jours).
+- [Premiere execution validee](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/45971255561) : seuls
+  `globals` et `pageHome` diffèrent (fichiers .txt et JSON).
+
+La validation automatique n'est **pas** une preuve de compilation par Nextion Editor.
+Elle ne prouve pas non plus la correction du probleme de jauges invisibles apres reveil.
+**Attention** : verifier que la source 6.0.0 de GitHub est bien la meme que votre
+source locale avant de considerer un fichier 7.0.0 comme finalise.
