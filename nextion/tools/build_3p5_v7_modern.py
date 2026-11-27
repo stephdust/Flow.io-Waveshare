@@ -2,7 +2,8 @@
 """Build modern Flow.io Nextion NX4832K035_011 HMI 7.0.0 from saved validated 7.0.0.
 
 This mutates ONLY pageHome, the HomeGaugepic atlas (logical picture #3) and
-five filtration icon picture resources (#20-24). It preserves all other live
+five filtration icon picture resources (#20-24). Picture pixels MUST be
+encoded column-major (x-major); the original project uses this layout. It preserves all other live
 resources, screen touch component IDs, serial protocol and 60 s RTC timer.
 Every modified directory entry receives its mirrored Nextion CRC32_T.
 Editor open + compilation + live device testing are still required.
@@ -251,7 +252,15 @@ def replace_pic(buf:bytearray,dir_table:dict,name:str,im:Image.Image,append:bool
     im=im.convert('RGB')
     a=np.array(im,dtype=np.uint16)
     rgb=((a[:,:,0]>>3)<<11)|((a[:,:,1]>>2)<<5)|(a[:,:,2]>>3)
-    payload=rgb.astype('<u2').tobytes()
+    # CRITICAL: Nextion .i payloads are x-major (column-major), not normal
+    # row-major RGB565. The old encoder wrote rows and produced white/corrupt
+    # rectangles and broken sprites on a real NX4832K035 display.
+    payload=rgb.astype('<u2').tobytes(order='F')
+    decoded=np.frombuffer(payload,dtype='<u2').reshape((im.width,im.height)).T
+    assert np.array_equal(decoded,rgb), f'Nextion image layout mismatch: {name}'
+    # A row-major encoder must never be accepted for a non-uniform image.
+    if im.width>1 and im.height>1 and not np.all(rgb==rgb.flat[0]):
+        assert payload != rgb.astype('<u2').tobytes(order='C'), name
     header=bytearray(old[:24]);struct.pack_into('<H',header,12,im.width);struct.pack_into('<H',header,14,im.height);struct.pack_into('<I',header,16,len(payload))
     new=bytes(header)+payload
     if append:
