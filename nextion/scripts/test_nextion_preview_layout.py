@@ -103,9 +103,10 @@ assert borderless.size==image.size
 edge_deltas = [at(x,y)[1] - borderless.getpixel((x,y))[1]
                for x in range(60,420,9) for y in range(3,10)]
 assert max(edge_deltas)>10, "borderless comparison has no visible header difference"
-assert max(borderless.getpixel((x,y))[1] for x in range(60,420,9)
-           for y in range(3,10))<95, (
-    "borderless comparison still has a bright cyan header outline"
+# Blank segment between the water thermometer and time has no icon:
+# check only that location, not the nearby cyan waves/thermometer.
+assert borderless.getpixel((240,5))[1]<75, (
+    "borderless comparison still has the top cyan frame at x=240"
 )
 assert (borderless.crop((0,60,480,320)).tobytes() ==
         image.crop((0,60,480,320)).tobytes()), (
