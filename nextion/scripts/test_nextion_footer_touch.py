@@ -19,7 +19,7 @@ components = {c["name"]: c for c in page["component"]}
 # margin. No zone should capture a neighbouring button or a gauge.
 targets = {
     "b0": (8, 268, 72, 45),       # grid / configuration
-    "m2": (103, 268, 81, 46),     # triangle / filtration
+    "m2": (103, 268, 81, 47),     # triangle / filtration
     "m1": (207, 210, 70, 70),     # central pump / filtration
     "m0": (309, 268, 78, 45),     # gear / equipment switches
     "b1": (412, 268, 62, 45),     # triangle alarm / alarms page
