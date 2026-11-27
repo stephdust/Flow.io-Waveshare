@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Single PlatformIO Nextion pipeline: nxwright HMI/TFT or quick TFT manifest.
+
+Use from the repository root:
+  pio run -e nextion                 # nxwright check/build/compile; refresh manifest
+  pio run -e nextion -t manifest     # no compile: just TFT copy + manifest
+
+Only NX4832K035_011, 480x320, release 7.0.0 on the development fork.
+Never compiles ESP32, SPIFFS, 5-inch/7-inch displays, or flashes hardware.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import venv
+
+
+ROOT = Path(__file__).resolve().parents[2]
+VERSION = "7.0.0"
+MODEL = "NX4832K035_011"
+SOURCE = ROOT / "nextion" / "tests" / MODEL / VERSION / "source"
+RELEASE = ROOT / "nextion" / "releases" / VERSION
+HMI_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.HMI"
+TFT_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.tft"
+NXWRIGHT_COMMIT = "e9443a409cc9deb866db7486854fa962d382accc"
+VENV = ROOT / ".pio" / "nextion-nxwright-venv"
+
+
+def execute(*argv: str) -> None:
+    print("[NEXTION] " + " ".join(str(arg) for arg in argv), flush=True)
+    subprocess.run([str(x) for x in argv], cwd=ROOT, check=True)
+
+
+def check_source() -> None:
+    app = SOURCE / "app.toml"
+    home = SOURCE / "pages" / "pageHome.nx"
+    if not app.is_file() or not home.is_file():
+        raise RuntimeError(f"Nextion nxwright sources not found: {SOURCE}")
+    text = app.read_text(encoding="utf-8")
+    if not re.search(r'(?m)^screen\s*=\s*"NX4832K035"\s*$', text):
+        raise RuntimeError("Only NX4832K035 Nextion 480x320 is supported")
+    if not re.search(r'(?m)^rotation\s*=\s*90\s*$', text):
+        raise RuntimeError("Expected 90-degree orientation for NX4832K035")
+    # Keep version fixed until a reviewed upstream PR.
+    ini = (ROOT / "platformio.ini").read_text(encoding="utf-8")
+    if not re.search(r'(?m)^nextion_firmware_version\s*=\s*[^\r\n]*7\.0\.0', ini):
+        raise RuntimeError("platformio.ini no longer selects Nextion 7.0.0")
+
+
+def nxwright_path() -> Path:
+    """Install pinned nxwright once into a separate .pio venv; not ESP32's Python.
+
+    The first compilation needs network access for GitHub and Nextion Editor
+    firmware (--download); subsequent runs reuse the isolated environment.
+    The manifest-only target does not create or inspect this environment.
+    """
+    exe = VENV / ("Scripts/nxwright.exe" if os.name == "nt" else "bin/nxwright")
+    if exe.is_file():
+        return exe
+
+    if sys.version_info < (3, 11):
+        raise RuntimeError("nxwright needs Python 3.11+; update your PlatformIO Python")
+    VENV.parent.mkdir(parents=True, exist_ok=True)
+    print("[NEXTION] First use: installing pinned nxwright in .pio/nextion-nxwright-venv", flush=True)
+    venv.EnvBuilder(with_pip=True).create(VENV)
+    py = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    execute(str(py), "-m", "pip", "install", "--no-cache-dir",
+            f"git+https://github.com/nixiewright/nxwright.git@{NXWRIGHT_COMMIT}")
+    if not exe.is_file():
+        raise RuntimeError("nxwright installation completed but CLI is missing")
+    return exe
+
+
+def publish_file(staged: Path, destination: Path) -> None:
+    if not staged.is_file() or staged.stat().st_size < 4096:
+        raise RuntimeError(f"Nextion file is missing or unexpectedly small: {staged}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    # Copy to the same directory first, then replace atomically (also on Windows).
+    temporary = destination.with_name(destination.name + ".nextion-tmp")
+    try:
+        shutil.copyfile(staged, temporary)
+        os.replace(temporary, destination)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def refresh_manifest() -> None:
+    helper = ROOT / "nextion" / "scripts" / "refresh_nextion_manifest.py"
+    execute(sys.executable, str(helper))
+    print("[NEXTION] Done: binary/TFT and binary/manifest.json updated.", flush=True)
+
+
+def compile_nextion() -> None:
+    check_source()
+    nx = nxwright_path()
+    RELEASE.mkdir(parents=True, exist_ok=True)
+    (ROOT / ".pio").mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="nextion-build-", dir=ROOT / ".pio") as folder:
+        scratch = Path(folder)
+        staged_hmi = scratch / HMI_NAME
+        staged_tft = scratch / TFT_NAME
+        readback = scratch / "hmi-check"
+        execute(str(nx), "check", str(SOURCE))
+        execute(str(nx), "build", str(SOURCE), str(staged_hmi), "--no-lock")
+        # Validate the rebuilt HMI can be extracted, unlike the old .pa/.i patch.
+        execute(str(nx), "extract", str(staged_hmi), str(readback))
+        execute(str(nx), "check", str(readback))
+        execute(str(nx), "compile", str(SOURCE), str(staged_tft), "--download")
+        execute(str(nx), "tft-read", str(staged_tft))
+        publish_file(staged_hmi, RELEASE / HMI_NAME)
+        publish_file(staged_tft, RELEASE / TFT_NAME)
+        print("[NEXTION] HMI/TFT 7.0.0 rebuilt from the editable nxwright source.", flush=True)
+    refresh_manifest()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("mode", choices=("compile", "manifest"))
+    args = parser.parse_args()
+    if args.mode == "compile":
+        compile_nextion()
+    else:
+        refresh_manifest()
+
+
+if __name__ == "__main__":
+    main()
