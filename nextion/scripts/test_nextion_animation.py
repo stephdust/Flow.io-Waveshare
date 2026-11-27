@@ -57,6 +57,8 @@ assert "d.ellipse((3*S,3*S,67*S,67*S)" in renderer, "the pressure ring must be c
 assert "ring_frame(bg,state)" in renderer
 assert "blade_frame(frame)" in renderer
 assert "fan_frame(bg,state,frame)" not in renderer, "55 full frames must be eliminated"
+assert "width=1.6*S" not in renderer, "Pillow 12 / Python 3.13 requires integer arc widths"
+assert "width=round(1.6*S)" in renderer, "fractional arc widths must be rounded to int"
 assert "ImageFont.truetype(FONTS[0]" not in renderer, "Windows preview must use portable fonts"
 assert "atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)" in renderer
 assert "WIFI_ATLAS_Y=690" in renderer
