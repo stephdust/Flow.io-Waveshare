@@ -28,8 +28,8 @@ assert byname["tProp"]["w"]==70 and byname["tProp"]["h"]==70
 assert byname["vaIconProp"]["txt"].startswith("┌┍┎")
 assert "vis tProp,0" in load
 assert "vaPrvPSINid.val=-1" in post
-assert "xpic 205,239,70,70,0,620,HomeGaugepic" in post
-assert "xpic 219,253,42,42,350,620,HomeGaugepic" in post
+assert "xpic 205,239,70,70,0,470,HomeGaugepic" in post
+assert "xpic 219,253,42,42,350,470,HomeGaugepic" in post
 assert "temp1=globals.vaStates.val>>0" in animation
 assert "temp1=temp1&1" in animation
 assert "if(temp1==1)" in animation
@@ -39,9 +39,9 @@ assert "sys1=vaPSINiddle.val" in animation
 assert "sys1!=vaPrvPSINid.val" in animation
 assert "vaPrvPSINid.val=sys1" in animation
 assert "sys0=sys1*70" in animation
-assert "xpic 205,239,70,70,sys0,620,HomeGaugepic" in animation
+assert "xpic 205,239,70,70,sys0,470,HomeGaugepic" in animation
 assert "sys0=temp*42" in animation and "sys0+=350" in animation
-assert "xpic 219,253,42,42,sys0,620,HomeGaugepic" in animation
+assert "xpic 219,253,42,42,sys0,470,HomeGaugepic" in animation
 assert "tProp.pic=" not in update, "hidden legacy component should not redraw"
 assert "FAN_X,FAN_Y,FAN_SIZE=205,239,70" in renderer
 # The two 207px gauge centres are x=123 and x=356.
@@ -49,7 +49,7 @@ assert "FAN_X,FAN_Y,FAN_SIZE=205,239,70" in renderer
 assert abs((205+70/2)-((20+207/2+253+207/2)/2)) <= 1
 # Gauge xpic spans y=89..238; rotor top y=239 must not overlap it.
 assert 239 >= 89+150, "filtration icon must not cover the gauges"
-assert "FAN_RING_ATLAS_Y=620" in renderer
+assert "FAN_RING_ATLAS_Y=470" in renderer
 assert "FAN_CORE_SIZE=42" in renderer
 assert "FAN_CORE_ATLAS_X=350" in renderer and "FAN_FRAMES=11" in renderer
 assert "def _turn(" in renderer, "all four blades must share a precise rotation centre"
@@ -72,15 +72,18 @@ assert "width=max(1,round(width*S))" in renderer, (
     "the drawing helper must convert its scaled line widths to integers"
 )
 assert "ImageFont.truetype(FONTS[0]" not in renderer, "Windows preview must use portable fonts"
-assert "atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_H),NAVY)" in renderer
-assert "WIFI_ATLAS_Y=690" in renderer
-# The physical xpic rectangles must fit the compact 1035x728 source atlas.
-assert 5*207 == 1035
-assert 5*70 <= 350
-assert 350+11*42 <= 1035
-assert 690+38 == 728
+assert "atlas=Image.new('RGB',(812,WIFI_ATLAS_Y+WIFI_H),NAVY)" in renderer
+assert "WIFI_ATLAS_Y=540" in renderer
+# Two gauge tiles fit horizontally; remaining sprites reuse the old rows.
+assert 207*2 == 414
+assert 5*70 == 350
+assert 350+11*42 == 812
+assert 540+38 == 578
+assert "gauge_sprite('pH')" in renderer
+assert "gauge_sprite('ORP')" in renderer
+assert "gauge_sprite(bg,kind,state)" not in renderer
 assert 219+42 == 261 and 253+42 == 295
 print("PASS: 70px ring and 42px rotor centered at x=240 y=274, no gauge overlap")
 print("PASS: 11 shared cores instead of 55 full frames, ON -> 10, OFF -> 0")
 print("PASS: 3D curved blades, hub shading and continuous glossy pressure ring")
-print("PASS: ring pressure severity, legacy serial IDs and 1035x728 atlas preserved")
+print("PASS: pressure severity preserved with 2-dial 812x578 atlas")
