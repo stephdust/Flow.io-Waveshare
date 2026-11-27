@@ -27,8 +27,10 @@ Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
 
 Le réveil Nextion recharge `pageHome` (page 1) pour redessiner les jauges
 `xpic`, puis `wup=255` est restauré en quittant la page. La pompe
-tourne grâce à sa police native `Propeller_50` et au timer de 50 ms lorsque
-la filtration est active ; à l'arrêt, le symbole reste immobile.
+tourne grâce à **10 images de turbine centrées** dessinées par `xpic`, au
+timer de 50 ms et au bit 0 de filtration. À l'arrêt, l'image 0 reste immobile.
+L'ancien composant `tProp` (police native `Propeller_50`) est conservé
+pour compatibilité, mais masqué pour éviter son décalage graphique.
 
 La compilation et les tests statiques ne remplacent pas la validation réelle :
 vérifier les jauges, les transitions veille/réveil, les valeurs dynamiques,

@@ -3,9 +3,11 @@
 
 HomeGaugepic atlas (logical picture #3) stays 1035px wide:
 pH gauge sprites at y=0..149, ORP sprites at y=150..299, backdrop at y=300..619.
-Five tProp background pictures (#20..24) carry a colored rim ONLY.
-The actual spinning propeller is a NATIVE Nextion font character driven by
-tmAnim.timer and globals.vaStates bit 0; never bake static blades into the TFT.
+The atlas additionally contains 5 pressure-status rows of 11 turbine frames
+(y=620..969). Four asymmetric cyan blades rotate around the exact 35px center.
+tmAnim.timer remains 50ms and gates frames on globals.vaStates bit 0:
+filtration OFF -> frame 0, ON -> animation frames 1..10.
+The native tProp component/IDs are retained but hidden; no ESP32 change.
 """
 from __future__ import annotations
 
@@ -68,12 +70,22 @@ def make_background():
     d=ImageDraw.Draw(image)
     for x in (154,298,413):line(d,[(x,13),(x,49)],(9,161,217),.7)
     for x in (92,194,294,387):line(d,[(x,270),(x,307)],(7,155,209),.8)
-    # Three cyan Flow.io waves / lowercase wordmark.
-    for j in range(3):
-        path=[(16+t,14.7+7.5*j+1.6*math.sin(t/6)-t*.03) for t in range(42)]
-        line(d,path,(10,207,250),3)
-    text(d,'flow',61,30,20,anchor='lm')
-    text(d,'.io',112,30,20,(11,212,248),anchor='lm')
+    # Exact three-wave emblem from the repository's existing Flow.io logo.
+    # Crop the wave-only half: keep the original contours (not three fake lines).
+    logo_path=Path(__file__).resolve().parents[2]/'data/webinterface/logo-flowio.png'
+    wave_source=Image.open(logo_path).convert('RGBA')
+    if wave_source.width<140 or wave_source.height<40:
+        raise ValueError('unexpected official Flow.io wordmark size')
+    wave=wave_source.crop((0,0,int(wave_source.width*.42),wave_source.height))
+    bbox=wave.getbbox()
+    if not bbox:
+        raise ValueError('official Flow.io waves are empty')
+    wave=wave.crop(bbox)
+    wave.thumbnail((57*S,33*S),Image.Resampling.LANCZOS)
+    image.paste(wave,(8*S,14*S+((33*S-wave.height)//2)),wave)
+    d=ImageDraw.Draw(image)
+    text(d,'flow',65,31,20,anchor='lm')
+    text(d,'.io',115,31,20,(11,212,248),anchor='lm')
     # Pool thermometer / water ripples; water temperature stays live text.
     line(d,[(170,13),(170,39)],WHITE,5.4)
     line(d,[(170,16),(170,41)],(248,44,55),3.2)
@@ -140,16 +152,65 @@ def gauge_sprite(bg,kind,active):
     return image.convert('RGB')
 
 
-def fan_background(bg,index):
-    # No blades: tProp.txt rotates through native Propeller_50 glyphs.
-    image=bg.crop((207*S,210*S,277*S,280*S)).convert('RGBA')
-    color=((141,185,208),(81,236,112),(247,220,51),
-           (249,137,29),(241,62,81))[index]
-    rect=tuple(q*S for q in (6,6,64,64))
-    image=halo(image,lambda d:d.arc(rect,195,520,
-                                     fill=(*color,155),width=6*S),3)
-    ImageDraw.Draw(image).arc(rect,195,520,fill=(*color,255),width=5*S)
-    return image.convert('RGB')
+FAN_X,FAN_Y,FAN_SIZE=207,210,70
+FAN_ATLAS_Y=620
+FAN_FRAMES=11
+
+
+def _cubic(a,b,c,d,steps=12):
+    return [((1-t)**3*a[0]+3*(1-t)**2*t*b[0]+3*(1-t)*t*t*c[0]+t**3*d[0],
+             (1-t)**3*a[1]+3*(1-t)**2*t*b[1]+3*(1-t)*t*t*c[1]+t**3*d[1])
+            for t in (i/steps for i in range(steps+1))]
+
+
+def fan_frame(bg,status,frame):
+    """70x70 high-contrast turbine, perfectly centered at (35,35).
+
+    There are 11 frames: 0 is the stationary OFF glyph, 1..10 are active
+    rotational phases covering 90 degrees (4-fold symmetry), avoiding jumps.
+    Pressure condition remains the same 0..4, independently of ON/OFF.
+    """
+    assert 0<=status<=4 and 0<=frame<FAN_FRAMES
+    im=bg.crop((FAN_X*S,FAN_Y*S,(FAN_X+FAN_SIZE)*S,
+                (FAN_Y+FAN_SIZE)*S)).convert('RGBA')
+    colors=((152,176,195),(107,248,44),(246,216,40),
+            (248,146,30),(245,71,81))
+    active=colors[status]
+    rect=(3*S,3*S,67*S,67*S)
+    im=halo(im,lambda d:d.ellipse(rect,outline=(*AQUA,150),width=3*S),3)
+    d=ImageDraw.Draw(im)
+    d.ellipse(rect,fill=(4,24,44,255),outline=(*AQUA,255),width=1*S)
+    d.ellipse((6*S,6*S,64*S,64*S),
+              fill=(3,17,31,255),outline=(111,158,188,255),width=S)
+    # Continuous status ring around the spinner. Green/yellow/orange/red
+    # follows the same pressure severity as the old image 20..24.
+    d.arc((5*S,5*S,65*S,65*S),5,170,
+          fill=(185,205,222,255),width=4*S)
+    d.arc((5*S,5*S,65*S,65*S),187,338,
+          fill=(*active,255),width=4*S)
+    curves=[
+      ((-3,-7),(-8,-9),(-18,-23),(-8,-26)),
+      ((-8,-26),(-5,-30),(10,-29),(13,-25)),
+      ((13,-25),(16,-20),(13,-17),(9,-13)),
+      ((9,-13),(7,-11),(6,-7),(-3,-7)),
+    ]
+    # Frame 0 is held when filtration is off. Active phases 1..10 run
+    # continuously at 50ms per frame with a seamless 4-blade turn.
+    phase=(max(0,frame-1)*math.pi/20) if frame else 0
+    for blade in range(4):
+        angle=phase+blade*math.pi/2
+        co,si=math.cos(angle),math.sin(angle)
+        outline=[pt for c in curves for pt in _cubic(*c)]
+        coords=[((35+u*co-v*si)*S,(35+u*si+v*co)*S) for u,v in outline]
+        d.polygon(coords,fill=(23,195,244,255))
+        d.line(coords+[coords[0]],fill=(228,252,255,255),width=S)
+        highlights=[(-6,-21),(1,-26),(8,-25)]
+        d.line([((35+u*co-v*si)*S,(35+u*si+v*co)*S)
+                for u,v in highlights],
+               fill=(144,235,255,255),width=S)
+    d.ellipse((30*S,30*S,40*S,40*S),
+              fill=(6,74,128,255),outline=(*WHITE,255),width=2*S)
+    return im.convert('RGB')
 
 
 def render(source,preview):
@@ -159,27 +220,24 @@ def render(source,preview):
     pictures=source/'pictures'
     assert (pictures/'picture-0003.png').is_file(), 'expected an editable RGB Home atlas'
     bg=make_background()
-    atlas=Image.new('RGB',(1035,620),NAVY)
+    atlas=Image.new('RGB',(1035,FAN_ATLAS_Y+5*FAN_SIZE),NAVY)
     for state in range(5):
         for y,kind in ((0,'pH'),(150,'ORP')):
             im=gauge_sprite(bg,kind,state).resize((207,150),Image.Resampling.LANCZOS)
             atlas.paste(im,(state*207,y))
-        path=pictures/f'picture-{20+state:04}.png'
-        if not path.is_file():raise ValueError('missing animated fan background: '+str(path))
-        fan_background(bg,state).resize((70,70),Image.Resampling.LANCZOS).save(path,optimize=True)
+        for frame in range(FAN_FRAMES):
+            turbine=fan_frame(bg,state,frame)
+            turbine=turbine.resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
+            atlas.paste(turbine,(frame*FAN_SIZE,FAN_ATLAS_Y+state*FAN_SIZE))
     atlas.paste(bg.resize((480,320),Image.Resampling.LANCZOS),(0,300))
     atlas.save(pictures/'picture-0003.png',optimize=True)
     demo=bg.resize((480,320),Image.Resampling.LANCZOS)
     demo.paste(atlas.crop((414,0,621,150)),(20,89))
     demo.paste(atlas.crop((414,150,621,300)),(253,89))
-    demo.paste(fan_background(bg,1).resize((70,70),Image.Resampling.LANCZOS),(207,210))
+    # Preview frame is the same real turbine bitmap used by the Nextion timer.
+    demo.paste(fan_frame(bg,1,4).resize((70,70),Image.Resampling.LANCZOS),
+               (FAN_X,FAN_Y))
     d=ImageDraw.Draw(demo)
-    # Sample rotating glyph drawn ONLY in preview. Real tProp uses native frames.
-    for i in range(4):
-        a=i*math.pi/2
-        x=242+13*math.cos(a);y=245+13*math.sin(a)
-        d.ellipse((round(x-8),round(y-7),round(x+8),round(y+7)),fill=WHITE)
-    d.ellipse((239,242,245,248),fill=(34,125,203))
     sample_font=ImageFont.truetype(FONTS[0],26)
     d.text((123,184),'7.50',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
@@ -191,7 +249,7 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
-    print('Home atlas=1035x620; pH/ORP distinct sprites; native pump rotation unchanged')
+    print('Home atlas=1035x970; 5 pressure states x 11 centered turbine frames')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
 

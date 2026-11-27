@@ -7,6 +7,8 @@ on pageHome.load:
   vis bDateTime,0
   vis bInjectUpdt,0
   vis tFConnectState,0
+  // tProp component retained for compatibility; centered rotating bitmaps are drawn via xpic.
+  vis tProp,0
 
 on pageHome.loadend:
   // Draw the complete navy Flow.io background from the extra atlas rows.
@@ -25,7 +27,8 @@ on pageHome.loadend:
   ref tFConnectState
   ref tpH
   ref tORP
-  ref tProp
+  // Paint a stationary turbine immediately; tmAnim selects live frame and PSI colour.
+  xpic 207,210,70,70,0,620,HomeGaugepic
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
@@ -45,13 +48,29 @@ on pageHome.unload:
   PreviousPage=dp
 
 on tmAnim.timer:
-  // Rotating propeller
-  temp1=globals.vaStates.val>>0   // Filtration Pump
+  // 50 ms animation: filtration ON rotates centered four-blade turbine.
+  // OFF always displays stationary frame 0. No ESP32 protocol change.
+  temp1=globals.vaStates.val>>0
   temp1=temp1&1
-  temp1*=temp
-  substr vaIconProp.txt,tProp.txt,temp1,1
-  temp%=10
-  temp+=1
+  if(temp1==1)
+  {
+    temp%=10
+    temp+=1
+    sys0=temp*70
+  }else
+  {
+    temp=0
+    sys0=0
+  }
+  // Existing pressure severity 0..4 selects the animated sprite row.
+  sys1=vaPSINiddle.val
+  if(sys1>4)
+  {
+    sys1=4
+  }
+  sys1*=70
+  sys1+=620
+  xpic 207,210,70,70,sys0,sys1,HomeGaugepic
 
 on tmUpdate.timer:
   // Update the values
@@ -65,8 +84,7 @@ on bUpdateGauge.down:
   tORP.txt=globals.vaOrpValue.txt
   tpH.txt=globals.vaPhValue.txt
   tWaterTemp.txt=globals.vaWaterTemp.txt
-  //// PSI Niddle (value between 0 and 4)
-  tProp.pic=PSIGaugepic+vaPSINiddle.val
+  // Pump ring severity is read by tmAnim. Legacy tProp stays hidden.
   // bit 7 - Wifi
   sys1=globals.vaStates.val
   sys1=sys1/128

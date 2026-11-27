@@ -26,9 +26,11 @@ Le manifeste et le TFT doivent être publiés ensemble en cas de distribution HT
 
 - Rafraîchissement au réveil : la page Home est rechargée pour redessiner le
   fond et les deux jauges `xpic` (pH/ORP).
-- Rotation de la pompe : conserver `tmAnim` à 50 ms, `vaIconProp`, le
-  bit 0 de filtration et la police native `Propeller_50`. Le nouveau
-  fond coloré ne dessine **aucune pale statique**.
+- Rotation de la pompe : `tmAnim` conserve sa période de 50 ms et le
+  bit 0 de filtration. Les pales sont désormais de **vraies images animées**
+  centrées : 10 images en marche, une fixe à l'arrêt, avec 5 couleurs
+  selon l'état PSI. `tProp` et la police `Propeller_50` restent dans le
+  projet mais l'ancienne représentation est masquée.
 - Conserver les valeurs dynamiques, le protocole série, les commandes tactiles,
   les timers et les identifiants des composants.
 - Vérifier après installation le Wi-Fi, la date/heure, les jauges,
