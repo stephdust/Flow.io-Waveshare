@@ -187,6 +187,25 @@ def gauge_sprite(bg,kind,active):
     return image.convert('RGB')
 
 
+
+def draw_preview_gauge_cursor(image, origin_x, percent):
+    """Match the 21-position Nextion 'line' cursor on the static preview.
+
+    Runtime X/Y commands are compiled into pageHome.nx; this routine is
+    deliberately simple and separately asserted by the gauge regression gate.
+    """
+    idx = max(0, min(20, (int(percent)+7)//14))
+    theta = math.pi + idx*math.pi/20
+    x0 = round(origin_x + 103 + 77*math.cos(theta))
+    y0 = round(89 + 96.5 + 66*math.sin(theta))
+    x1 = round(origin_x + 103 + 99*math.cos(theta))
+    y1 = round(89 + 96.5 + 85*math.sin(theta))
+    d = ImageDraw.Draw(image)
+    for dx, colour in ((-1,(0,255,255)),(0,WHITE),(1,(0,255,255))):
+        d.line((x0+dx,y0,x1+dx,y1), fill=colour, width=1)
+
+
+
 FAN_X,FAN_Y,FAN_SIZE=207,210,70
 FAN_RING_ATLAS_Y=620
 FAN_CORE_SIZE=42
@@ -421,9 +440,14 @@ def render(source,preview):
                (FAN_CORE_X,FAN_CORE_Y))
     demo.paste(wifi_frame(bg,4).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
                (WIFI_X,WIFI_Y))
+    # Preview the same live white/cyan measurement bars as the HMI script.
+    # ESP32 value=7.60 around pH setpoint 7.50 -> percentage 146;
+    # ORP 706 around 700 -> percentage 144. Both must be in green.
+    draw_preview_gauge_cursor(demo, 20, 146)
+    draw_preview_gauge_cursor(demo, 253, 144)
     d=ImageDraw.Draw(demo)
     sample_font=preview_font(26)
-    d.text((123,184),'7.50',font=sample_font,fill=WHITE,anchor='mm')
+    d.text((123,184),'7.60',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
     d.text((187,20),'27.3°C',font=preview_font(16),
            fill=WHITE,anchor='lm')
