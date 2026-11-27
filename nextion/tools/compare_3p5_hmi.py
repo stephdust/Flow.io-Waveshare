@@ -23,8 +23,8 @@ import traceback
 
 from build_3p5_v7_hmi import commands, components, crc, entries
 
-DEFAULT_V6 = Path('nextion/releases/6.0.0/Flowio_Enhanced_480x320.HMI')
-DEFAULT_V7 = Path('nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI')
+DEFAULT_V6 = Path('nextion/releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI')
+DEFAULT_V7 = Path('nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI')
 EXPECTED_CHANGED_PAGES = {'5.pa': {25}, '19.pa': {14, 21, 27, 29}}
 
 

@@ -1,13 +1,13 @@
 # Nextion flow.io 7.0.0 — NX4832K035_011 (480 × 320)
 
-> **État : HMI 7.0.0 de test disponible, mais TFT 7.0.0 non compilé.**
-> Source expérimentale à ouvrir et compiler dans Nextion Editor avant installation. La version 6.0.0 reste la seule version stable ; ne pas modifier `common.nextion_firmware_version` dans `platformio.ini`.
+> **État : HMI 7.0.0 corrigé, ouverture et compilation dans Nextion Editor validées par l'utilisateur ; test sur écran réel restant.**
+> Source expérimentale : la version 6.0.0 reste le retour arrière stable. `common.nextion_firmware_version` vaut désormais `7.0.0` sur `dev`, et l'export complet nécessite le TFT 7.0.0 compilé dans ce dossier.
 
 ## Périmètre validé
 
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
-- Source de référence existante : [Flowio_Enhanced_480x320.HMI (6.0.0)](../6.0.0/Flowio_Enhanced_480x320.HMI).
-- **HMI corrigé à essayer :** [`Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI`](Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI) (généré depuis la source 6.0.0 du dépôt). L'ancien fichier `..._TEST.HMI` était invalide (checksum du répertoire erroné) et ne doit pas être utilisé.
+- Source de référence existante : [FlowIO_Nextion_NX4832K035_011-6.0.0.HMI (6.0.0)](../6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI).
+- **HMI corrigé validé dans Nextion Editor :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) (généré depuis la source 6.0.0 du dépôt). L'ancien fichier `..._TEST.HMI` était invalide (checksum du répertoire erroné) et ne doit pas être utilisé.
 - Générateur reproductible : [`nextion/tools/build_3p5_v7_hmi.py`](../../tools/build_3p5_v7_hmi.py) ; une action GitHub peut le régénérer. Le binaire créé à partir de la source versionnée peut différer octet pour octet d'une source HMI fournie séparément.
 - **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
 - Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
@@ -25,7 +25,7 @@
 ## Vérifications avant publication
 
 - Le générateur vérifie le CRC des pages modifiées, les miroirs du répertoire, le checksum du répertoire (`CRC32_T` suivi de `ADEC`) et la signature `ver21234`. Ces vérifications binaires ne remplacent pas Nextion Editor.
-- Ouvrir puis compiler **le fichier CRC_FIX.HMI** avec Nextion Editor pour **NX4832K035_011** et vérifier que la compilation n'émet aucune erreur.
+- Ouvrir puis compiler **le fichier `FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`** avec Nextion Editor pour **NX4832K035_011** et vérifier que la compilation n'émet aucune erreur.
 - Tester l'affichage de la date, de l'heure, du Wi-Fi et des jauges au démarrage puis à la sortie de veille.
 - Tester passage de minute, passage de minuit, heure NTP/RTC et reconnexion.
 - Confirmer que les commandes tactiles et les événements de la page Home n'ont pas régressé.

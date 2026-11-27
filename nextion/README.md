@@ -6,6 +6,10 @@ Les fichiers `.HMI` sont les sources éditables dans Nextion Editor. Les fichier
 
 Les fichiers Nextion sont rangés **uniquement par version** dans `releases/<version>/`. Les anciens `.tft` à la racine et le répertoire `src/` ont été supprimés pour éviter les doublons.
 
+**Convention de nommage commune aux sources et binaires :** `FlowIO_Nextion_<MODELE_COMPATIBLE>-<VERSION>.HMI` pour le projet source, et même nom en `.tft` pour le firmware compilé. L'extension `.HMI` n'est pas analysée par le script d'export des TFT.
+
+**Cas 800 × 480 (6.0.0) :** une source HMI historique unique sert aux écrans 5″ (`NX8048P050_011`) et 7″ (`NX8048P070_011`). Elle est rangée sous le nom canonique `FlowIO_Nextion_NX8048P050_011-6.0.0.HMI` ; cela **n'affirme pas** que le fichier compilé est utilisable indifféremment sur les deux écrans. Les TFT restent séparés par modèle.
+
 La valeur de `common.nextion_firmware_version` dans [`platformio.ini`](../platformio.ini) est désormais **7.0.0**. Le HMI corrigé de test, qui s'ouvre et compile dans Nextion Editor, est disponible dans [`releases/7.0.0/`](releases/7.0.0/). **Attention : le TFT 7.0.0 compilé n'est pas encore présent sur GitHub** : le déposer dans ce dossier sous le nom `FlowIO_Nextion_NX4832K035_011-7.0.0.tft`, puis le commiter. En attendant, un clone propre échouera à l'étape d'export Nextion lors d'un build complet.
 
 La [version 6.0.0](releases/6.0.0/) reste archivée et intacte, avec ses sources et ses TFT ; elle n'est plus sélectionnée par `platformio.ini`.

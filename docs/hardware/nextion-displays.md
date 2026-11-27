@@ -1,6 +1,6 @@
 # Écrans Nextion
 
-Flow.io communique avec l'écran Nextion par l'UART2 à 115200 bauds. Les fichiers HMI et TFT fournis correspondent à la version `6.0.0`, également déclarée par `TFT_FIRMW=6.0.0` dans `platformio.ini`.
+Flow.io communique avec l'écran Nextion par l'UART2 à 115200 bauds. Les fichiers Nextion 6.0.0 restent archivés sous `nextion/releases/6.0.0/`. Sur la branche `dev`, `TFT_FIRMW=7.0.0` est sélectionné pour le test de l'écran NX4832K035 ; le TFT compilé 7.0.0 doit être présent dans sa release avant un build complet.
 
 ## Modèles fournis
 
@@ -16,10 +16,10 @@ Les dessins dimensionnels officiels sont disponibles pour le [NX4832K035](https:
 
 | Définition | Source HMI |
 |---|---|
-| 480×320 | [`Flowio_Enhanced_480x320.HMI`](../../nextion/releases/6.0.0/Flowio_Enhanced_480x320.HMI) |
-| 800×480 | [`Flowio_Intelligent_800x480.HMI`](../../nextion/releases/6.0.0/Flowio_Intelligent_800x480.HMI) |
+| 480×320 | [`FlowIO_Nextion_NX4832K035_011-6.0.0.HMI`](../../nextion/releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI) |
+| 800×480 (source commune 5″ / 7″) | [`FlowIO_Nextion_NX8048P050_011-6.0.0.HMI`](../../nextion/releases/6.0.0/FlowIO_Nextion_NX8048P050_011-6.0.0.HMI) |
 
-Le 5 pouces et le 7 pouces utilisent deux binaires distincts compilés depuis la source 800×480. Ne pas renommer un binaire pour l'utiliser sur un autre modèle.
+Le 5 pouces et le 7 pouces utilisent deux binaires distincts compilés depuis **un même HMI 800×480**. Celui-ci est classé sous le modèle canonique `NX8048P050_011` pour éviter les doublons de sources. Le modèle matériel dans Nextion Editor doit être vérifié avant compilation ; ne pas renommer un TFT pour l'utiliser sur un autre modèle.
 
 ## Câblage
 
