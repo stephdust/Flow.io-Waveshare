@@ -31,6 +31,15 @@ jobs:
         run: python scripts/tests/test_nextion_wifi_rssi.py
       - name: Install PlatformIO Core
         run: python -m pip install 'platformio>=6.2,<7'
+      - name: Select last Arduino-ESP32 3.x platform for this CI build
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Stable now resolves to Arduino-ESP32 4.0.0, which cannot compile
+          # OneWireNg 0.14.1 (GPIO register API removed upstream).
+          # Override only on the disposable CI runner until app migration.
+          sed -i 's|^platform = https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip|platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.313/platform-espressif32.zip|' platformio.ini
+          grep -F 'platform = https://github.com/pioarduino/platform-espressif32/releases/download/55.03.313/platform-espressif32.zip' platformio.ini
       - name: Compile Waveshare ESP32-S3 firmware (without re-building the Nextion)
         run: pio run -e Flowio-waveshare-esp32-s3
       - name: Verify that firmware binary exists
