@@ -26,6 +26,7 @@ assert "text(d,'6.8',21,116,16)" in art
 assert "text(d,'8.2',187,116,16)" in art
 assert "text(d,'600',21,116,15)" in art
 assert "text(d,'800',187,116,15)" in art
+assert "text(d,kind,103,135,16)" in art, "pH/ORP labels must be enlarged to 16px"
 
 def event(name):
     match = re.search(r"(?ms)^on " + re.escape(name) +
