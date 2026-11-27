@@ -532,13 +532,12 @@ def render(source,preview):
     # Comparison ONLY: the unchanged firmware continues to use the bordered
     # header. This extra image lets us decide visually before altering HMI.
     borderless=demo.copy()
-    header_no_frame=make_background(header_frame=False).resize(
-        (480,320),Image.Resampling.LANCZOS)
+    bg_no_frame=make_background(header_frame=False)
+    header_no_frame=bg_no_frame.resize((480,320),Image.Resampling.LANCZOS)
     borderless.paste(header_no_frame.crop((0,0,480,60)),(0,0))
     borderless.paste(
-        wifi_frame(header_no_frame.resize((480*S,320*S),
-                        Image.Resampling.NEAREST),4).resize(
-                            (WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
+        wifi_frame(bg_no_frame,4).resize(
+            (WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
         (WIFI_X,WIFI_Y))
     h=ImageDraw.Draw(borderless)
     h.text((185,18),'27.3°C',font=preview_font(23),
