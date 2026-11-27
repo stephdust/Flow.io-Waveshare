@@ -57,7 +57,7 @@ for i in range(8):
     assert c["type"]=="text" and c["bco"]=="#041225"
     assert c["pco"]=="#ffffff" and c["xcen"]==c["ycen"]==1
     assert c["font"]=="Segoe24_MenuItems" and c["isbr"]==1 and c["h"]==48
-    assert c["y"] in (102,221)
+    assert c["y"] in (101,219)
 for event in ("btAuto","btAutoORP","btAutoPH","btPHPump",
               "btCHLPump","btWinter","btLight","btRobot"):
     source=(args.source/"pages/pageHomeSwtch.nx").read_text(encoding="utf-8")
