@@ -43,3 +43,32 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'test(nextion): add CRC-fixed NX4832K035 HMI 7.0.0 test [skip ci]'
           git push origin HEAD:dev
+      # Independent 7.1.0 TEST build. 7.0.0 remains the known-good fallback.
+      - name: Install PNG atlas authoring dependencies
+        run: python3 -m pip install 'Pillow>=10,<12' 'numpy>=1.26,<3'
+      - name: Generate 7.1.0 experimental Home redesign from the 7.0.0 HMI
+        run: |
+          python3 nextion/tools/build_3p5_v7_1_experimental.py \
+            --source nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI \
+            --out nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI \
+            --logo data/webinterface/logo-flowio.png \
+            --preview nextion/releases/7.1.0/preview.png
+      - name: Archive 7.1.0 experimental HMI and preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nextion-NX4832K035-HMI-7.1.0-EXPERIMENTAL
+          path: |
+            nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI
+            nextion/releases/7.1.0/preview.png
+          retention-days: 14
+      - name: Publish 7.1.0 experimental HMI on dev
+        run: |
+          git add -- nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI nextion/releases/7.1.0/preview.png
+          if git diff --cached --quiet; then
+            echo '7.1.0 unchanged.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(nextion): generate experimental 7.1.0 modern Home HMI [skip ci]'
+          git push origin HEAD:dev
