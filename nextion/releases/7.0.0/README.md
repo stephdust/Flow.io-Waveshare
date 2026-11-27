@@ -1,13 +1,15 @@
+> **Release officielle 7.0.0 : HMI de référence remis à la dernière version validée sur écran réel.** L'essai de redesign par patch binaire a provoqué des rectangles blancs et a été retiré. Le nouveau HMI graphique expérimental est construit proprement depuis les **sources nxwright texte/PNG**, dans un [artefact distinct](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). **Ne pas utiliser les fichiers de test comme firmware de production tant que le rendu sur écran réel n'est pas validé.**
+
 # Nextion flow.io 7.0.0 — NX4832K035_011 (480 × 320)
 
-> **État : nouveau design Home intégré dans le HMI 7.0.0 sur `dev` ; contrôles structure/CRC réussis, ouverture et compilation Nextion Editor de CETTE VERSION non encore confirmées.**
+> **État : HMI original 7.0.0 validé restauré dans la release ; nouveau design expérimenté séparément via nxwright.**
 > Version maintenue : `7.0.0`. La version 7.0.0 précédente, déjà compilée et testée sur matériel (jauges après veille OK), est conservée sur la branche [`backup/nextion-v7-validated-20261127`](https://github.com/stephdust/Flow.io-Waveshare/tree/backup/nextion-v7-validated-20261127). Ne pas installer le nouveau HMI tant que Nextion Editor n'a pas validé la compilation.
 
 ## Périmètre validé
 
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
 - Source de référence existante : [FlowIO_Nextion_NX4832K035_011-6.0.0.HMI (6.0.0)](../6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI).
-- **HMI 7.0.0 avec nouveau design Home (à compiler) :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) : 480 × 320 uniquement, jauges modernisées, logo officiel, thermomètre de piscine rouge, Wi-Fi coloré et redessin après veille. Version précédente sauvegardée sur la branche indiquée ci-dessus.
+- **HMI 7.0.0 de référence (validé sur écran réel) :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) : 480 × 320 uniquement, jauges modernisées, logo officiel, thermomètre de piscine rouge, Wi-Fi coloré et redessin après veille. Version précédente sauvegardée sur la branche indiquée ci-dessus.
 - Générateur du nouveau design : [`build_3p5_v7_modern.py`](../../scripts/build_3p5_v7_modern.py) avec [`validate_3p5_v7_modern.py`](../../scripts/validate_3p5_v7_modern.py). Le workflow [`nextion-7-modern.yml`](../../../.github/workflows/nextion-7-modern.yml) reconstruit toujours le HMI depuis la 7.0.0 validée archivée (et non depuis un HMI déjà modifié).
 - **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
 - Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
@@ -64,3 +66,13 @@ source locale avant de considerer un fichier 7.0.0 comme finalise.
 - Validation GitHub : [workflow de génération et contrôle des ressources](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/45987260043), avec CRC des pages et répertoire, version 7.0.0 inchangée et comparaison à la source validée.
 - **La validation d'ouverture/compilation dans Nextion Editor et la validation réelle du redessin des jauges sur cette version restent à faire.**
 - Ni les projets ni les TFT des **Nextion 5″ ou 7″** ne sont concernés.
+
+## Nouvelle chaîne recommandée (source éditable)
+
+```text
+HMI 7.0.0 validé → nxwright extract → modifier pageHome.nx / pageHome.page.toml / PNG
+  → nxwright check → nxwright build → nouveau HMI 7.0.0 expérimental
+  → nxwright compile --download → TFT NX4832K035 TEST-ONLY
+```
+
+Le [workflow d'essai réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701) conserve les mêmes identifiants de composants et événements série. La génération n'est pas une validation physique ; ouvrir le HMI dans Nextion Editor et vérifier les jauges/veille avant d'autoriser la publication du TFT.

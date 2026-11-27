@@ -38,3 +38,14 @@ le retour après veille, la bonne orientation des images, les événements tacti
 et les objets du protocole série avant de permettre à nxwright de compiler
 un TFT Flow.io. Les HMI reconstruits lors de cet audit ne sont **jamais**
 utilisés pour le déploiement.
+
+## Nouvelle voie de compilation expérimentale (27 novembre 2026)
+
+Le [workflow de redesign nxwright](../../.github/workflows/nextion-nxwright-redesign.yml) :
+- part de la 7.0.0 validée, jamais de l'ancien HMI patché en binaire ;
+- extrait les sources, adapte `pages/pageHome.nx`, `pages/pageHome.page.toml`, les images des jauges et du ventilateur ;
+- reconstruit le HMI avec `nxwright build`, le réextrait et passe `nxwright check` ;
+- compile un TFT expérimental avec `nxwright compile --download` et le firmware officiel de **Nextion Editor 1.68.2** ;
+- place la source texte, le HMI, le TFT TEST-ONLY et la prévisualisation uniquement dans un artefact GitHub Actions.
+
+[Résultat de la compilation source → HMI → TFT : réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Aucune validation sur l'écran réel à ce stade. Ne pas remplacer le TFT de production ni modifier les projets 5″/7″.
