@@ -34,15 +34,35 @@ def event(name):
     return match.group(1)
 
 update = event("bUpdateGauge.down")
+# Limit each search to the corresponding HMI gauge. Previously the regular
+# expression searched all of bUpdateGauge.down, so for ORP it matched the
+# FIRST pH cursor (e.g. x=46) instead of ORP's x=279 cursor.
+ph_start = update.index("  //// pH Gauge\n")
+orp_start = update.index("  //// ORP Gauge\n", ph_start)
+update_end = update.index("  doevents", orp_start)
+sections = {
+    "vapHPercent": update[ph_start:orp_start],
+    "vaOrpPercent": update[orp_start:update_end],
+}
 for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
+    section = sections[field]
+    other = "vaOrpPercent" if field == "vapHPercent" else "vapHPercent"
+    assert f"sys2={field}.val" in section
+    assert f"sys2={other}.val" not in section, (
+        f"{field} cursor test accidentally includes the other gauge"
+    )
+    cases = [int(x) for x in re.findall(r"if\\(sys2==(\\d+)\\)", section)]
+    assert cases == list(range(21)), (
+        f"{field} must have exactly the 21 cursor positions 0..20: {cases}"
+    )
     # ESP32 normalizes around its configured setpoint:
     # centre=140 on a 0..280 gauge, so the central green sector is active.
-    assert f"sys0={field}.val+35" in update
-    assert "sys0=sys0/70" in update
-    assert f"sys2={field}.val" in update
-    assert "sys2+=7" in update and "sys2=sys2/14" in update
+    assert f"sys0={field}.val+35" in section
+    assert "sys0=sys0/70" in section
+    assert f"sys2={field}.val" in section
+    assert "sys2+=7" in section and "sys2=sys2/14" in section
     xpic = f"xpic {destination_x},89,207,150"
-    assert xpic in update
+    assert xpic in section
     first_x = destination_x + 103
     for i in range(21):
         a = math.pi+i*math.pi/20
@@ -57,7 +77,7 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
             rf"if\(sys2=={i}\)\s*\{{\s*line [^\n]+2047\s*"
             rf"line (\d+),(\d+),(\d+),(\d+),65535\s*"
             rf"line [^\n]+2047",
-            update,
+            section,
         )
         assert match, f"missing {field} measurement bar at phase {i}"
         actual = [int(x) for x in match.groups()]
