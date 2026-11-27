@@ -21,7 +21,14 @@ La compilation nxwright est orchestrée par `nextion/scripts/run_nextion.py`.
 Le rendu graphique Home est maintenu par
 `nextion/scripts/render_nx_home.py` et les tests par
 `test_nextion_wake.py` et `test_nextion_animation.py`.
-Les HMI/TFT générés sont committés dans `nextion/releases/7.0.0/`.
+**Le build local ne modifie aucun fichier suivi par Git.** Il copie
+`source/` dans un dossier temporaire sous `.pio/`, puis construit les
+images et le TFT sur cette copie. Ses résultats sont dans
+`.pio/nextion-output/` (HMI, TFT, `preview.png`, `picture-0003.png`)
+et dans `binary/` (TFT, manifeste, `nextion-preview.png`).
+Seul le workflow CI, une fois tous les tests réussis, publie ces
+artefacts dans `nextion/releases/7.0.0/` et actualise la prévisualisation
+versionnée. Les sources HMI 3,5″ restent éditables sous `source/`.
 
 ## Température extérieure sur l'écran 480×320
 
