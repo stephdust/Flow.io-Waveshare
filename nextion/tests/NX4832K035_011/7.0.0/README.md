@@ -46,6 +46,30 @@ couronnes PSI 70×70 et onze cœurs animés 42×42. Les coordonnées
 `xpic` sont mises à jour ensemble avec `render_nx_home.py`. Le
 test `nextion/scripts/test_nextion_animation.py` contrôle ce contrat.
 
+## Touches Home alignées sur les dessins (sans bouton lecture)
+
+Le bouton « lecture » a été retiré : il doublonnait inutilement la commande
+de la pompe de filtration au centre de l'écran. Son dessin, sa zone `m2`
+et son événement ont été supprimés. La grille de configuration est
+recentrée dans la zone libérée ; les autres icônes restent inchangées.
+
+| Icône | Composant | Zone (x, y, largeur, hauteur) | Action |
+|---|---|---|---|
+| Grille (en bas à gauche) | `b0` | `64,268,72,45` | Configuration |
+| Turbine centrale | `m1` | `207,210,70,70` | Basculer la filtration |
+| Engrenage (en bas à droite) | `m0` | `309,268,78,45` | Commandes des équipements |
+| Alarme (à droite) | `b1` | `412,268,62,45` | Alarmes |
+
+Ce sont des zones tactiles transparentes, sans fond opaque : les icônes
+restent visibles. Les rectangles ne se chevauchent pas et les composants
+d'état sont positionnés au-dessus du bandeau, pour éviter de cacher les
+dessins ou de voler les appuis. Les identifiants des composants historiques
+sont préservés (le composant `m2` était ajouté en dernier et a été retiré).
+
+Le test `nextion/scripts/test_nextion_footer_touch.py` est intégré au
+build et vérifie géométrie, actions et absence de bouton redondant.
+La vérification tactile définitive reste à effectuer sur l'écran réel.
+
 ## Points à valider physiquement
 
 Le réveil Nextion recharge `pageHome` (page 1) pour redessiner les jauges
