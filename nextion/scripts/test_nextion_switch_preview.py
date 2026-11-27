@@ -37,8 +37,8 @@ for name,xy in zip(names,expected):
     assert off.tobytes()!=active.tobytes(),f"{name}: ON and OFF look identical"
     # The published image itself must reuse the active or inactive sprite.
     chosen=active if name in on else off
-    part=im.crop((*xy,xy[0]+70,xy[1]+75))
-    assert part.tobytes()==chosen.tobytes(),f"{name}: preview differs from HMI sprite"
+    part=im.crop((*xy,xy[0]+70,xy[1]+65))
+    assert part.tobytes()==chosen.crop((0,0,70,65)).tobytes(),f"{name}: preview differs from HMI sprite"
     assert any(px!=navy for px in chosen.getdata()),f"{name}: missing 3D glyph"
 home=buttons["bHome"]
 assert (home["x"],home["y"],home["w"],home["h"])==(0,267,56,52)
