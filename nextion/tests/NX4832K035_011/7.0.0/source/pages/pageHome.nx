@@ -7,6 +7,11 @@ on pageHome.load:
   vis bDateTime,0
   vis bInjectUpdt,0
   vis tFConnectState,0
+  // Original glyph stays present for older builds, but the live RSSI uses
+  // colorful xpic sprites in the same header slot.
+  vis tWifiState,0
+  // The empty scrolling-text alarm must not paint an opaque horizontal bar.
+  vis tErrMessage,0
   // tProp component retained for compatibility; centered rotating bitmaps are drawn via xpic.
   vis tProp,0
 
@@ -19,11 +24,12 @@ on pageHome.loadend:
   // Force BOTH gauge sprites to be redrawn after every page load/wake.
   vaPrvpHPercen.val=-1
   vaPrvOrpPercen.val=-1
+  vaPrvWifiLevel.val=-1
   // Restore live native components that the background image covered.
   ref tWaterTemp
   ref tTime
   ref tDate
-  ref tWifiState
+  // WiFi and FlowConnect legacy glyphs are hidden (new RSSI xpic).
   ref tFConnectState
   ref tpH
   ref tORP
@@ -32,9 +38,10 @@ on pageHome.loadend:
   ref tpHInject
   ref tChlInject
   ref tSWGRunning
-  ref tErrMessage
-  ref b0
-  ref b1
+  // The background itself draws the footer icons.  Do not ref b0/b1
+  // (their opaque default button frames would cover the new artwork);
+  // they retain all native touch handlers and component IDs.
+  // Alarm text is shown by bUpdateGauge only while nonempty.
   // Update the values
   click bUpdateGauge,1
   //Update Injection Icons
@@ -78,32 +85,39 @@ on tmUpdate.timer:
 
 on bUpdateGauge.down:
   //Update Blinking
-  //Update error message
-  tErrMessage.txt=globals.vaErrMsg.txt
+  // Only draw the alert banner while a message exists.  Otherwise the
+  // scrolling-text widget paints an opaque stripe over the green markers.
+  if(tErrMessage.txt!=globals.vaErrMsg.txt)
+  {
+    tErrMessage.txt=globals.vaErrMsg.txt
+    if(tErrMessage.txt=="")
+    {
+      vis tErrMessage,0
+      xpic 63,57,378,30,63,357,HomeGaugepic
+    }else
+    {
+      vis tErrMessage,1
+    }
+  }
   //Update Values
   tORP.txt=globals.vaOrpValue.txt
   tpH.txt=globals.vaPhValue.txt
   tWaterTemp.txt=globals.vaWaterTemp.txt
   // Pump ring severity is read by tmAnim. Legacy tProp stays hidden.
-  // bit 7 - Wifi
-  sys1=globals.vaStates.val
-  sys1=sys1/128
-  sys1=sys1%2
-  if(sys1==1)
+  // Real RSSI 0..4, encoded by ESP32 in Home state bits 16..18.
+  // Previous WiFi/MQTT state bits 7/8 remain available to legacy screens.
+  sys0=globals.vaStates.val/65536
+  sys0=sys0%8
+  if(sys0>4)
   {
-    vis tWifiState,1
-    tWifiState.pco=12145
-  }else
-  {
-    vis tWifiState,0
+    sys0=0
   }
-  // bit 8 - MQTT
-  sys1=globals.vaStates.val
-  sys1=sys1/256
-  sys1=sys1%2
-  if(sys1==1)
+  if(sys0!=vaPrvWifiLevel.val)
   {
-    tWifiState.pco=1821
+    vaPrvWifiLevel.val=sys0
+    sys1=sys0*38
+    sys1+=970
+    xpic 428,11,43,38,0,sys1,HomeGaugepic
   }
   //// pH Gauge
   if(vapHPercent.val!=vaPrvpHPercen.val)

@@ -77,7 +77,7 @@ def make_background():
     image=panel(image,(5,4,475,58),13,(3,26,52),(7,197,245))
     image=panel(image,(5,262,475,315),13,(3,25,48),(6,202,246))
     d=ImageDraw.Draw(image)
-    for x in (154,298,413):line(d,[(x,13),(x,49)],(9,161,217),.7)
+    for x in (154,300,413):line(d,[(x,13),(x,48)],(9,161,217),.7)
     for x in (92,194,294,387):line(d,[(x,270),(x,307)],(7,155,209),.8)
     # Exact three-wave emblem from the repository's existing Flow.io logo.
     # Crop the wave-only half: keep the original contours (not three fake lines).
@@ -118,13 +118,22 @@ def make_background():
     line(d,[(450,276),(433,304),(467,304),(450,276)],WHITE,2)
     line(d,[(450,285),(450,296)],WHITE,2)
     d.ellipse((448*S,298*S,452*S,302*S),fill=WHITE)
-    # Time/date/WiFi are rendered by live native widgets, not fake pixels.
+    # Time, date, and water temperature remain live native widgets. Wi-Fi
+    # signal tiers are drawn dynamically from atlas frames (RSSI from ESP32).
     return image.convert('RGB')
 
 
 def gauge_sprite(bg,kind,active):
     x=20 if kind=='pH' else 253
     image=bg.crop((x*S,89*S,(x+207)*S,239*S)).convert('RGBA')
+    # Create a smooth dark center with an exactly solid NAVY patch behind
+    # the live Nextion text backgrounds; no rounded capsule or white outline.
+    shade=Image.new('RGBA',image.size,(*NAVY,255))
+    mask=Image.new('L',image.size,0)
+    md=ImageDraw.Draw(mask)
+    md.ellipse((27*S,30*S,179*S,163*S),fill=255)
+    mask=mask.filter(ImageFilter.GaussianBlur(11*S))
+    image=Image.composite(shade,image,mask)
     colors=((249,35,83),(255,147,29),(255,212,36),
             (105,247,51),(8,217,248))
     ring=tuple(q*S for q in (7,11,200,182))
@@ -145,19 +154,17 @@ def gauge_sprite(bg,kind,active):
         r2=67 if i%3==0 else 71
         line(d,[(cx+co*76,cy+si*76*.89),
                 (cx+co*r2,cy+si*r2*.89)],WHITE,1.3 if i%3==0 else .7)
-    pill=tuple(q*S for q in (50,60,158,129))
-    image=halo(image,lambda d:d.rounded_rectangle(
-        pill,radius=25*S,outline=(*AQUA,140),width=4*S),2)
-    d=ImageDraw.Draw(image)
-    d.rounded_rectangle(pill,radius=25*S,fill=(*NAVY,255),
-                        outline=(*AQUA,255),width=S)
-    text(d,kind,103,119,12)
+    # No capsule around the live values.  The 72x40 Nextion text boxes use
+    # NAVY bco, so blend the gauge center into that exact solid shade
+    # (softened toward the ring), with no visible rectangular frame.
+    # This preserves dynamic pH/ORP text on the real device.
+    text(d,kind,103,135,13)
     if kind=='pH':
-        text(d,'6.8',21,106,11)
-        text(d,'8.2',188,106,11)
+        text(d,'6.8',21,140,11)
+        text(d,'8.2',188,140,11)
     else:
-        text(d,'600',19,106,10)
-        text(d,'800',188,106,10)
+        text(d,'600',19,140,10)
+        text(d,'800',188,140,10)
     return image.convert('RGB')
 
 
@@ -210,16 +217,52 @@ def fan_frame(bg,status,frame):
         angle=phase+blade*math.pi/2
         co,si=math.cos(angle),math.sin(angle)
         outline=[pt for c in curves for pt in _cubic(*c)]
-        coords=[((35+u*co-v*si)*S,(35+u*si+v*co)*S) for u,v in outline]
+        # Thin, airy turbine: 28% smaller blades, same exact center.
+        coords=[((35+.72*(u*co-v*si))*S,(35+.72*(u*si+v*co))*S)
+                for u,v in outline]
         d.polygon(coords,fill=(23,195,244,255))
         d.line(coords+[coords[0]],fill=(228,252,255,255),width=S)
         highlights=[(-6,-21),(1,-26),(8,-25)]
-        d.line([((35+u*co-v*si)*S,(35+u*si+v*co)*S)
+        d.line([((35+.72*(u*co-v*si))*S,(35+.72*(u*si+v*co))*S)
                 for u,v in highlights],
                fill=(144,235,255,255),width=S)
-    d.ellipse((30*S,30*S,40*S,40*S),
-              fill=(6,74,128,255),outline=(*WHITE,255),width=2*S)
+    d.ellipse((32*S,32*S,38*S,38*S),
+              fill=(6,74,128,255),outline=(*WHITE,255),width=S)
     return im.convert('RGB')
+
+
+
+WIFI_X,WIFI_Y,WIFI_W,WIFI_H=428,11,43,38
+WIFI_ATLAS_Y=970
+WIFI_LEVELS=5
+
+
+def wifi_frame(bg,level):
+    """Live RSSI tier frames: 0=offline, 1=red, 2=amber, 3=cyan, 4=green.
+
+    Outer arcs are additive: higher levels illuminate more segments,
+    with one consistent color per newly activated arc. No simulated RSSI.
+    """
+    assert 0<=level<5
+    image=bg.crop((WIFI_X*S,WIFI_Y*S,(WIFI_X+WIFI_W)*S,
+                   (WIFI_Y+WIFI_H)*S)).convert('RGBA')
+    colors=((255,80,88),(255,197,38),(9,218,250),(111,243,40))
+    inactive=(64,93,119)
+    d=ImageDraw.Draw(image)
+    cx,cy=21.5,31
+    for ring in range(1,4):
+        radius=6+ring*5.7
+        box=tuple(round(q*S) for q in
+                  (cx-radius,cy-radius,cx+radius,cy+radius))
+        color=colors[ring] if level>=ring+1 else inactive
+        d.arc(box,205,335,fill=(*color,255),width=3*S)
+    dot=colors[0] if level>=1 else inactive
+    d.ellipse(((cx-3)*S,(cy-3)*S,(cx+3)*S,(cy+3)*S),fill=(*dot,255))
+    if level>=1:
+        image=halo(image,lambda od: od.ellipse(
+            ((cx-2)*S,(cy-2)*S,(cx+2)*S,(cy+2)*S),
+            fill=(*colors[0],95)),1)
+    return image.convert('RGB')
 
 
 def render(source,preview):
@@ -229,7 +272,7 @@ def render(source,preview):
     pictures=source/'pictures'
     assert (pictures/'picture-0003.png').is_file(), 'expected an editable RGB Home atlas'
     bg=make_background()
-    atlas=Image.new('RGB',(1035,FAN_ATLAS_Y+5*FAN_SIZE),NAVY)
+    atlas=Image.new('RGB',(1035,WIFI_ATLAS_Y+WIFI_LEVELS*WIFI_H),NAVY)
     for state in range(5):
         for y,kind in ((0,'pH'),(150,'ORP')):
             im=gauge_sprite(bg,kind,state).resize((207,150),Image.Resampling.LANCZOS)
@@ -238,6 +281,9 @@ def render(source,preview):
             turbine=fan_frame(bg,state,frame)
             turbine=turbine.resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
             atlas.paste(turbine,(frame*FAN_SIZE,FAN_ATLAS_Y+state*FAN_SIZE))
+    for level in range(WIFI_LEVELS):
+        tile=wifi_frame(bg,level).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS)
+        atlas.paste(tile,(0,WIFI_ATLAS_Y+level*WIFI_H))
     atlas.paste(bg.resize((480,320),Image.Resampling.LANCZOS),(0,300))
     atlas.save(pictures/'picture-0003.png',optimize=True)
     demo=bg.resize((480,320),Image.Resampling.LANCZOS)
@@ -246,6 +292,8 @@ def render(source,preview):
     # Preview frame is the same real turbine bitmap used by the Nextion timer.
     demo.paste(fan_frame(bg,1,4).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
+    demo.paste(wifi_frame(bg,4).resize((WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
+               (WIFI_X,WIFI_Y))
     d=ImageDraw.Draw(demo)
     sample_font=preview_font(26)
     d.text((123,184),'7.50',font=sample_font,fill=WHITE,anchor='mm')
@@ -258,7 +306,7 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
-    print('Home atlas=1035x970; 5 pressure states x 11 centered turbine frames')
+    print('Home atlas=1035x1160: 5x11 turbine frames + 5 RSSI icon levels')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
 

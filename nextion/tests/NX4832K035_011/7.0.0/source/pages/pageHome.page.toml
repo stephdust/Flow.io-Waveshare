@@ -16,11 +16,11 @@ tim = 50
 name = "tWaterTemp"
 type = "text"
 vscope = 1
-x = 196
+x = 199
 y = 13
-w = 100
-h = 40
-font = "SegoeUI_Home"
+w = 102
+h = 36
+font = "SegoeUI_28_B"
 bco = "#041b33"
 pco = "#ffffff"
 ycen = 0
@@ -223,12 +223,12 @@ txt = "UptInject"
 name = "tDate"
 type = "text"
 vscope = 1
-x = 304
-y = 31
-w = 94
-h = 28
+x = 314
+y = 32
+w = 91
+h = 19
 endx = 161
-font = "SegoeUI_28_B"
+font = "SegoeUI_16"
 bco = "#041b33"
 pco = "#ffffff"
 txt = "__ ______"
@@ -241,6 +241,11 @@ val = -1
 
 [[component]]
 name = "vaPrvOrpPercen"
+type = "variable"
+val = -1
+
+[[component]]
+name = "vaPrvWifiLevel"
 type = "variable"
 val = -1
 

@@ -32,6 +32,10 @@ def main() -> None:
     assert final.index("vaPrvOrpPercen.val=-1") < final.index("click bUpdateGauge,1")
     assert "xpic 20,89,207,150,sys1,0,HomeGaugepic" in gauges
     assert "xpic 253,89,207,150,sys1,150,HomeGaugepic" in gauges
+    assert "vaPrvWifiLevel.val=-1" in final
+    assert "xpic 428,11,43,38,0,sys1,HomeGaugepic" in gauges
+    assert "vis tErrMessage,0" in initial
+    assert "ref b0" not in final and "ref b1" not in final
     assert "click bUpdateGauge,1" in tick
     print("PASS: Home wake reloads and redraws xpic background + two gauge sprites")
     print("PASS: leaving Home restores wup=255; normal navigation is unchanged")
