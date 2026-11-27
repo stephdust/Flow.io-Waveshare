@@ -69,6 +69,7 @@ jobs:
           assert (compiled / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
           tft = compiled / name
           assert (compiled / 'preview.png').stat().st_size > 4096
+          assert (compiled / 'preview-header-borderless.png').stat().st_size > 4096
           assert (compiled / 'picture-0003.png').stat().st_size > 4096
           copied = Path('binary') / name
           assert tft.stat().st_size > 1000000
@@ -99,6 +100,7 @@ jobs:
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
             .pio/nextion-output/preview.png
+            .pio/nextion-output/preview-header-borderless.png
             .pio/nextion-output/picture-0003.png
             binary/manifest.json
           include-hidden-files: true
@@ -114,11 +116,13 @@ jobs:
           cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft nextion/releases/7.0.0/
           cp .pio/nextion-output/picture-0003.png nextion/tests/NX4832K035_011/7.0.0/source/pictures/
           cp .pio/nextion-output/preview.png nextion/tests/NX4832K035_011/7.0.0/preview.png
+          cp .pio/nextion-output/preview-header-borderless.png nextion/tests/NX4832K035_011/7.0.0/preview-header-borderless.png
           cp .pio/nextion-output/preview.png nextion/releases/7.0.0/preview-modern.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
           git add -- nextion/tests/NX4832K035_011/7.0.0/preview.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/preview-header-borderless.png
           git add -- nextion/releases/7.0.0/preview-modern.png
           if git diff --cached --quiet; then
             echo "Both generated HMI and TFT match the current fork dev."
