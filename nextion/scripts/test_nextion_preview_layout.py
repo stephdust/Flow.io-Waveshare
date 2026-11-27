@@ -85,19 +85,36 @@ assert sum(r>170 and g>170 and b>170 for r,g,b in wordmark)>8, (
     "Flow.io lettering not brought closer to the waves"
 )
 
-# The water and air symbols are grouped on the same x~194 axis and
-# should sit just left of the text fields starting at x207.
-# Crucially, they must NOT be drawn inside the repainting text component.
-water=[at(x,y) for x in range(183,206) for y in range(8,30)]
-air=[at(x,y) for x in range(175,206) for y in range(30,55)]
+# The symbols and live text fields form two identical icon/value rows.
+# The HMI starts both text components at x=218 with LEFT alignment, so the
+# visible gap remains fixed even when one temperature has fewer digits.
+# No icon can be painted inside a text widget's repainting bounds.
+water=[at(x,y) for x in range(191,216) for y in range(8,30)]
+air=[at(x,y) for x in range(191,216) for y in range(30,55)]
 assert sum(r>150 and g>150 and b>150 for r,g,b in air)>20, (
     "outdoor air symbol not visible beside its temperature"
 )
 assert at(171,18)==navy and at(175,46)==navy, (
     "old weather icons are still detached from the displayed temperatures"
 )
-assert at(207,18)==navy and at(207,43)==navy, (
-    "temperature icons overlap the native right-aligned text area"
+assert at(217,18)==navy and at(217,43)==navy, (
+    "temperature icons crossed the boundary of the native text fields"
+)
+def icon_text_gap(y0,y1):
+    drawn_icon=[(x,y) for y in range(y0,y1) for x in range(191,216)
+                if at(x,y)!=navy]
+    drawn_text=[(x,y) for y in range(y0,y1) for x in range(218,302)
+                if all(channel>205 for channel in at(x,y))]
+    assert drawn_icon and drawn_text, "temperature icon/text missing from preview"
+    gap=min(x for x,y in drawn_text)-max(x for x,y in drawn_icon)
+    assert 2<=gap<=10, (
+        f"temperature icon detached from live value: {gap}px separation"
+    )
+    return min(x for x,y in drawn_text)
+water_start=icon_text_gap(8,30)
+air_start=icon_text_gap(32,55)
+assert abs(water_start-air_start)<=3, (
+    f"water and air first digits misaligned: x={water_start}/{air_start}"
 )
 assert sum(b>140 and b>r+40 for r,g,b in water)>35, (
     "water-thermometer droplet lost its blue detail"
@@ -140,7 +157,7 @@ print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: frameless footer with cyan, jade and GREEN normal-state 3D icons")
 print("PASS: icon centres x123/346/440, 50px+ gap to pump and neighbour")
 print("PASS: 70px turbine correctly centered between gauges")
-print("PASS: both temperature icons paired at x194 with 3px clearance to native text")
+print("PASS: real preview has short 2..10px icon-to-digit gaps in both rows")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
