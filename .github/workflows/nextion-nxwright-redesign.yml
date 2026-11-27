@@ -9,6 +9,8 @@ on:
       - 'nextion/scripts/pio_nextion_targets.py'
       - 'nextion/scripts/run_nextion.py'
       - 'nextion/scripts/render_nx_home.py'
+      - 'nextion/scripts/render_nx_switches.py'
+      - 'nextion/scripts/test_nextion_switch_preview.py'
       - 'nextion/scripts/test_nextion_animation.py'
       - 'nextion/scripts/test_nextion_gauges.py'
       - 'nextion/scripts/test_nextion_picture_refs.py'
@@ -51,7 +53,7 @@ jobs:
           python nextion/scripts/test_nextion_outdoor_temp.py
           python nextion/scripts/test_nextion_footer_touch.py
           python scripts/tests/test_nextion_wifi_rssi.py
-          python -m py_compile nextion/scripts/render_nx_home.py
+          python -m py_compile nextion/scripts/render_nx_home.py nextion/scripts/render_nx_switches.py nextion/scripts/test_nextion_switch_preview.py
       - name: Seed obsolete previews to verify automatic cleanup
         run: |
           mkdir -p binary .pio/nextion-output
@@ -77,6 +79,7 @@ jobs:
           assert (compiled / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
           tft = compiled / name
           assert (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png').stat().st_size > 4096
+          assert (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHomeSwtch.png').stat().st_size > 4096
           assert not (compiled / 'NX4832K035_011/7.0.0/preview.png').exists()
           assert not (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png').exists()
           assert (source_dir / 'pages/pageHome.nx').is_file()
@@ -112,6 +115,7 @@ jobs:
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
             .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+            .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHomeSwtch.png
             .pio/nextion-output/picture-0003.png
             binary/manifest.json
           include-hidden-files: true
@@ -128,11 +132,13 @@ jobs:
           cp .pio/nextion-output/picture-0003.png nextion/tests/NX4832K035_011/7.0.0/source/pictures/
           cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
           cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+          cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHomeSwtch.png nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHomeSwtch.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
           git add -- nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHomeSwtch.png
           # Remove the old ambiguous, HMI-only preview name from Git; only
           # actual per-page previews may be committed from now on.
           git rm --ignore-unmatch -- \
