@@ -1,35 +1,33 @@
-# Nextion flow.io — 7.0.0 (préparation)
+# Nextion flow.io 7.0.0 — NX4832K035_011 (480 × 320)
 
-> **État : en préparation — non installable.** Aucun fichier `.tft` de la version 7.0.0 n'est publié dans ce dossier. Ne pas modifier `TFT_FIRMW` / `nextion_firmware_version` tant que les trois TFT n'ont pas été compilés, contrôlés et testés.
+> **État : travaux préparatoires, pas encore de HMI 7.0.0 modifié ni de TFT 7.0.0 compilé.**
+> La version 6.0.0 reste seule publiée et installable ; ne pas modifier `common.nextion_firmware_version` dans `platformio.ini`.
 
-## Modèles prévus
+## Périmètre validé
 
-| Modèle | Taille | Résolution | Source | TFT attendu |
-|---|---|---|---|---|
-| NX4832K035_011 | 3,5″ | 480 × 320 | HMI 3,5″ à intégrer | `FlowIO_Nextion_NX4832K035_011-7.0.0.tft` |
-| NX8048P050-011R | 5,0″ | 800 × 480 | HMI à adapter | `FlowIO_Nextion_NX8048P050_011-7.0.0.tft` |
-| NX8048P070-011R | 7,0″ | 800 × 480 | HMI à adapter | `FlowIO_Nextion_NX8048P070_011-7.0.0.tft` |
+- **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
+- Source de référence existante : [Flowio_Enhanced_480x320.HMI (6.0.0)](../6.0.0/Flowio_Enhanced_480x320.HMI).
+- **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
+- Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
 
-Les définitions 5″ et 7″ ont la même résolution, mais leurs firmwares restent propres à chaque modèle. Ne jamais renommer un TFT d'un modèle en un autre.
+## Changements UI à effectuer dans Nextion Editor
 
-## Évolutions prévues
+1. Sur la page Home, réorganiser **seulement le bandeau** : logo flow.io à gauche, date `JJ/MM/AA` et heure `HH:MM` au centre, état Wi-Fi à droite. Vérifier la lisibilité à **480 × 320** et les éventuels recouvrements.
+2. Préserver la variable / l'objet `tTime.txt` déjà alimenté par l'ESP ; ne pas le renommer sans modifier simultanément le firmware.
+3. L'heure est affichée au format `HH:MM`, **mise à jour au changement de minute** (contrôle au plus une fois par minute, ou immédiatement au réveil / reconnexion). Pas de mise à jour toutes les 10 secondes.
+4. La date est affichée `JJ/MM/AA` et ne change qu'à minuit (ainsi qu'à l'initialisation et au réveil) ; conserver la logique RTC existante, ou mettre à jour le protocole ESP/HMI de façon atomique si un nouveau champ global est ajouté.
+5. Conserver le fonctionnement normal du Wi-Fi, des mesures et des jauges. **Ne pas abaisser la fréquence de rafraîchissement des jauges à une minute.**
+6. Après réveil du Nextion, vérifier le rendu des jauges pH/ORP et restaurer leur représentation graphique si elle disparaît. S'appuyer sur le chemin existant de *FullRefresh* et éviter une nouvelle boucle permanente de redessin.
+7. Conserver les événements tactiles, les valeurs `vapHPercent.val`, `vaOrpPercent.val`, `globals.vaStates.val` et le protocole `printh 23 ...`.
 
-- Bandeau supérieur : logo flow.io à gauche, date `JJ/MM/AA` et heure `HH:MM` au centre, état Wi-Fi à droite ; disposition à vérifier sur l'écran réel.
-- **Heure uniquement** : contrôle toutes les 60 secondes, sans lecture NTP supplémentaire ; envoyer `tTime.txt` seulement si `HH:MM` a changé (ou après réveil / reconnexion). Source : heure locale de Flow.io (NTP/RTC), selon le contrat existant.
-- **Date** : format compact `JJ/MM/AA`, actualisation au changement de jour et après réveil ; conserver la logique RTC Nextion existante jusqu'à adaptation validée de l'HMI.
-- **Wi-Fi** : mises à jour uniquement sur changement d'état, sans imposer de cadence de 10 secondes.
-- **Jauges, mesures et autres éléments** : conserver leurs cadences de mise à jour existantes, sans rafraîchissement global de l'écran toutes les 10 secondes.
-- Reconstruction explicite des jauges graphiques de la page principale après réveil du Nextion (diagnostic et correctif à valider).
-- Adaptation des ressources et placements pour NX4832K035_011 et NX8048P070-011R, sans perdre les fonctions existantes.
-- Préserver les traitements d'événements tactiles, identifiants de composants et commandes série compatibles avec le firmware Flow.io ; toute modification du protocole nécessite sa prise en charge côté ESP32-S3.
+## Vérifications avant publication
 
-## Publication
+- Compiler avec Nextion Editor **pour NX4832K035_011** et vérifier que la compilation n'émet aucune erreur.
+- Tester l'affichage de la date, de l'heure, du Wi-Fi et des jauges au démarrage puis à la sortie de veille.
+- Tester passage de minute, passage de minuit, heure NTP/RTC et reconnexion.
+- Confirmer que les commandes tactiles et les événements de la page Home n'ont pas régressé.
+- Confirmer les transferts OTA Nextion et la compatibilité modèle avant de renommer le binaire.
+- Publier la source modifiée sous `Flowio_Enhanced_480x320.HMI` et le TFT compilé sous `FlowIO_Nextion_NX4832K035_011-7.0.0.tft`, **uniquement après ces contrôles**.
+- Changer ensuite `common.nextion_firmware_version` dans `platformio.ini` et valider la génération de `binary/` / du manifeste.
 
-1. Ajouter les fichiers sources `.HMI` éditables, issus des projets Nextion Editor et vérifiés.
-2. Appliquer les changements d'interface et de logique, puis compiler chaque cible avec Nextion Editor.
-3. Vérifier que le contrôle d'heure à 60 s n'entraîne pas de transmissions redondantes ni de rafraîchissement global ; vérifier minuit et sortie de veille.
-4. Vérifier la compilation des trois modèles et nommer les TFT selon la convention ci-dessus.
-5. Tester l'affichage, les commandes tactiles, le bandeau, la langue, le réveil et la mise à jour Nextion sur matériel.
-6. Seulement après validation, basculer `common.nextion_firmware_version` de `6.0.0` à `7.0.0` dans `platformio.ini` et contrôler le contenu de `binary/` ainsi que le manifeste OTA.
-
-La présence de ce dossier ne constitue ni une release stable ni une mise à jour prête au déploiement.
+Références : [protocole ESP/Nextion](../../../docs/integration/nextion-esp-protocol.md) · [documentation hardware](../../../docs/hardware/nextion-displays.md).
