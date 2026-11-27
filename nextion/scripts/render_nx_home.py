@@ -102,8 +102,8 @@ def make_background():
     d.arc((163*S,33*S,171*S,41*S),185,355,fill=(255,216,96),width=2*S)
     for a,b in [((167,30),(167,32)),((160,35),(162,36)),((172,34),(174,33))]:
         line(d,[a,b],(255,216,96),1.1)
-    d.arc((160*S,40*S,172*S,53*S),130,280,fill=WHITE,width=1.6*S)
-    d.arc((169*S,37*S,181*S,51*S),188,356,fill=WHITE,width=1.6*S)
+    d.arc((160*S,40*S,172*S,53*S),130,280,fill=WHITE,width=round(1.6*S))
+    d.arc((169*S,37*S,181*S,51*S),188,356,fill=WHITE,width=round(1.6*S))
     line(d,[(162,50),(178,50)],WHITE,1.6)
     # Nominal markers, WITHOUT colored value capsules.
     for x,value in ((123,'7.5'),(357,'700')):
