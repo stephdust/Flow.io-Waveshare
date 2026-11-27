@@ -265,7 +265,7 @@ txt_maxl = 3
 [[component]]
 name = "b0"
 type = "hotspot"
-x = 8
+x = 64
 y = 268
 w = 72
 h = 45
@@ -364,11 +364,3 @@ pco = "#ffffff"
 ycen = 0
 txt = "__._°C"
 txt_maxl = 20
-
-[[component]]
-name = "m2"
-type = "hotspot"
-x = 103
-y = 268
-w = 81
-h = 47
