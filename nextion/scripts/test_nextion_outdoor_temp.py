@@ -73,7 +73,7 @@ assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
 assert "weather_icons=Image.new('RGBA'" in renderer
 assert "weather_icons.crop((159*S,5*S,184*S,30*S)),(182*S,5*S)" in renderer
-assert "weather_icons.crop((157*S,30*S,186*S,55*S)),(176*S,30*S)" in renderer
+assert "weather_icons.crop((159*S,30*S,184*S,55*S)),(182*S,30*S)" in renderer
 assert water["x"] > 204 and air["x"] > 204, "Nextion text widget may erase shifted temperature icons"
 assert "cloud=(3,26,52,255)" in renderer
 assert "d.text((296,18),'27.3°C',font=preview_font(22)" in renderer
