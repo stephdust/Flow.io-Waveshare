@@ -40,6 +40,7 @@ assert byname["tTime"]["bco"] == byname["tDate"]["bco"] == "#041225", (
     "native header labels must not paint rectangular panels over uniform navy"
 )
 assert water["ycen"] == air["ycen"] == 1
+assert water["xcen"] == air["xcen"] == 2, "both temperature fields must be right aligned"
 assert 154 < water["x"] and water["x"] + water["w"] <= 300
 assert 154 < air["x"] and air["x"] + air["w"] <= 300
 assert water["y"] == 5 and water["h"] == 25
@@ -68,9 +69,10 @@ assert "fill=(242,48,62,255)" in renderer
 assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
 assert "cloud=(3,26,52,255)" in renderer
-assert "d.text((185,18),'27.3°C',font=preview_font(18)" in renderer
-assert "d.text((185,43),'7.3°C',font=preview_font(18)" in renderer
+assert "d.text((296,18),'27.3°C',font=preview_font(18)" in renderer
+assert "d.text((296,43),'7.3°C',font=preview_font(18)" in renderer
 assert "d.text((187,20),'27.3°C'" not in renderer
 print("PASS: water/outdoor temperatures use existing ESP32 globals")
-print("PASS: smaller 16px native temperature fonts, no text background rectangles")
+assert "fill=WHITE,anchor='rm')" in renderer, "right edge should align with native widget"
+print("PASS: smaller 16px temperatures right-aligned in native HMI and preview")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
