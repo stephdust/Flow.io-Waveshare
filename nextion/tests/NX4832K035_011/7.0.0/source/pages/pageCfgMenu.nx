@@ -1,0 +1,367 @@
+on pageCfgMenu.load:
+  if(globals.vaKbdCtxRef.val>0)
+  {
+    printh 23 06 50 0A
+    print globals.vaKbdCtxRef.val
+    globals.vaKbdCtxRef.val=0
+  }else
+  {
+    printh 23 02 50 0A
+  }
+  vis tL0,0
+  vis tL1,0
+  vis tL2,0
+  vis tL3,0
+  vis tL4,0
+  vis tL5,0
+  vis tV0,0
+  vis tV1,0
+  vis tV2,0
+  vis tV3,0
+  vis tV4,0
+  vis tV5,0
+  vis bR0,0
+  vis bR1,0
+  vis bR2,0
+  vis bR3,0
+  vis bR4,0
+  vis bR5,0
+
+on pageCfgMenu.unload:
+  printh 23 02 51 06
+
+on tPath.up:
+  printh 23 02 51 02
+
+on bHome.down:
+  tmReboot.en=1
+
+on bHome.up:
+  tmReboot.en=0
+  vaRebtCounter.val=0
+  printh 23 02 51 06
+  page pageHome
+
+on bValid.down:
+  printh 23 02 51 03
+
+on tL0.down:
+  printh 23 02 52 00
+
+on tL1.down:
+  printh 23 02 52 01
+
+on tL2.down:
+  printh 23 02 52 02
+
+on tL3.down:
+  printh 23 02 52 03
+
+on tL4.down:
+  printh 23 02 52 04
+
+on tL5.down:
+  printh 23 02 52 05
+
+on bR0.up:
+  printh 23 02 55 00
+
+on bR1.up:
+  printh 23 02 55 01
+
+on bR2.up:
+  printh 23 02 55 02
+
+on bR3.up:
+  printh 23 02 55 03
+
+on bR4.up:
+  printh 23 02 55 04
+
+on bR5.up:
+  printh 23 02 55 05
+
+on tV0.down:
+  if(vaEditType0.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV0.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=0
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType0.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=0
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL0.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV0.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType0.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=0
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL0.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV0.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType0.val==3) // BOOLEAN
+  {
+    printh 23 02 52 00
+  }
+
+on tV1.down:
+  if(vaEditType1.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV1.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=1
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType1.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=1
+    pageKeyPad.vaReturnPage.val=dp
+    // virgule autorisée pour consigne pH
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL1.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV1.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType1.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=1
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL1.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV1.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType1.val==3) // BOOLEAN
+  {
+    printh 23 02 52 01
+  }
+
+on tV2.down:
+  if(vaEditType2.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV2.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=2
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType2.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=2
+    pageKeyPad.vaReturnPage.val=dp
+    // virgule autorisée pour consigne pH
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL2.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV2.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType2.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=2
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL2.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV2.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType2.val==3) // BOOLEAN
+  {
+    printh 23 02 52 02
+  }
+
+on tV3.down:
+  if(vaEditType3.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV3.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=3
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType3.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=3
+    pageKeyPad.vaReturnPage.val=dp
+    // virgule autorisée pour consigne pH
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL3.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV3.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType3.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=3
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL3.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV3.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType3.val==3) // BOOLEAN
+  {
+    printh 23 02 52 03
+  }
+
+on tV4.down:
+  if(vaEditType4.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV4.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=4
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType4.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=4
+    pageKeyPad.vaReturnPage.val=dp
+    // virgule autorisée pour consigne pH
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL4.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV4.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType4.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=4
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL4.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV4.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType4.val==3) // BOOLEAN
+  {
+    printh 23 02 52 04
+  }
+
+on tV5.down:
+  if(vaEditType5.val==0) // TEXT
+  {
+    pageKeyBoard.InputCommand.txt=tV5.txt
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=5
+    printh 23 02 50 0B
+    page pageKeyBoard
+  }else if(vaEditType5.val==1) // INTEGER
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=5
+    pageKeyPad.vaReturnPage.val=dp
+    // virgule autorisée pour consigne pH
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=0
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL5.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV5.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType5.val==2) // FLOAT
+  {
+    globals.vaKbdCtxRef.val=vaCtxRef.val
+    globals.vaKbdRow.val=5
+    pageKeyPad.vaReturnPage.val=dp
+    pageKeyPad.vaTxtMaxAv.val=5
+    pageKeyPad.vaTxtMaxAp.val=2
+    pageKeyPad.vaMaxi.val=9999
+    pageKeyPad.vaMini.val=0
+    pageKeyPad.tName.txt=tL5.txt
+    pageKeyPad.tName.txt+="\r"
+    pageKeyPad.tName.txt+=tV5.txt
+    pageKeyPad.tName.txt+=" "
+    printh 23 02 50 0B
+    page pageKeyPad
+  }else if(vaEditType0.val==3) // BOOLEAN
+  {
+    printh 23 02 52 05
+  }
+
+on bPrev.up:
+  printh 23 02 51 05
+
+on bNext.up:
+  printh 23 02 51 04
+
+on bBack.up:
+  printh 23 02 51 02
+
+on tmReboot.timer:
+  vaRebtCounter.val+=1
+  if(vaRebtCounter.val<=bHome.w)
+  {
+    fill bHome.x,bHome.y,vaRebtCounter.val,bHome.h,62307
+  }else
+  {
+    //printh 23 01 43  // Execture arbitrary commands
+    tmReboot.en=0
+    vaRebtCounter.val=0
+    page pageReboot
+  }

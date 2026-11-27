@@ -1,0 +1,362 @@
+[page]
+name = "pageHome"
+type = "page"
+x = 0
+y = 0
+w = 480
+h = 320
+bco = "#041225"
+
+[[component]]
+name = "tmAnim"
+type = "timer"
+tim = 50
+
+[[component]]
+name = "tWaterTemp"
+type = "text"
+vscope = 1
+x = 196
+y = 13
+w = 100
+h = 40
+font = "SegoeUI_Home"
+bco = "#041b33"
+pco = "#ffffff"
+ycen = 0
+txt = "__._°C"
+txt_maxl = 20
+
+[[component]]
+name = "tpH"
+type = "text"
+vscope = 1
+x = 87
+y = 166
+w = 72
+h = 40
+font = "SegoeUI_Home"
+bco = "#041225"
+pco = "#ffffff"
+txt = "_.__"
+txt_maxl = 20
+
+[[component]]
+name = "tPHTitle"
+type = "text"
+x = 33
+y = 238
+w = 182
+h = 30
+font = "SegoeUI_28"
+bco = "#041225"
+pco = "#ffffff"
+ycen = 0
+txt = "pH"
+txt_maxl = 20
+
+[[component]]
+name = "tOrpTitle"
+type = "text"
+x = 267
+y = 237
+w = 182
+h = 30
+font = "SegoeUI_28"
+bco = "#041225"
+pco = "#ffffff"
+ycen = 0
+txt = "Orp"
+txt_maxl = 20
+
+[[component]]
+name = "tORP"
+type = "text"
+vscope = 1
+x = 321
+y = 166
+w = 71
+h = 40
+font = "SegoeUI_Home"
+bco = "#041225"
+pco = "#ffffff"
+txt = "___\r\nmV"
+txt_maxl = 20
+
+[[component]]
+name = "tWifiState"
+type = "text"
+x = 438
+y = 7
+w = 36
+h = 36
+font = "Home_Icons_32"
+bco = "#041b33"
+pco = "#ffffff"
+ycen = 0
+txt = "C"
+txt_maxl = 3
+
+[[component]]
+name = "tmUpdate"
+type = "timer"
+tim = 500
+
+[[component]]
+name = "bUpdateGauge"
+type = "button"
+sendkey = 2
+x = 0
+y = 81
+w = 50
+h = 30
+txt = "Update"
+
+[[component]]
+name = "vaPHNiddle"
+type = "variable"
+
+[[component]]
+name = "vaOrpNiddle"
+type = "variable"
+
+[[component]]
+name = "tProp"
+type = "text"
+x = 207
+y = 210
+w = 70
+h = 70
+sta = 2
+font = "Propeller_50"
+bco = "#041225"
+picc = "picture-0020"
+pic = "picture-0020"
+pco = "#ffffff"
+txt = "┌"
+txt_maxl = 3
+
+[[component]]
+name = "vaIconProp"
+type = "variable"
+sta = 1
+txt = "┌┍┎┏┐┑┒┓└┕┖"
+txt_maxl = 33
+
+[[component]]
+name = "tTime"
+type = "text"
+vscope = 1
+x = 304
+y = 5
+w = 94
+h = 28
+endx = 80
+font = "SegoeUI_28_B"
+bco = "#041b33"
+pco = "#ffffff"
+txt = "__:__"
+txt_maxl = 6
+
+[[component]]
+name = "tpHInject"
+type = "text"
+x = 104
+y = 275
+w = 36
+h = 36
+font = "HomeIcons_35"
+bco = "#041c35"
+pco = "#004152"
+ycen = 0
+txt = "╈"
+txt_maxl = 3
+
+[[component]]
+name = "tChlInject"
+type = "text"
+x = 323
+y = 275
+w = 36
+h = 36
+font = "HomeIcons_35"
+bco = "#041c35"
+pco = "#004152"
+ycen = 0
+txt = "╍"
+txt_maxl = 3
+
+[[component]]
+name = "vaPSINiddle"
+type = "variable"
+val = 2
+
+[[component]]
+name = "tSWGRunning"
+type = "text"
+x = 359
+y = 275
+w = 36
+h = 36
+font = "HomeIcons_35"
+bco = "#041c35"
+pco = "#004152"
+ycen = 0
+txt = "▭"
+txt_maxl = 3
+
+[[component]]
+name = "tmBlink"
+type = "timer"
+tim = 300
+
+[[component]]
+name = "bInjectUpdt"
+type = "button"
+x = 2
+y = 205
+w = 50
+h = 30
+txt = "UptInject"
+
+[[component]]
+name = "tDate"
+type = "text"
+vscope = 1
+x = 304
+y = 31
+w = 94
+h = 28
+endx = 161
+font = "SegoeUI_28_B"
+bco = "#041b33"
+pco = "#ffffff"
+txt = "__ ______"
+txt_maxl = 9
+
+[[component]]
+name = "vaPrvpHPercen"
+type = "variable"
+val = -1
+
+[[component]]
+name = "vaPrvOrpPercen"
+type = "variable"
+val = -1
+
+[[component]]
+name = "vaPrvPSINid"
+type = "variable"
+
+[[component]]
+name = "tFConnectState"
+type = "text"
+x = 400
+y = 7
+w = 36
+h = 36
+font = "Home_Icons_32"
+bco = "#041b33"
+pco = "#0086b5"
+ycen = 0
+txt = "a"
+txt_maxl = 3
+
+[[component]]
+name = "b0"
+type = "button"
+x = 4
+y = 268
+w = 48
+h = 50
+style = 0
+font = "Home_Icons_37"
+bco = "#041c35"
+bco2 = "#041c35"
+pco = "#ffffff"
+pco2 = "#0092d6"
+txt = "Z"
+txt_maxl = 1
+
+[[component]]
+name = "bDateTime"
+type = "button"
+x = 1
+y = 124
+w = 52
+h = 45
+
+[[component]]
+name = "vaTmpDateTime"
+type = "variable"
+sta = 1
+txt = ""
+txt_maxl = 30
+
+[[component]]
+name = "tmDateTime"
+type = "timer"
+tim = 60000
+
+[[component]]
+name = "vaOrpPercent"
+type = "variable"
+val = 140
+
+[[component]]
+name = "vapHPercent"
+type = "variable"
+val = 140
+
+[[component]]
+name = "vaBuildDatTime"
+type = "variable"
+sta = 1
+txt = ""
+
+[[component]]
+name = "tErrMessage"
+type = "scrolling-text"
+x = 63
+y = 57
+w = 378
+h = 30
+font = "SegoeUI_28"
+bco = "#041225"
+pco = "#f74d39"
+dis = 8
+tim = 100
+txt = ""
+txt_maxl = 31
+
+[[component]]
+name = "m0"
+type = "hotspot"
+x = 196
+y = 0
+w = 284
+h = 272
+
+[[component]]
+name = "m1"
+type = "hotspot"
+x = 192
+y = 195
+w = 97
+h = 98
+
+[[component]]
+name = "b1"
+type = "button"
+x = 428
+y = 268
+w = 48
+h = 50
+style = 0
+font = "Home_Icons_37"
+bco = "#041c35"
+bco2 = "#041c35"
+pco = "#ffffff"
+pco2 = "#0092d6"
+txt = "f"
+txt_maxl = 1

@@ -1,0 +1,101 @@
+//The following code is only run once when power on, and is generally used for global variable definition and power on initialization data
+int sys0=0,sys1=0,sys2=0     //At present, the definition of global variable only supports 4-byte signed integer (int), and other types of global quantity declaration are not supported. If you want to use string type, you can use variable control in the page to implement
+int gest_x=0,gest_y=0,gest_dx=0,gest_dy=0,gest_dsq=0,gest_time=0,gest_type=0,tmp=0
+int temp=0
+int temp1=0
+int temp2=0
+int temp3=0
+int temp4=0
+int temp5=0
+int temp6=0
+int tempdotpage=0,tempdotspc=30,tempdottensP=0,tempdottens=0,tempdotdir=1,tempdotaccel=10,tempdot2=0,tempdot3=0,tempdot4=0,tempdot5=0,temphoriz=0
+int tempIsError=0   // Variable used to store whether there is an active error when loading page (to draw the alarm signal)
+int ErrorToggle=0   // Used to make icons blink
+int PreviousPage=1 // Used as return function
+int LongPressNumber=0
+// GLOBALS PAGE OBJECTS REFERENCE FOR COLORS
+//////////////////////////
+// PICTURE REFERENCES: TO BE CHANGED WHEN ADD/REMOVE PICTURES
+//////////////////////////
+int ArrowIconpic=1
+int SettingGearpic=2
+int LEDpic=1  // the grey led. -1 is green and +1 is red
+int Switchpic=37
+int HomeGaugepic=3
+int kpad_shift_up=11
+int kpad_shift_down=14
+int PSIGaugepic=20
+//Page index Reference
+int IDpageStorage=0
+int IDSto=0
+//Switch Overlay Page command index
+// In microcontroller code, commands are listed from Command_Shift index and more
+int Command_Shift=4
+//WIFI SCAN
+int WifiNetworlsPerPage=5
+int WifiPages=3   // Must be <16
+//HOME PAGE SIMPLE
+int Green_Color=11532
+int Grey_Color=522
+int Light_Grey_Background=59230
+int Orange_Color=58788
+int Red_Color=53801
+int DarkGreen_Color=1232
+int Blue_Color=1309
+int Turquoise_Color=946
+int Black_Color=0
+int White_Color=65535
+//// ALL PAGES CODES ////
+// Needs to be sync with ESP32 code
+int ENP_SPLASH=1 // printh 23 02 50 01
+int ENP_HOME=2 // printh 23 02 50 02
+int ENP_MENU=3 // printh 23 02 50 03
+int ENP_CALIB=4  // printh 23 02 50 04
+int ENP_KEYPAD=5  // printh 23 02 50 05
+int ENP_WIFI_SCAN=6  // printh 23 02 50 06
+int ENP_ELECTROLYSE=7  // printh 23 02 50 07
+int ENP_NEWTANK=8  // printh 23 02 50 08
+int ENP_INFO=9  // printh 23 02 50 09
+int ENP_DATETIME=10 // printh 23 02 50 0A
+int ENP_WIFI_CONFIG=11 // printh 23 02 50 0B
+int ENP_GRAPH=13 // printh 23 02 50 0D
+int ENP_HOME_SWITCH=14 // printh 23 02 50 0E
+int ENP_LANGUAGE=15 // printh 23 02 50 0F
+int ENP_MQTT_CONFIG=16 // printh 23 02 50 10
+int ENP_ALERTS=17 // printh 23 02 50 11
+int ENP_SMTP_CONFIG=18 // printh 23 02 50 12
+int ENP_PINS_CONFIG=19 // printh 23 02 50 13
+int ENP_HELP_POPUP=20  // printh 23 02 50 14
+int ENMP_EMPTY_CONTROLS=90 // printh 23 02 50 5A
+//// ALL COMMANDS CODES ////
+// Needs to be sync with ESP32 code
+int ENMC_FILT_MODE=0
+int ENMC_PH_AUTOMODE=1
+int ENMC_ORP_AUTOMODE=2
+int ENMC_HEAT=3
+int ENMC_FILT_PUMP=4
+int ENMC_PH_PUMP=5
+int ENMC_CHL_PUMP=6
+int ENMC_HEATING=7
+int ENMC_WINTER_MODE=8
+int ENMC_LANGUAGE=9
+int ENMC_PH_PUMP_MENU=11
+int ENMC_CHL_PUMP_MENU=12
+int ENMC_FILT_PUMP_MENU=13
+int ENMC_HEAT_MENU=14
+int ENMC_SWG_MODE_MENU=15
+int ENMC_TANK_STATUS=16
+int ENMC_ROBOT=17
+int ENMC_LIGHTS=18
+int ENMC_SPARE=19
+int ENMC_CLEAR_ALARMS=20
+int ENMC_FILLING_PUMP=21
+int ENMC_SWG_REGULATION=22
+baud=115200//Configure baudrate
+dim=100//Configure backlight
+recmod=0//Serial data parsing mode:0-Passive mode;1-Active mode
+thsp=60
+thup=1
+usup=0
+printh 00 00 00 ff ff ff 88 ff ff ff//Output power on information to serial port
+page pageHome                             //Power on start page 1 which is Home

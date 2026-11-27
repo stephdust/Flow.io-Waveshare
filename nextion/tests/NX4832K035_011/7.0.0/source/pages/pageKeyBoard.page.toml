@@ -1,0 +1,650 @@
+[page]
+name = "pageKeyBoard"
+type = "page"
+x = 0
+y = 0
+w = 480
+h = 320
+sta = 2
+bco = "#e7ebf7"
+pic = "picture-0004"
+
+[[component]]
+name = "p0"
+type = "picture"
+x = 10
+y = 232
+w = 61
+h = 78
+pic = "picture-0025"
+
+[[component]]
+name = "tc0"
+type = "touch-capture"
+
+[[component]]
+name = "SetLow"
+type = "button"
+x = 360
+y = 11
+w = 46
+h = 25
+
+[[component]]
+name = "SetHigh"
+type = "button"
+x = 415
+y = 10
+w = 46
+h = 25
+
+[[component]]
+name = "SetNum1"
+type = "button"
+x = 360
+y = 39
+w = 46
+h = 25
+
+[[component]]
+name = "SetNum2"
+type = "button"
+x = 412
+y = 38
+w = 46
+h = 25
+
+[[component]]
+name = "t0"
+type = "text"
+x = 17
+y = 20
+w = 444
+h = 37
+style = 1
+borderc = "#adaaad"
+borderw = 1
+font = "Segoe_30_Keyboard"
+pco = "#adaaad"
+xcen = 0
+txt = " "
+txt_maxl = 100
+
+[[component]]
+name = "Num"
+type = "button"
+x = 18
+y = 248
+w = 55
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0011"
+pic2 = "picture-0014"
+pco2 = "#000000"
+txt = "123"
+
+[[component]]
+name = "Shift"
+type = "button"
+x = 18
+y = 187
+w = 55
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0011"
+pic2 = "picture-0011"
+txt = "▊"
+
+[[component]]
+name = "Enter"
+type = "button"
+x = 408
+y = 248
+w = 55
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0011"
+pic2 = "picture-0014"
+pco2 = "#000000"
+txt = "▙"
+
+[[component]]
+name = "Del"
+type = "button"
+x = 408
+y = 187
+w = 55
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0011"
+pic2 = "picture-0014"
+pco2 = "#000000"
+txt = "▝"
+
+[[component]]
+name = "b0"
+type = "button"
+x = 18
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "a"
+
+[[component]]
+name = "b1"
+type = "button"
+x = 63
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "z"
+
+[[component]]
+name = "b2"
+type = "button"
+x = 108
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "e"
+
+[[component]]
+name = "b3"
+type = "button"
+x = 153
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "r"
+
+[[component]]
+name = "b4"
+type = "button"
+x = 198
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "t"
+
+[[component]]
+name = "b5"
+type = "button"
+x = 243
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "y"
+
+[[component]]
+name = "b6"
+type = "button"
+x = 288
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "u"
+
+[[component]]
+name = "b7"
+type = "button"
+x = 333
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "i"
+
+[[component]]
+name = "b8"
+type = "button"
+x = 378
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "o"
+
+[[component]]
+name = "b9"
+type = "button"
+x = 423
+y = 65
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "o"
+
+[[component]]
+name = "b10"
+type = "button"
+x = 18
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "p"
+
+[[component]]
+name = "b11"
+type = "button"
+x = 63
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "s"
+
+[[component]]
+name = "b12"
+type = "button"
+x = 108
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "d"
+
+[[component]]
+name = "b13"
+type = "button"
+x = 153
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "f"
+
+[[component]]
+name = "b14"
+type = "button"
+x = 198
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "g"
+
+[[component]]
+name = "b15"
+type = "button"
+x = 243
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "h"
+
+[[component]]
+name = "b16"
+type = "button"
+x = 288
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "j"
+
+[[component]]
+name = "b17"
+type = "button"
+x = 333
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "k"
+
+[[component]]
+name = "b18"
+type = "button"
+x = 378
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "l"
+
+[[component]]
+name = "b19"
+type = "button"
+x = 423
+y = 126
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "m"
+
+[[component]]
+name = "b26"
+type = "button"
+x = 355
+y = 186
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "'"
+
+[[component]]
+name = "b25"
+type = "button"
+x = 311
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "n"
+
+[[component]]
+name = "b24"
+type = "button"
+x = 266
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "b"
+
+[[component]]
+name = "b23"
+type = "button"
+x = 221
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "v"
+
+[[component]]
+name = "b22"
+type = "button"
+x = 176
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "c"
+
+[[component]]
+name = "b21"
+type = "button"
+x = 131
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "x"
+
+[[component]]
+name = "b20"
+type = "button"
+x = 86
+y = 187
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "w"
+
+[[component]]
+name = "b29"
+type = "button"
+x = 356
+y = 248
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "."
+
+[[component]]
+name = "b28"
+type = "button"
+x = 311
+y = 248
+w = 40
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0010"
+pic2 = "picture-0015"
+txt = "@"
+
+[[component]]
+name = "b27"
+type = "button"
+x = 152
+y = 248
+w = 154
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0012"
+pic2 = "picture-0017"
+txt = " "
+
+[[component]]
+name = "b30"
+type = "button"
+x = 86
+y = 187
+w = 69
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0013"
+pic2 = "picture-0016"
+txt = "."
+
+[[component]]
+name = "b31"
+type = "button"
+x = 166
+y = 187
+w = 69
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0013"
+pic2 = "picture-0016"
+txt = "_"
+
+[[component]]
+name = "b32"
+type = "button"
+x = 246
+y = 187
+w = 69
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0013"
+pic2 = "picture-0016"
+txt = "-"
+
+[[component]]
+name = "b33"
+type = "button"
+x = 326
+y = 187
+w = 69
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0013"
+pic2 = "picture-0016"
+txt = "+"
+
+[[component]]
+name = "CurrentLayout"
+type = "variable"
+
+[[component]]
+name = "InputCommand"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 60
+
+[[component]]
+name = "tm0"
+type = "timer"
+tim = 200
+en = 0
+
+[[component]]
+name = "vaToggle"
+type = "variable"
+
+[[component]]
+name = "tm1"
+type = "timer"
+tim = 50
+
+[[component]]
+name = "t2"
+type = "text"
+x = 315
+y = 6
+w = 23
+h = 30
+font = "Segoe_30_Keyboard"
+txt = "▊"
+
+[[component]]
+name = "Back"
+type = "button"
+x = 86
+y = 248
+w = 55
+h = 55
+sta = 2
+font = "Segoe_30_Keyboard"
+pic = "picture-0011"
+pic2 = "picture-0014"
+pco2 = "#000000"
+txt = "ESC"
+
+[[component]]
+name = "prevInputCmd"
+type = "variable"
+sta = 1
+txt = ""
+txt_maxl = 100
+
+[[component]]
+name = "firstKey"
+type = "variable"
+val = 1
+
+[[component]]
+name = "vaKBPage"
+type = "variable"
+vscope = 1
+txt = ""
+txt_maxl = 60
+
+[[component]]
+name = "vaKBObject"
+type = "variable"
+vscope = 1
+txt = ""
+txt_maxl = 60
+
+[[component]]
+name = "vaKBTouched"
+type = "variable"
+vscope = 1

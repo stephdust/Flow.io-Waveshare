@@ -1,0 +1,87 @@
+on pageHomeSwtch.load:
+  vis bUpdateBt,0
+
+on pageHomeSwtch.loadend:
+  //Update Alarm and Settings icons
+  click bUpdateBt,1
+
+on pageHomeSwtch.unload:
+  PreviousPage=dp
+
+on bHome.down:
+  page pageHome
+
+on btAuto.down:
+  printh 23 03 60 0A 01
+
+on btAutoORP.down:
+  printh 23 03 60 0B 01
+
+on btAutoPH.down:
+  printh 23 03 60 0C 01
+
+on btPHPump.down:
+  printh 23 03 60 07 01
+
+on btCHLPump.down:
+  printh 23 03 60 08 01
+
+on btWinter.down:
+  printh 23 03 60 0D 01
+
+on btLight.down:
+  printh 23 03 60 0E 01
+
+on btRobot.down:
+  printh 23 03 60 0F 01
+
+on bUpdateBt.down:
+  tErrMessage.txt=globals.vaErrMsg.txt
+  // bit 1
+  sys1=globals.vaStates.val
+  sys1=sys1/2
+  sys1=sys1%2
+  btPHPump.val=sys1
+  // bit 2
+  sys1=globals.vaStates.val
+  sys1=sys1/4
+  sys1=sys1%2
+  btCHLPump.val=sys1
+  // bit 3
+  sys1=globals.vaStates.val
+  sys1=sys1/8
+  sys1=sys1%2
+  btAuto.val=sys1
+  // bit 4
+  sys1=globals.vaStates.val
+  sys1=sys1/16
+  sys1=sys1%2
+  btAutoPH.val=sys1
+  // bit 5
+  sys1=globals.vaStates.val
+  sys1=sys1/32
+  sys1=sys1%2
+  btAutoORP.val=sys1
+  // bit 6
+  sys1=globals.vaStates.val
+  sys1=sys1/64
+  sys1=sys1%2
+  btWinter.val=sys1
+  // bit 9
+  sys1=globals.vaStates.val
+  sys1=sys1/512
+  sys1=sys1%2
+  btRobot.val=sys1
+  // bit 10
+  sys1=globals.vaStates.val
+  sys1=sys1/1024
+  sys1=sys1%2
+  btLight.val=sys1
+  // bit 12
+  sys1=globals.vaStates.val
+  sys1=sys1/8192
+  sys1=sys1%2
+  //btFill.val=sys1
+
+on tmUpdateBt.timer:
+  click bUpdateBt,1

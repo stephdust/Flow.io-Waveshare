@@ -1,0 +1,260 @@
+[page]
+name = "globals"
+type = "page"
+vscope = 1
+x = 0
+y = 0
+w = 480
+h = 320
+
+[[component]]
+name = "vaMCFW"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "Version x"
+txt_maxl = 20
+
+[[component]]
+name = "vaSSID"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 30
+
+[[component]]
+name = "vaIP"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 15
+
+[[component]]
+name = "vaElectroSec"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaElectroDelay"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaStaSto"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "--/--h"
+
+[[component]]
+name = "vaOrp"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "430"
+
+[[component]]
+name = "vapH"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "7.8"
+
+[[component]]
+name = "vaTime"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "--:--:--"
+
+[[component]]
+name = "vaDate"
+type = "variable"
+vscope = 1
+sta = 1
+
+[[component]]
+name = "vaSPBut"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vapHSP"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "-.-"
+
+[[component]]
+name = "vaOrpSP"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "---"
+
+[[component]]
+name = "vaCommand"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 200
+
+[[component]]
+name = "vaWTSP"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "---"
+
+[[component]]
+name = "vaWTLT"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "---"
+
+[[component]]
+name = "vaPSIMin"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "---"
+
+[[component]]
+name = "vaPSIMax"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "---"
+
+[[component]]
+name = "vaTmpLang"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "vaSwitches"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaMQTTServer"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 50
+
+[[component]]
+name = "vaMQTTPassword"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "vaMQTTLogin"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "t0"
+type = "text"
+x = 58
+y = 99
+w = 377
+h = 113
+font = "SegoeUI_59_Keypad"
+txt = "      Store\r\nGlobal Variables"
+txt_maxl = 30
+
+[[component]]
+name = "vaVersion"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "7.0.0"
+txt_maxl = 8
+val = 2
+
+[[component]]
+name = "vaStates"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaAlarms"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaMonthText"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 15
+
+[[component]]
+name = "vaDayText"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 15
+
+[[component]]
+name = "vaErrMsg"
+type = "variable"
+vscope = 1
+sta = 1
+txt = ""
+txt_maxl = 31
+
+[[component]]
+name = "vaOrpValue"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "___"
+
+[[component]]
+name = "vaPhValue"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "_.__"
+
+[[component]]
+name = "vaAirTemp"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "__._°C"
+
+[[component]]
+name = "vaWaterTemp"
+type = "variable"
+vscope = 1
+sta = 1
+txt = "__._°C"
+
+[[component]]
+name = "vaKbdCtxRef"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaKbdRow"
+type = "variable"
+vscope = 1

@@ -1,0 +1,376 @@
+on pageSetTime.load:
+  printh 23 02 50 // Set page number in ESP
+  prints ENP_DATETIME,1
+  // The following is going to execute before we load this current page:
+  vis b0,0
+  // Choose which is the hour reference
+  sys0=globals.vaSwitches.val>>28   //NTP Ready
+  sys0=sys0&1
+  second.val=rtc5  // write the second box with RTC data
+  minute.val=rtc4  // write the minute box with RTC da
+  hour.val=rtc3
+  day.val=rtc2  // write the day box with RTC data
+  month.val=rtc1  // write the month box with RTC data
+  year.val=rtc0  // write the year box with RTC data
+  //Update time source button
+  if(sys0==1)
+  {
+    vis bApply,0
+  }else
+  {
+    vis bApply,1
+  }
+
+on pageSetTime.unload:
+  pageKeyPad.vaOkCancel.val=0
+
+on m0.up:
+  page PreviousPage
+
+on bApply.up:
+  rtc5=second.val  // write the second box with RTC data
+  rtc4=minute.val  // write the minute box with RTC data
+  rtc3=hour.val
+  rtc2=day.val  // write the day box with RTC data
+  rtc1=month.val  // write the month box with RTC data
+  rtc0=year.val  // write the year box with RTC data
+  globals.vaCommand.txt="{\"SetDateTime\":["
+  covx hour.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+=","
+  covx minute.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+=","
+  covx second.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+=","
+  covx day.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+=","
+  covx month.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+=","
+  covx year.val,vaTmp.txt,0,0
+  globals.vaCommand.txt+=vaTmp.txt
+  globals.vaCommand.txt+="]}"
+  printh 23 01 43  // Execture arbitrary commands
+  page PreviousPage  // go to page 0
+
+on b1.down:
+  vaDay_Changed.val=1
+  day.pco=Green_Color
+  if(day.val<vaMaxD.val)
+  {
+    day.val++
+  }else
+  {
+    day.val=1
+  }
+  click b0,1
+
+on hour.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on hour.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on minute.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on minute.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on second.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on second.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on day.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on day.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on month.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on month.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on year.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on year.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on t0.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on t0.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on t2.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on t2.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on b2.down:
+  vaMon_Changed.val=1
+  month.pco=Green_Color
+  if(month.val==12)
+  {
+    month.val=1
+  }else
+  {
+    month.val++
+  }
+  click b0,1
+
+on b3.down:
+  vaYea_Changed.val=1
+  year.pco=Green_Color
+  year.val++
+  click b0,1
+
+on b4.down:
+  vaHou_Changed.val=1
+  hour.pco=Green_Color
+  if(hour.val==23) // if hour is 23 (11 PM)
+  {
+    hour.val=0  // set hour as 0 (12 AM)
+  }else  // since hour is not 23
+  {
+    hour.val++  // increase hour by 1
+  }
+
+on b5.down:
+  vaMin_Changed.val=1
+  minute.pco=Green_Color
+  if(minute.val==59)  // if minute is 59
+  {
+    minute.val=0  // set minute as 0
+  }else  // since minute is not 59
+  {
+    minute.val++  // increase minute by 1
+  }
+
+on b6.down:
+  vaSec_Changed.val=1
+  second.pco=Green_Color
+  if(second.val==59)  // if second is 59
+  {
+    second.val=0  // set second as 0
+  }else  // since second is not 59
+  {
+    second.val++  // increase second by 1
+  }
+
+on b7.down:
+  vaDay_Changed.val=1
+  day.pco=Green_Color
+  if(day.val>1)
+  {
+    day.val--
+  }else
+  {
+    day.val=vaMaxD.val
+  }
+  click b0,1
+
+on b8.down:
+  vaMon_Changed.val=1
+  month.pco=Green_Color
+  if(month.val==1)
+  {
+    month.val=12
+  }else
+  {
+    month.val--
+  }
+  click b0,1
+
+on b9.down:
+  vaYea_Changed.val=1
+  year.pco=Green_Color
+  if(year.val>1900)
+  {
+    year.val--
+  }
+  click b0,1
+
+on b10.down:
+  vaHou_Changed.val=1
+  hour.pco=Green_Color
+  if(hour.val==0) // if hour is 0 (12 AM)
+  {
+    hour.val=23  // set hour as 23 (11 PM)
+  }else  // since hour is not 0
+  {
+    hour.val-- // decrease hour by 1
+  }
+
+on b11.down:
+  vaMin_Changed.val=1
+  minute.pco=Green_Color
+  if(minute.val==0)  // if minute is 0
+  {
+    minute.val=59  // set minute as 59
+  }else  // since minute is not 0
+  {
+    minute.val--  // decrease minute by 1
+  }
+
+on b12.down:
+  vaSec_Changed.val=1
+  second.pco=Green_Color
+  if(second.val==0)  // if second is 0
+  {
+    second.val=59  // set second as 59
+  }else  // since second is not 0
+  {
+    second.val--  // decrease second by 1
+  }
+
+on t1.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on t1.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on t3.down:
+  // The following is going to execute everytime you press this object:
+  //
+
+on t3.up:
+  // The following is going to execute everytime you release this object:
+  //
+
+on b0.down:
+  vaLeapYear.val=0
+  vaMaxD.val=31
+  if(month.val==4||month.val==6||month.val==9||month.val==11)
+  {
+    vaMaxD.val=30
+  }else if(month.val==2)
+  {
+    va0.val=year.val
+    va1.val=year.val
+    va2.val=year.val
+    va0.val%=4
+    va1.val%=100
+    va2.val%=400
+    if(va0.val==0&&va1.val!=0)
+    {
+      vaLeapYear.val=1
+    }else if(va2.val==0)
+    {
+      vaLeapYear.val=1
+    }
+    if(vaLeapYear.val==1)
+    {
+      vaMaxD.val=29
+    }else
+    {
+      vaMaxD.val=28
+    }
+  }
+  if(day.val>vaMaxD.val)
+  {
+    day.val=vaMaxD.val
+  }
+
+on tm0.timer:
+  sys0=globals.vaSwitches.val>>28   //NTP Ready
+  sys0=sys0&1
+  pNTPStatus.pic=-2*sys0+1+LEDpic
+  if(sys0==1)
+  {
+    vis bApply,0
+  }else
+  {
+    vis bApply,1
+  }
+  if(vaSec_Changed.val==0)
+  {
+    second.val=rtc5  // write the second box with RTC data
+  }
+  if(vaMin_Changed.val==0)
+  {
+    minute.val=rtc4  // write the minute box with RTC da
+  }
+  if(vaHou_Changed.val==0)
+  {
+    hour.val=rtc3
+  }
+  if(vaDay_Changed.val==0)
+  {
+    day.val=rtc2  // write the day box with RTC data
+  }
+  if(vaMon_Changed.val==0)
+  {
+    month.val=rtc1  // write the month box with RTC data
+  }
+  if(vaYea_Changed.val==0)
+  {
+    year.val=rtc0  // write the year box with RTC data
+  }
+
+on repeat_tm.timer:
+  click b[button_i.val],1 //repeat
+  tick_c.val++ // increment ticks counter
+  if(tick_c.val==2)
+  {
+    repeat_tm.tim/=4 // handle acceleration
+  }
+
+on tc0.down:
+  // check if the pressed component is a button and act accordingly
+  // other conditions might be added with && if not all buttons shall repeat
+  if(b[tc0.val].type==98)
+  {
+    // for multitouch screens: if a further button is pressed,
+    // the repater will restart and act on the last pressed
+    if(tc0.val!=button_i.val)
+    {
+      button_i.val=tc0.val
+      repeat_tm.tim=500 // start with slow repeat
+      tick_c.val=0 // reinitialize
+    }
+    repeat_tm.en=1 // start timer if not already running
+  }
+
+on tc0.up:
+  // check if the pressed component is a button and act accordingly
+  // other conditions might be added with && if not all buttons shall repeat
+  if(b[tc0.val].type==98)
+  {
+    // for multitouch screens: check if the released button is the currently repeated one
+    // the repater will stop and reinitialize the timer and tick counter
+    if(tc0.val==button_i.val)
+    {
+      repeat_tm.en=0 // stop timer
+      repeat_tm.tim=500 // start the next again  with slow repeat
+      tick_c.val=0 // reinitialize
+      button_i.val=0 // reinitialize
+    }
+  }

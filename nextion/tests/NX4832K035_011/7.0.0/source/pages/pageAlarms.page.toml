@@ -1,0 +1,490 @@
+[page]
+name = "pageAlarms"
+type = "page"
+x = 0
+y = 0
+w = 480
+h = 320
+bco = "#21557b"
+pic = 40
+
+[[component]]
+name = "tPath"
+type = "text"
+aph = 100
+x = 66
+y = 0
+w = 413
+h = 41
+font = "Segoe24_MenuItems"
+bco = "#21557b"
+pco = "#ffffff"
+xcen = 0
+txt = "flow>config"
+txt_maxl = 50
+
+[[component]]
+name = "bHome"
+type = "button"
+x = 0
+y = 268
+w = 56
+h = 52
+style = 0
+font = "Home_Icons_32"
+pic = 40
+bco = "#21557b"
+pic2 = 41
+bco2 = "#21557b"
+pco = "#c6c3c6"
+pco2 = "#0092d6"
+txt = "N"
+
+[[component]]
+name = "tL0"
+type = "text"
+aph = 80
+x = 67
+y = 35
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "tL1"
+type = "text"
+aph = 80
+x = 67
+y = 72
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "tL2"
+type = "text"
+aph = 80
+x = 67
+y = 111
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "tL3"
+type = "text"
+aph = 80
+x = 67
+y = 150
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "tL4"
+type = "text"
+aph = 80
+x = 67
+y = 188
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "tL5"
+type = "text"
+aph = 80
+x = 67
+y = 226
+w = 350
+h = 40
+style = 1
+borderc = "#c6c3c6"
+borderw = 1
+font = "Segoe24_MenuItems"
+bco = "#313431"
+pco = "#ffffff"
+xcen = 0
+txt = ""
+txt_maxl = 40
+
+[[component]]
+name = "bR0"
+type = "button"
+aph = 100
+x = 375
+y = 36
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "bR1"
+type = "button"
+aph = 100
+x = 375
+y = 74
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "bR2"
+type = "button"
+aph = 100
+x = 375
+y = 113
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "bR3"
+type = "button"
+aph = 100
+x = 375
+y = 152
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "bR4"
+type = "button"
+aph = 100
+x = 375
+y = 189
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "bR5"
+type = "button"
+aph = 100
+x = 375
+y = 228
+w = 40
+h = 36
+style = 1
+borderc = "#c6c3c6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#f7f3f7"
+pco = "#f7f3f7"
+pco2 = "#0071a5"
+txt = "n"
+txt_maxl = 2
+
+[[component]]
+name = "t0"
+type = "text"
+x = 219
+y = 270
+w = 51
+h = 50
+font = "Segoe24_MenuItems"
+bco = "#21557b"
+pco = "#ffffff"
+txt = "/"
+txt_maxl = 1
+
+[[component]]
+name = "nPage"
+type = "number"
+x = 193
+y = 270
+w = 40
+h = 50
+font = "Segoe24_MenuItems"
+bco = "#21557b"
+pco = "#ffffff"
+xcen = 2
+
+[[component]]
+name = "nPages"
+type = "number"
+x = 258
+y = 270
+w = 36
+h = 50
+font = "Segoe24_MenuItems"
+bco = "#21557b"
+pco = "#ffffff"
+xcen = 0
+
+[[component]]
+name = "tV0"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 36
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "tV1"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 74
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "tV2"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 113
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "tV3"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 152
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "tV4"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 189
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "tV5"
+type = "dual-state-button"
+aph = 80
+x = 328
+y = 228
+w = 45
+h = 36
+style = 1
+borderc = "#0092d6"
+borderw = 0
+font = "Home_Icons_32"
+bco = "#313431"
+bco2 = "#0092d6"
+pco = "#c6c3c6"
+txt = ""
+txt_maxl = 25
+
+[[component]]
+name = "bPrev"
+type = "button"
+x = 137
+y = 270
+w = 50
+h = 50
+style = 0
+borderc = "#c6c3c6"
+borderw = 1
+font = "Home_Icons_32"
+pic = 40
+bco = "#21557b"
+pic2 = 41
+bco2 = "#21557b"
+pco = "#c6c3c6"
+pco2 = "#0092d6"
+txt = "S"
+txt_maxl = 1
+
+[[component]]
+name = "bNext"
+type = "button"
+x = 300
+y = 270
+w = 50
+h = 50
+style = 0
+borderc = "#c6c3c6"
+borderw = 1
+font = "Home_Icons_32"
+pic = 40
+bco = "#21557b"
+pic2 = 41
+bco2 = "#21557b"
+pco = "#c6c3c6"
+pco2 = "#0092d6"
+txt = "P"
+txt_maxl = 1
+
+[[component]]
+name = "vaEditType0"
+type = "variable"
+
+[[component]]
+name = "vaEditType1"
+type = "variable"
+
+[[component]]
+name = "vaEditType2"
+type = "variable"
+
+[[component]]
+name = "vaEditType3"
+type = "variable"
+
+[[component]]
+name = "vaEditType4"
+type = "variable"
+
+[[component]]
+name = "vaEditType5"
+type = "variable"
+
+[[component]]
+name = "vaCtxRef"
+type = "variable"
+
+[[component]]
+name = "vaRebtCounter"
+type = "variable"
+
+[[component]]
+name = "vaDelay"
+type = "variable"
+
+[[component]]
+name = "tmReboot"
+type = "timer"
+tim = 50
+en = 0

@@ -1,0 +1,343 @@
+on pageKeyBoard.load:
+  //printh 23 02 50 // Set page number in ESP
+  //prints ENP_KEYPAD,1
+  //Hide the command button
+  vis SetLow,0
+  vis SetHigh,0
+  vis SetNum1,0
+  vis SetNum2,0
+  vis t2,0
+  //Initialize
+  click SetLow,1
+
+on tc0.down:
+  tm0.en=0
+  tm1.en=0
+  // Only relevant keys
+  sys0=0
+  if(tc0.val>=b0.id&&tc0.val<=b33.id)
+  {
+    sys0=1
+  }
+  if(tc0.val==Del.id)
+  {
+    sys0=1
+  }
+  if(sys0==1)
+  {
+    if(vaKBTouched.val==0)
+    {
+      firstKey.val=0
+      InputCommand.txt=""
+      vaKBTouched.val=1
+    }
+    if(tc0.val==Del.id)
+    {
+      InputCommand.txt-=1 // Delete a character
+    }else
+    {
+      InputCommand.txt+=b[tc0.val].txt   //Input New Txt
+    }
+    t0.pco=0
+    vaToggle.val=0
+  }
+  if(CurrentLayout.val==1&&tc0.val!=Shift.id)
+  {
+    CurrentLayout.val=0
+    click SetLow,1
+    Shift.pic=kpad_shift_up
+    Shift.pic2=kpad_shift_up
+  }
+
+on tc0.up:
+  tm0.en=1
+  tm1.en=1
+
+on SetLow.down:
+  vis b30,0
+  vis b31,0
+  vis b32,0
+  vis b33,0
+  vis b20,1
+  vis b21,1
+  vis b22,1
+  vis b23,1
+  vis b24,1
+  vis b25,1
+  vis b26,1
+  vis b10,1
+  vis b19,1
+  b0.txt="a"
+  b1.txt="z"
+  b2.txt="e"
+  b3.txt="r"
+  b4.txt="t"
+  b5.txt="y"
+  b6.txt="u"
+  b7.txt="i"
+  b8.txt="o"
+  b9.txt="p"
+  b10.txt="q"
+  b11.txt="s"
+  b12.txt="d"
+  b13.txt="f"
+  b14.txt="g"
+  b15.txt="h"
+  b16.txt="j"
+  b17.txt="k"
+  b18.txt="l"
+  b19.txt="m"
+  b20.txt="w"
+  b21.txt="x"
+  b22.txt="c"
+  b23.txt="v"
+  b24.txt="b"
+  b25.txt="n"
+  b26.txt="'"
+  b27.txt=" "
+  b28.txt="@"
+  b29.txt="."
+  b30.txt=""
+  b31.txt=""
+  b32.txt=""
+  b33.txt=""
+
+on SetHigh.down:
+  vis b30,0
+  vis b31,0
+  vis b32,0
+  vis b33,0
+  vis b20,1
+  vis b21,1
+  vis b22,1
+  vis b23,1
+  vis b24,1
+  vis b25,1
+  vis b26,1
+  vis b10,1
+  vis b19,1
+  b0.txt="A"
+  b1.txt="Z"
+  b2.txt="E"
+  b3.txt="R"
+  b4.txt="T"
+  b5.txt="Y"
+  b6.txt="U"
+  b7.txt="I"
+  b8.txt="O"
+  b9.txt="P"
+  b10.txt="Q"
+  b11.txt="S"
+  b12.txt="D"
+  b13.txt="F"
+  b14.txt="G"
+  b15.txt="H"
+  b16.txt="J"
+  b17.txt="K"
+  b18.txt="L"
+  b19.txt="M"
+  b20.txt="W"
+  b21.txt="X"
+  b22.txt="C"
+  b23.txt="V"
+  b24.txt="B"
+  b25.txt="N"
+  b26.txt="'"
+  b27.txt=" "
+  b28.txt="@"
+  b29.txt="."
+  b30.txt=""
+  b31.txt=""
+  b32.txt=""
+  b33.txt=""
+
+on SetNum1.down:
+  vis b30,1
+  vis b31,1
+  vis b32,1
+  vis b33,1
+  vis b20,0
+  vis b21,0
+  vis b22,0
+  vis b23,0
+  vis b24,0
+  vis b25,0
+  vis b26,0
+  vis b10,0
+  vis b19,0
+  b0.txt="1"
+  b1.txt="2"
+  b2.txt="3"
+  b3.txt="4"
+  b4.txt="5"
+  b5.txt="6"
+  b6.txt="7"
+  b7.txt="8"
+  b8.txt="9"
+  b9.txt="0"
+  b10.txt=""
+  b11.txt="$"
+  b12.txt="!"
+  b13.txt="~"
+  b14.txt="&"
+  b15.txt="="
+  b16.txt="#"
+  b17.txt="["
+  b18.txt="]"
+  b19.txt=""
+  b20.txt=""
+  b21.txt=""
+  b22.txt=""
+  b23.txt=""
+  b24.txt=""
+  b25.txt=""
+  b26.txt=""
+  b27.txt=""
+  b28.txt="@"
+  b29.txt="."
+  b30.txt="."
+  b31.txt="_"
+  b32.txt="-"
+  b33.txt="+"
+
+on SetNum2.down:
+  vis b30,1
+  vis b31,1
+  vis b32,1
+  vis b33,1
+  vis b20,0
+  vis b21,0
+  vis b22,0
+  vis b23,0
+  vis b24,0
+  vis b25,0
+  vis b26,0
+  vis b10,0
+  vis b19,0
+  b0.txt="`"
+  b1.txt="|"
+  b2.txt="{"
+  b3.txt="}"
+  b4.txt="?"
+  b5.txt="%"
+  b6.txt="^"
+  b7.txt="*"
+  b8.txt="/"
+  b9.txt="'"
+  b10.txt=""
+  b11.txt="$"
+  b12.txt="!"
+  b13.txt="~"
+  b14.txt="&"
+  b15.txt="="
+  b16.txt="#"
+  b17.txt="["
+  b18.txt="]"
+  b19.txt=""
+  b20.txt=""
+  b21.txt=""
+  b22.txt=""
+  b23.txt=""
+  b24.txt=""
+  b25.txt=""
+  b26.txt=""
+  b27.txt=""
+  b28.txt="@"
+  b29.txt="."
+  b30.txt="."
+  b31.txt="_"
+  b32.txt="-"
+  b33.txt="+"
+
+on Num.down:
+  if(CurrentLayout.val==0||CurrentLayout.val==1)
+  {
+    CurrentLayout.val=2
+    click SetNum1,1
+    Shift.pic=kpad_shift_up
+    Shift.pic2=kpad_shift_up
+    Shift.pco=0
+    Shift.txt="#+="
+    Num.txt="ABC"
+  }else if(CurrentLayout.val==2||CurrentLayout.val==3)
+  {
+    CurrentLayout.val=0
+    click SetLow,1
+    Shift.txt=t2.txt
+    Num.txt="123"
+  }
+
+on Shift.down:
+  if(CurrentLayout.val==0)
+  {
+    CurrentLayout.val=1
+    click SetHigh,1
+    Shift.pic=kpad_shift_down
+    Shift.pic2=kpad_shift_down
+  }else if(CurrentLayout.val==1)
+  {
+    CurrentLayout.val=0
+    click SetLow,1
+    Shift.pic=kpad_shift_up
+    Shift.pic2=kpad_shift_up
+  }else if(CurrentLayout.val==2)
+  {
+    CurrentLayout.val=3
+    click SetNum2,1
+    Shift.txt="123"
+  }else if(CurrentLayout.val==3)
+  {
+    CurrentLayout.val=2
+    click SetNum1,1
+    Shift.txt="#+="
+  }
+
+on Enter.up:
+  btlen InputCommand.txt,sys0
+  if(sys0>47)
+  {
+    sys0=47
+  }
+  sys1=sys0+2
+  // 1) Annonce du contexte menu (reste sur la page clavier)
+  printh 23
+  printh 06
+  printh 50 0A
+  print globals.vaKbdCtxRef.val
+  // 2) Envoi de la valeur texte
+  printh 23
+  prints sys1,1
+  printh 56
+  prints globals.vaKbdRow.val,1
+  prints InputCommand.txt,sys0
+  page pageCfgMenu
+
+on tm0.timer:
+  if(vaToggle.val==0)
+  {
+    t0.txt+="_"
+  }else
+  {
+    t0.txt-=1
+  }
+  vaToggle.val+=1
+  vaToggle.val%=2
+
+on tm1.timer:
+  if(InputCommand.txt!=prevInputCmd.txt)
+  {
+    t0.txt=" "
+    t0.txt+=InputCommand.txt
+    prevInputCmd.txt=InputCommand.txt
+  }
+
+on Back.down:
+  vaKBTouched.val=0
+
+on Back.up:
+  // 1) Annonce du contexte menu (reste sur la page clavier)
+  printh 23
+  printh 06
+  printh 50 0A
+  print globals.vaKbdCtxRef.val
+  page pageCfgMenu

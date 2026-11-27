@@ -1,0 +1,98 @@
+on pageAlarms.load:
+  if(globals.vaKbdCtxRef.val>0)
+  {
+    printh 23 06 50 0B
+    print globals.vaKbdCtxRef.val
+    globals.vaKbdCtxRef.val=0
+  }else
+  {
+    printh 23 02 50 0B
+  }
+  vis tL0,0
+  vis tL1,0
+  vis tL2,0
+  vis tL3,0
+  vis tL4,0
+  vis tL5,0
+  vis tV0,0
+  vis tV1,0
+  vis tV2,0
+  vis tV3,0
+  vis tV4,0
+  vis tV5,0
+  vis bR0,0
+  vis bR1,0
+  vis bR2,0
+  vis bR3,0
+  vis bR4,0
+  vis bR5,0
+
+on pageAlarms.unload:
+  printh 23 02 51 06
+
+on tPath.up:
+  printh 23 02 51 02
+
+on bHome.down:
+  tmReboot.en=1
+
+on bHome.up:
+  tmReboot.en=0
+  vaRebtCounter.val=0
+  printh 23 02 51 06
+  page pageHome
+
+on tL0.down:
+  printh 23 02 52 00
+
+on tL1.down:
+  printh 23 02 52 01
+
+on tL2.down:
+  printh 23 02 52 02
+
+on tL3.down:
+  printh 23 02 52 03
+
+on tL4.down:
+  printh 23 02 52 04
+
+on tL5.down:
+  printh 23 02 52 05
+
+on bR0.up:
+  printh 23 02 52 00
+
+on bR1.up:
+  printh 23 02 52 01
+
+on bR2.up:
+  printh 23 02 52 02
+
+on bR3.up:
+  printh 23 02 52 03
+
+on bR4.up:
+  printh 23 02 52 04
+
+on bR5.up:
+  printh 23 02 52 05
+
+on bPrev.up:
+  printh 23 02 51 05
+
+on bNext.up:
+  printh 23 02 51 04
+
+on tmReboot.timer:
+  vaRebtCounter.val+=1
+  if(vaRebtCounter.val<=bHome.w)
+  {
+    fill bHome.x,bHome.y,vaRebtCounter.val,bHome.h,62307
+  }else
+  {
+    //printh 23 01 43  // Execture arbitrary commands
+    tmReboot.en=0
+    vaRebtCounter.val=0
+    page pageReboot
+  }

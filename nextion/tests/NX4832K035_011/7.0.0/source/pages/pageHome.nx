@@ -1,0 +1,253 @@
+on pageHome.load:
+  printh 23 02 50 00
+  printh 23 03 60 03 00
+  vis bUpdateGauge,0
+  vis bDateTime,0
+  vis bInjectUpdt,0
+  vis tFConnectState,0
+
+on pageHome.loadend:
+  // Draw the complete navy Flow.io background from the extra atlas rows.
+  // Leave native component IDs, timers and touch events unchanged.
+  vis tPHTitle,0
+  vis tOrpTitle,0
+  xpic 0,0,480,320,0,150,HomeGaugepic
+  // Force BOTH gauge sprites to be redrawn after every page load/wake.
+  vaPrvpHPercen.val=-1
+  vaPrvOrpPercen.val=-1
+  // Restore live native components that the background image covered.
+  ref tWaterTemp
+  ref tTime
+  ref tDate
+  ref tWifiState
+  ref tFConnectState
+  ref tpH
+  ref tORP
+  ref tProp
+  ref tpHInject
+  ref tChlInject
+  ref tSWGRunning
+  ref tErrMessage
+  ref b0
+  ref b1
+  // Update the values
+  click bUpdateGauge,1
+  //Update Injection Icons
+  click bInjectUpdt,1
+  //Update Date Time
+  click bDateTime,1
+
+on pageHome.unload:
+  PreviousPage=dp
+
+on tmAnim.timer:
+  // Rotating propeller
+  temp1=globals.vaStates.val>>0   // Filtration Pump
+  temp1=temp1&1
+  temp1*=temp
+  substr vaIconProp.txt,tProp.txt,temp1,1
+  temp%=10
+  temp+=1
+
+on tmUpdate.timer:
+  // Update the values
+  click bUpdateGauge,1
+
+on bUpdateGauge.down:
+  //Update Blinking
+  //Update error message
+  tErrMessage.txt=globals.vaErrMsg.txt
+  //Update Values
+  tORP.txt=globals.vaOrpValue.txt
+  tpH.txt=globals.vaPhValue.txt
+  tWaterTemp.txt=globals.vaWaterTemp.txt
+  //// PSI Niddle (value between 0 and 4)
+  tProp.pic=PSIGaugepic+vaPSINiddle.val
+  // bit 7 - Wifi
+  sys1=globals.vaStates.val
+  sys1=sys1/128
+  sys1=sys1%2
+  if(sys1==1)
+  {
+    vis tWifiState,1
+    tWifiState.pco=12145
+  }else
+  {
+    vis tWifiState,0
+  }
+  // bit 8 - MQTT
+  sys1=globals.vaStates.val
+  sys1=sys1/256
+  sys1=sys1%2
+  if(sys1==1)
+  {
+    tWifiState.pco=1821
+  }
+  //// pH Gauge
+  if(vapHPercent.val!=vaPrvpHPercen.val)
+  {
+    vaPrvpHPercen.val=vapHPercent.val
+    sys0=vapHPercent.val+35
+    sys0=sys0/70
+    if(sys0>4)
+    {
+      sys0=4
+    }
+    sys1=sys0*207
+    xpic 20,89,207,150,sys1,0,HomeGaugepic
+    if(sys0==0||sys0==4)
+    {
+      tpH.bco=132
+    }
+    if(sys0==1||sys0==3)
+    {
+      tpH.bco=132
+    }
+    if(sys0==2)
+    {
+      tpH.bco=132
+    }
+    vis tpH,1
+  }
+  //// ORP Gauge
+  if(vaOrpPercent.val!=vaPrvOrpPercen.val)
+  {
+    vaPrvOrpPercen.val=vaOrpPercent.val
+    sys0=vaOrpPercent.val+35
+    sys0=sys0/70
+    if(sys0>4)
+    {
+      sys0=4
+    }
+    sys1=sys0*207
+    xpic 253,89,207,150,sys1,0,HomeGaugepic
+    if(sys0==0||sys0==4)
+    {
+      tORP.bco=132
+    }
+    if(sys0==1||sys0==3)
+    {
+      tORP.bco=132
+    }
+    if(sys0==2)
+    {
+      tORP.bco=132
+    }
+    vis tORP,1
+  }
+  doevents
+
+on tmBlink.timer:
+  //Error Toggle
+  ErrorToggle+=1
+  ErrorToggle%=2
+  click bInjectUpdt,1
+
+on bInjectUpdt.down:
+  // Visible or not
+  //// pH Injection Pump if AutoMode
+  sys1=globals.vaStates.val>>4   // pH AutoMode
+  sys1=sys1&1
+  if(sys1==1)
+  {
+    vis tpHInject,1
+  }else
+  {
+    vis tpHInject,0
+  }
+  //// Chl Injection Pump if AutoMode
+  sys1=globals.vaStates.val>>5   // Orp AutoMode
+  sys1=sys1&1
+  if(sys1==1)
+  {
+    vis tChlInject,1
+  }else
+  {
+    vis tChlInject,0
+  }
+  //// SWG if AutoMode
+  sys1=globals.vaStates.val>>13   // SWG AutoMode
+  sys1=sys1&1
+  if(sys1==1)
+  {
+    vis tSWGRunning,1
+  }else
+  {
+    vis tSWGRunning,0
+  }
+  // Blinking or not (please note that if it blinks, turn the visibility on)
+  //// pH Injection Pump
+  sys1=globals.vaStates.val>>1   // pH Injection Pump status
+  sys1=sys1&1
+  if(sys1==1&&ErrorToggle==1)
+  {
+    tpHInject.pco=Green_Color
+    vis tpHInject,1
+  }else
+  {
+    tpHInject.pco=Grey_Color
+  }
+  //// Chl Injection Pump
+  sys1=globals.vaStates.val>>2   // Chl Injection Pump status
+  sys1=sys1&1
+  if(sys1==1&&ErrorToggle==1)
+  {
+    tChlInject.pco=Green_Color
+    vis tChlInject,1
+  }else
+  {
+    tChlInject.pco=Grey_Color
+  }
+  //// SWG
+  sys1=globals.vaStates.val>>14   // SWG
+  sys1=sys1&1
+  if(sys1==1&&ErrorToggle==1)
+  {
+    tSWGRunning.pco=Green_Color
+    vis tSWGRunning,1
+  }else
+  {
+    tSWGRunning.pco=Grey_Color
+  }
+  doevents
+
+on b0.up:
+  page pageCfgMenu
+
+on bDateTime.down:
+  // Build Time
+  vaTmpDateTime.txt=""
+  covx rtc3,vaBuildDatTime.txt,2,0
+  vaTmpDateTime.txt+=vaBuildDatTime.txt
+  vaTmpDateTime.txt+=":"
+  covx rtc4,vaBuildDatTime.txt,2,0
+  vaTmpDateTime.txt+=vaBuildDatTime.txt
+  if(vaTmpDateTime.txt!=tTime.txt)
+  {
+    tTime.txt=vaTmpDateTime.txt
+  }
+  // Build Date DD/MM/YY
+  covx rtc2,tDate.txt,2,0
+  tDate.txt+="/"
+  covx rtc1,vaBuildDatTime.txt,2,0
+  tDate.txt+=vaBuildDatTime.txt
+  tDate.txt+="/"
+  sys0=rtc0%100
+  covx sys0,vaBuildDatTime.txt,2,0
+  tDate.txt+=vaBuildDatTime.txt
+  // Date from RTC
+
+on tmDateTime.timer:
+  click bDateTime,1
+
+on m0.down:
+  page pageHomeSwtch
+
+on m1.down:
+  printh 23 03 60 09 01
+
+on b1.down:
+  page pageAlarms
+
+on b1.up:
+  page pageCfgMenu

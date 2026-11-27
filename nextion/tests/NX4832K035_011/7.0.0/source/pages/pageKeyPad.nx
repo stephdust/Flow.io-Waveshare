@@ -1,0 +1,457 @@
+on pageKeyPad.load:
+  printh 23 02 50  // Set page number in ESP
+  prints ENP_KEYPAD,1
+  //Get the source component value
+  t0.txt=p[vaReturnPage.val].b[vaReturnObjId.val].txt
+  if(t0.txt!="") // If text is empty, leave empty to start editing new number from scratch
+  {
+    //If not empty, ensure that the number corresponds to standard and correct if needed
+    click bCleanText,1
+  }
+  //If value does not expect . hide the button
+  if(vaTxtMaxAp.val==0)
+  {
+    vis b11,0
+  }
+  //Hide the function buttons
+  vis bCleanText,0
+  vis bCheckLength,0
+  vis t2,0
+  //Write Maxi and mini values for convenience
+  tName2.txt="["
+  covx vaMini.val,va3.txt,0,0
+  tName2.txt+=va3.txt
+  tName2.txt+="-"
+  covx vaMaxi.val,va3.txt,0,0
+  tName2.txt+=va3.txt
+  tName2.txt+="]"
+  // Look for an existing comma in the current text
+  vaNbPts.val=0
+  va3.txt=t0.txt+"-"
+  spstr va3.txt,va4.txt,".",1
+  strlen va4.txt,va2.val
+  if(va2.val>0)
+  {
+    vaNbPts.val+=1
+  }
+  //Intialize the variable which tells source page if enter was presed
+  vaOkCancel.val=0
+
+on b10.down:
+  if(t0.txt=="0")
+  {
+    t0.txt+=""
+  }
+  t2.txt="0"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b1.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="1"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b2.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="2"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b3.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="3"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b4.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="4"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b5.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="5"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b6.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="6"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b7.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="7"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b8.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="8"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b9.down:
+  if(t0.txt=="0")
+  {
+    t0.txt=""
+  }
+  t2.txt="9"
+  click bCheckLength,1
+  t0.txt+=t2.txt
+
+on b11.down:
+  // Look for an existing comma in the current text
+  //va3.txt=t0.txt+"-"  //dummy caracter to avoid trailing dot
+  //spstr va3.txt,va3.txt,".",1
+  //strlen va3.txt,va1.val
+  //if(va1.val==0) // We have no comma
+  //{
+  //  t0.txt=t0.txt+"."
+  //}
+  if(vaNbPts.val==0)
+  {
+    vaNbPts.val=1
+    t2.txt="."
+    t0.txt+=t2.txt
+  }
+
+on b12.down:
+  va0.txt=t0.txt
+  va0.txt-=1
+  va0.txt=va0.txt+"."
+  if(t0.txt==va0.txt)//c'est la virgule  que l 'on supprime
+  {
+    vaNbPts.val=0
+  }
+  t0.txt-=1
+  if(t0.txt=="")
+  {
+    t0.txt="0"
+  }
+
+on b13.down:
+  t0.txt="0"
+  vaNbPts.val=0
+
+on b14.down:
+  click bCleanText,1
+
+on b14.up:
+  if(vaError.val==0)
+  {
+    vaOkCancel.val=1 //Enter was pressed
+    btlen t0.txt,sys0
+    if(sys0>47)
+    {
+      sys0=47
+    }
+    sys1=sys0+2
+    // 1) Annonce du contexte menu (reste sur la page clavier)
+    printh 23
+    printh 06
+    printh 50 0A
+    print globals.vaKbdCtxRef.val
+    // 2) Envoi de la valeur texte
+    printh 23
+    prints sys1,1
+    printh 56
+    prints globals.vaKbdRow.val,1
+    prints t0.txt,sys0
+    page pageCfgMenu
+  }
+
+on m0.up:
+  vaOkCancel.val=0
+  printh 23
+  printh 06
+  printh 50 0A
+  print globals.vaKbdCtxRef.val
+  page pageCfgMenu
+
+on bplus.down:
+  // Look for an existing comma in the current text
+  va3.txt=t0.txt+"-"  //dummy caracter to avoid trailing dot
+  spstr va3.txt,va3.txt,".",1
+  strlen va3.txt,va1.val
+  vaNbPts.val=0
+  if(va1.val>0) // We have a comma
+  {
+    vaNbPts.val=1
+    covx t0.txt,vaReel.val,0,0
+    // What is the number after the comma
+    spstr t0.txt,va3.txt,".",1
+    covx va3.txt,vaFloat.val,0,0
+    strlen va3.txt,temp4
+    if(temp4>1)
+    {
+      va3.txt-=1 // Limit to one digit floating part
+      covx va3.txt,vaFloat.val,0,0
+    }
+    if(vaFloat.val<9)
+    {
+      vaFloat.val+=1
+    }else
+    {
+      vaReel.val+=1
+      vaFloat.val=0
+    }
+    covx vaReel.val,va3.txt,0,0
+    covx vaFloat.val,va4.txt,0,0
+    va3.txt+="."
+    if(vaReel.val<=vaMaxi.val)
+    {
+      if(vaReel.val==vaMaxi.val)
+      {
+        va4.txt="0"
+      }
+      va3.txt+=va4.txt
+    }else
+    {
+      covx vaMaxi.val,va3.txt,0,0
+      va3.txt+=".0"
+    }
+  }else  //We have no comma
+  {
+    covx t0.txt,vaReel.val,0,0
+    if(vaReel.val<vaMaxi.val)
+    {
+      vaReel.val+=1
+    }else
+    {
+      vaReel.val=vaMaxi.val
+    }
+    covx vaReel.val,va3.txt,0,0
+  }
+  t0.txt=va3.txt
+
+on bminus.down:
+  // Look for an existing comma in the current text
+  va3.txt=t0.txt+"-"  //dummy caracter to avoid trailing dot
+  spstr va3.txt,va3.txt,".",1
+  strlen va3.txt,va1.val
+  vaNbPts.val=0
+  if(va1.val>0) // We have a comma
+  {
+    vaNbPts.val=1
+    covx t0.txt,vaReel.val,0,0
+    // What is the number after the comma
+    spstr t0.txt,va3.txt,".",1
+    covx va3.txt,vaFloat.val,0,0
+    strlen va3.txt,temp4
+    if(temp4>1)
+    {
+      va3.txt-=1 // Limit to one digit floating part
+      covx va3.txt,vaFloat.val,0,0
+    }
+    if(vaFloat.val>0)
+    {
+      vaFloat.val-=1
+    }else
+    {
+      vaReel.val-=1
+      vaFloat.val=9
+    }
+    covx vaReel.val,va3.txt,0,0
+    if(vaReel.val>=vaMini.val)
+    {
+      va4.txt=va3.txt
+      if(vaReel.val==0)
+      {
+        va3.txt=""
+      }else
+      {
+        va4.txt+="."
+        covx vaFloat.val,va3.txt,0,0
+      }
+      va4.txt+=va3.txt
+    }else
+    {
+      covx vaMini.val,va4.txt,0,0
+      va4.txt+=".0"
+    }
+    //  t0.txt=va3.txt+"."
+    //  covx vaFloat.val,va3.txt,0,0
+    //  t0.txt+=va3.txt
+  }else  //We have no comma
+  {
+    covx t0.txt,vaReel.val,0,0
+    if(vaReel.val>vaMini.val)
+    {
+      vaReel.val-=1
+    }else
+    {
+      vaReel.val=vaMini.val
+    }
+    covx vaReel.val,va4.txt,0,0
+  }
+  t0.txt=va4.txt
+
+on tm0.timer:
+  //Test
+  //covx button_i.val,tName.txt,0,0
+  // Look for an existing comma in the current text
+  va3.txt=t0.txt+"-"  //dummy caracter to avoid trailing dot
+  spstr va3.txt,va3.txt,".",1
+  strlen va3.txt,va1.val
+  vaNbPts.val=0
+  if(va1.val>0) // We have a comma
+  {
+    vaNbPts.val=1
+    // What is the number after the comma
+    spstr t0.txt,va3.txt,".",1
+    covx va3.txt,vaFloat.val,0,0
+  }
+  covx t0.txt,vaReel.val,0,0
+  if(vaReel.val==vaMaxi.val&&vaNbPts.val>=1&&vaFloat.val!=0) // nb avec virgule and partie d�cimale non nulle
+  {
+    t0.pco=63488
+  }else if(vaReel.val>vaMaxi.val)
+  {
+    t0.pco=63488
+  }else if(vaReel.val<vaMini.val)
+  {
+    t0.pco=63488
+  }else
+  {
+    t0.pco=19049
+  }
+
+on repeat_tm.timer:
+  click b[button_i.val],1 //repeat
+  tick_c.val++ // increment ticks counter
+  if(tick_c.val==4)
+  {
+    repeat_tm.tim/=4 // handle acceleration
+  }
+
+on tc0.down:
+  // check if the pressed component is a button and act accordingly
+  // other conditions might be added with && if not all buttons shall repeat
+  if(b[tc0.val].type==98)
+  {
+    // for multitouch screens: if a further button is pressed,
+    // the repater will restart and act on the last pressed
+    if(tc0.val!=button_i.val)
+    {
+      button_i.val=tc0.val
+      repeat_tm.tim=500 // start with slow repeat
+      tick_c.val=0 // reinitialize
+    }
+    repeat_tm.en=1 // start timer if not already running
+  }
+
+on tc0.up:
+  // check if the pressed component is a button and act accordingly
+  // other conditions might be added with && if not all buttons shall repeat
+  if(b[tc0.val].type==98)
+  {
+    // for multitouch screens: check if the released button is the currently repeated one
+    // the repater will stop and reinitialize the timer and tick counter
+    if(tc0.val==button_i.val)
+    {
+      repeat_tm.en=0 // stop timer
+      repeat_tm.tim=500 // start the next again  with slow repeat
+      tick_c.val=0 // reinitialize
+      button_i.val=0 // reinitialize
+    }
+  }
+
+on bCleanText.down:
+  //Function to cleanup number
+  //Remove possible leading spaces
+  strlen t0.txt,temp4
+  va3.txt=""
+  for(temp3=0;temp3<temp4;temp3++)
+  {
+    substr t0.txt,va0.txt,temp3,1
+    if(va0.txt!=" ")
+    {
+      va3.txt+=va0.txt
+    }
+  }
+  t0.txt=va3.txt
+  // Look for an existing comma in the current text
+  va3.txt=t0.txt+"-"  //dummy caracter to avoid trailing dot
+  spstr va3.txt,va3.txt,".",1
+  strlen va3.txt,va1.val
+  vaNbPts.val=0
+  if(va1.val>0) // We have a comma
+  {
+    vaNbPts.val=1
+    // What is the number after the comma
+    spstr t0.txt,va3.txt,".",1
+    covx va3.txt,vaFloat.val,0,0
+  }
+  covx t0.txt,vaReel.val,0,0
+  if(vaReel.val==vaMaxi.val&&vaNbPts.val>=1&&vaFloat.val!=0) // maxi nb avec virgule and partie d�cimale non nulle
+  {
+    vaError.val=1
+    covx vaMaxi.val,t0.txt,0,0
+  }else if(vaReel.val>vaMaxi.val)
+  {
+    vaError.val=1
+    covx vaMaxi.val,t0.txt,0,0
+  }else if(vaReel.val<vaMini.val)
+  {
+    vaError.val=1
+    covx vaMini.val,t0.txt,0,0
+  }else if(vaNbPts.val>=1&&vaFloat.val!=0) // nb avec virgule and partie d�cimale non nulle
+  {
+    vaError.val=0
+    //covx vaReel.val,t0.txt,0,0
+    //covx vaFloat.val,va3.txt,0,0
+    //t0.txt+="."
+    //t0.txt+=va3.txt
+  }else if(vaNbPts.val>=1&&vaFloat.val==0) // nb avec virgule and partie d�cimale nulle
+  {
+    vaError.val=0
+    covx vaReel.val,t0.txt,0,0
+  }else if(vaNbPts.val==0) // nb sans virgule reformatage
+  {
+    vaError.val=0
+    //covx vaReel.val,t0.txt,0,0
+  }
+
+on bCheckLength.down:
+  // Look for an existing comma in the current text
+  spstr t0.txt,va3.txt,".",0
+  strlen va3.txt,va1.val
+  va3.txt=t0.txt+"-"
+  spstr va3.txt,va4.txt,".",1
+  strlen va4.txt,va2.val
+  if(va2.val==0&&vaTxtMaxAv.val==va1.val)
+  {
+    t2.txt=""
+  }
+  if(va2.val>vaTxtMaxAp.val)
+  {
+    t2.txt=""
+  }

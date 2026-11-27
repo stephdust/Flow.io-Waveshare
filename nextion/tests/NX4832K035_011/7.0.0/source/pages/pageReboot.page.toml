@@ -1,0 +1,66 @@
+[page]
+name = "pageReboot"
+type = "page"
+x = 0
+y = 0
+w = 480
+h = 320
+sta = 0
+
+[[component]]
+name = "t0"
+type = "text"
+x = 110
+y = 79
+w = 261
+h = 123
+style = 1
+borderc = "#0086b5"
+font = "SegoeUI_59_Keypad"
+bco = "#f74d39"
+pco = "#ffffff"
+txt = ""
+
+[[component]]
+name = "tmCountDown"
+type = "timer"
+tim = 1000
+
+[[component]]
+name = "vaCountDown"
+type = "variable"
+val = 10
+
+[[component]]
+name = "tmHold"
+type = "timer"
+tim = 2000
+en = 0
+
+[[component]]
+name = "bCancel"
+type = "button"
+x = 176
+y = 209
+w = 136
+h = 40
+style = 0
+font = "SegoeB_28"
+pic = "picture-0000"
+bco = "#f74d39"
+pic2 = "picture-0000"
+pco = "#ffffff"
+txt = "Annuler"
+
+[[component]]
+name = "t1"
+type = "text"
+x = 110
+y = 85
+w = 259
+h = 30
+font = "Segoe24_MenuItems"
+bco = "#f74d39"
+pco = "#ffffff"
+txt = "Initialisation"
+txt_maxl = 30

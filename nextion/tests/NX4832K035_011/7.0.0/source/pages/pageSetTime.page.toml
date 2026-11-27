@@ -1,0 +1,575 @@
+[page]
+name = "pageSetTime"
+type = "page"
+vscope = 1
+x = 0
+y = 0
+w = 480
+h = 320
+sta = 2
+pic = "picture-0004"
+
+[[component]]
+name = "t5"
+type = "text"
+x = 15
+y = 262
+w = 43
+h = 43
+font = "SegoeUI_50_KeyPad"
+bco = "#21557b"
+picc = "picture-0000"
+pco = "#ffffff"
+xcen = 0
+txt = "⮌"
+txt_maxl = 20
+
+[[component]]
+name = "m0"
+type = "hotspot"
+x = 0
+y = 256
+w = 110
+h = 64
+
+[[component]]
+name = "bApply"
+type = "button"
+x = 324
+y = 262
+w = 136
+h = 40
+style = 0
+font = "SegoeB_28"
+pic = "picture-0000"
+bco = "#21557b"
+pic2 = "picture-0000"
+pco = "#ffffff"
+txt = ""
+
+[[component]]
+name = "tDateTitle"
+type = "text"
+x = 0
+y = 0
+w = 480
+h = 50
+sta = 0
+style = 1
+borderc = "#ffffff"
+font = "SegoeB_28"
+bco = "#2171b5"
+picc = "picture-0004"
+pic = "picture-0005"
+pco = "#007594"
+txt = ""
+txt_maxl = 60
+
+[[component]]
+name = "b1"
+type = "button"
+x = 18
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "hour"
+type = "number"
+x = 249
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 2
+isbr = 0
+
+[[component]]
+name = "minute"
+type = "number"
+x = 322
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 2
+isbr = 0
+
+[[component]]
+name = "second"
+type = "number"
+x = 395
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 2
+isbr = 0
+
+[[component]]
+name = "day"
+type = "number"
+x = 18
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 2
+isbr = 0
+
+[[component]]
+name = "month"
+type = "number"
+x = 91
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 2
+isbr = 0
+
+[[component]]
+name = "year"
+type = "number"
+x = 164
+y = 120
+w = 65
+h = 65
+sta = 0
+font = "SegoeB_28"
+picc = "picture-0004"
+pco = "#292829"
+lenth = 4
+isbr = 0
+
+[[component]]
+name = "t0"
+type = "text"
+x = 313
+y = 120
+w = 10
+h = 65
+sta = 0
+font = "SegoeB_28"
+bco = "#e7ebf7"
+picc = "picture-0004"
+pco = "#292829"
+txt = ":"
+isbr = 1
+
+[[component]]
+name = "t2"
+type = "text"
+x = 82
+y = 120
+w = 10
+h = 65
+sta = 0
+font = "SegoeB_28"
+bco = "#e7ebf7"
+picc = "picture-0004"
+pco = "#292829"
+txt = "/"
+isbr = 1
+
+[[component]]
+name = "b2"
+type = "button"
+x = 91
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "b3"
+type = "button"
+x = 164
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "b4"
+type = "button"
+x = 249
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "b5"
+type = "button"
+x = 322
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "b6"
+type = "button"
+x = 395
+y = 55
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯅"
+
+[[component]]
+name = "b7"
+type = "button"
+x = 18
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "b8"
+type = "button"
+x = 91
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "b9"
+type = "button"
+x = 164
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "b10"
+type = "button"
+x = 249
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "b11"
+type = "button"
+x = 322
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "b12"
+type = "button"
+x = 395
+y = 185
+w = 65
+h = 65
+lockobj = 1
+sta = 2
+style = 0
+font = "SegoeUI_50_KeyPad"
+pic = "picture-0006"
+picc = "picture-0004"
+bco = "#2171b5"
+pic2 = "picture-0007"
+picc2 = "picture-0004"
+bco2 = "#f76d18"
+pco = "#ffffff"
+pco2 = "#000000"
+txt = "⯆"
+
+[[component]]
+name = "t1"
+type = "text"
+x = 386
+y = 120
+w = 10
+h = 65
+sta = 0
+font = "SegoeB_28"
+bco = "#e7ebf7"
+picc = "picture-0004"
+pco = "#292829"
+txt = ":"
+isbr = 1
+
+[[component]]
+name = "t3"
+type = "text"
+x = 155
+y = 120
+w = 10
+h = 65
+sta = 0
+font = "SegoeB_28"
+bco = "#e7ebf7"
+picc = "picture-0004"
+pco = "#292829"
+txt = "/"
+isbr = 1
+
+[[component]]
+name = "b0"
+type = "button"
+x = 445
+y = 12
+w = 21
+h = 23
+style = 0
+txt = ""
+
+[[component]]
+name = "va0"
+type = "variable"
+
+[[component]]
+name = "va1"
+type = "variable"
+
+[[component]]
+name = "va2"
+type = "variable"
+
+[[component]]
+name = "vaMaxD"
+type = "variable"
+
+[[component]]
+name = "tm0"
+type = "timer"
+tim = 1000
+
+[[component]]
+name = "repeat_tm"
+type = "timer"
+tim = 300
+
+[[component]]
+name = "tc0"
+type = "touch-capture"
+
+[[component]]
+name = "button_i"
+type = "variable"
+
+[[component]]
+name = "tick_c"
+type = "variable"
+
+[[component]]
+name = "vaLeapYear"
+type = "variable"
+
+[[component]]
+name = "vaLocalMode"
+type = "variable"
+vscope = 1
+
+[[component]]
+name = "vaTmp"
+type = "variable"
+sta = 1
+txt = ""
+
+[[component]]
+name = "vaDay_Changed"
+type = "variable"
+
+[[component]]
+name = "vaMon_Changed"
+type = "variable"
+
+[[component]]
+name = "vaYea_Changed"
+type = "variable"
+
+[[component]]
+name = "vaHou_Changed"
+type = "variable"
+
+[[component]]
+name = "vaMin_Changed"
+type = "variable"
+
+[[component]]
+name = "vaSec_Changed"
+type = "variable"
+
+[[component]]
+name = "tStatus"
+type = "text"
+x = 115
+y = 270
+w = 95
+h = 30
+sta = 0
+font = "SegoeB_28"
+bco = "#000000"
+picc = "picture-0004"
+pco = "#394552"
+xcen = 2
+ycen = 0
+txt = ""
+txt_maxl = 20
+
+[[component]]
+name = "pNTPStatus"
+type = "picture"
+x = 216
+y = 270
+w = 31
+h = 31
+pic = "picture-0001"

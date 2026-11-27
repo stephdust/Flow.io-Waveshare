@@ -1,0 +1,287 @@
+[page]
+name = "pageHomeSwtch"
+type = "page"
+x = 0
+y = 0
+w = 480
+h = 320
+bco = "#21557b"
+
+[[component]]
+name = "bHome"
+type = "button"
+x = 0
+y = 267
+w = 56
+h = 52
+style = 0
+font = "Home_Icons_32"
+pic = 40
+bco = "#21557b"
+pic2 = 41
+bco2 = "#21557b"
+pco = "#c6c3c6"
+pco2 = "#0092d6"
+txt = "N"
+
+[[component]]
+name = "btAuto"
+type = "dual-state-button"
+x = 35
+y = 30
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "H"
+txt_maxl = 1
+
+[[component]]
+name = "btAutoORP"
+type = "dual-state-button"
+x = 148
+y = 30
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "m"
+txt_maxl = 1
+
+[[component]]
+name = "btAutoPH"
+type = "dual-state-button"
+x = 261
+y = 30
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "F"
+txt_maxl = 1
+
+[[component]]
+name = "btPHPump"
+type = "dual-state-button"
+x = 374
+y = 30
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "j"
+txt_maxl = 1
+
+[[component]]
+name = "btCHLPump"
+type = "dual-state-button"
+x = 374
+y = 149
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "i"
+txt_maxl = 1
+
+[[component]]
+name = "btWinter"
+type = "dual-state-button"
+x = 35
+y = 149
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "E"
+txt_maxl = 1
+
+[[component]]
+name = "btLight"
+type = "dual-state-button"
+x = 148
+y = 149
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "Q"
+txt_maxl = 1
+
+[[component]]
+name = "btRobot"
+type = "dual-state-button"
+x = 261
+y = 149
+w = 70
+h = 75
+sta = 2
+style = 0
+font = "Home_Icons_37"
+pic = "picture-0031"
+pic2 = "picture-0032"
+pco = "#d6d7de"
+txt = "J"
+txt_maxl = 1
+
+[[component]]
+name = "bUpdateBt"
+type = "button"
+x = 210
+y = 221
+w = 60
+h = 37
+
+[[component]]
+name = "tmUpdateBt"
+type = "timer"
+tim = 200
+
+[[component]]
+name = "tErrMessage"
+type = "scrolling-text"
+x = 80
+y = 271
+w = 378
+h = 30
+font = "SegoeUI_28"
+bco = "#21557b"
+pco = "#f74d39"
+dis = 8
+tim = 100
+txt = ""
+txt_maxl = 31
+
+[[component]]
+name = "vapHPercent"
+type = "variable"
+val = 140
+
+[[component]]
+name = "vaOrpPercent"
+type = "variable"
+val = 140
+
+[[component]]
+name = "t0"
+type = "text"
+x = 22
+y = 102
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "   Auto\r\nFiltration"
+txt_maxl = 20
+
+[[component]]
+name = "t1"
+type = "text"
+x = 134
+y = 102
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Auto\r\nORP"
+txt_maxl = 20
+
+[[component]]
+name = "t2"
+type = "text"
+x = 246
+y = 102
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Auto\r\n pH"
+txt_maxl = 20
+
+[[component]]
+name = "t3"
+type = "text"
+x = 358
+y = 102
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Pompe\r\n   PH"
+txt_maxl = 20
+
+[[component]]
+name = "t4"
+type = "text"
+x = 362
+y = 221
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Pompe\r\nChlore"
+txt_maxl = 20
+
+[[component]]
+name = "t5"
+type = "text"
+x = 248
+y = 221
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Robot"
+txt_maxl = 20
+
+[[component]]
+name = "t6"
+type = "text"
+x = 134
+y = 221
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Eclairage"
+txt_maxl = 20
+
+[[component]]
+name = "t7"
+type = "text"
+x = 20
+y = 221
+w = 100
+h = 30
+bco = "#21557b"
+pco = "#ffffff"
+txt = "Hivernage"
+txt_maxl = 20

@@ -1,0 +1,19 @@
+on pageReboot.loadend:
+  covx vaCountDown.val,t0.txt,0,0
+
+on tmCountDown.timer:
+  vaCountDown.val-=1
+  covx vaCountDown.val,t0.txt,0,0
+  if(vaCountDown.val==0)
+  {
+    tmCountDown.en=0
+    t0.txt="Init...."
+    printh 23 03 60 10 01
+    tmHold.en=1
+  }
+
+on tmHold.timer:
+  rest
+
+on bCancel.down:
+  page pageHome
