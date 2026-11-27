@@ -59,6 +59,7 @@ jobs:
           printf 'obsolete preview' > .pio/nextion-output/preview.png
           mkdir -p .pio/nextion-output/NX4832K035_011/7.0.0
           printf 'obsolete preview' > .pio/nextion-output/NX4832K035_011/7.0.0/preview.png
+          printf 'obsolete preview' > .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
       - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
         run: pio run -e nextion
       - name: Validate release, manifest and model without touching ESP32/SPIFFS
@@ -75,8 +76,10 @@ jobs:
           assert (source_dir / 'pages/pageHome.nx').is_file()
           assert (compiled / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
           tft = compiled / name
-          assert (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png').stat().st_size > 4096
+          assert (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png').stat().st_size > 4096
           assert not (compiled / 'NX4832K035_011/7.0.0/preview.png').exists()
+          assert not (compiled / 'NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png').exists()
+          assert (source_dir / 'pages/pageHome.nx').is_file()
           assert not (Path('binary') / 'nextion-preview.png').exists()
           assert not (compiled / 'preview.png').exists()
           assert (compiled / 'picture-0003.png').stat().st_size > 4096
@@ -108,7 +111,7 @@ jobs:
           path: |
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
-            .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
+            .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
             .pio/nextion-output/picture-0003.png
             binary/manifest.json
           include-hidden-files: true
@@ -123,13 +126,20 @@ jobs:
           cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI nextion/releases/7.0.0/
           cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft nextion/releases/7.0.0/
           cp .pio/nextion-output/picture-0003.png nextion/tests/NX4832K035_011/7.0.0/source/pictures/
-          cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
-          cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
+          cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+          cp .pio/nextion-output/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
-          git add -- nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
-          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png
+          git add -- nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0-pageHome.png
+          # Remove the old ambiguous, HMI-only preview name from Git; only
+          # actual per-page previews may be committed from now on.
+          git rm --ignore-unmatch -- \
+            nextion/tests/NX4832K035_011/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png \
+            nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.png \
+            nextion/tests/NX4832K035_011/7.0.0/preview.png \
+            nextion/releases/7.0.0/preview-modern.png
           if git diff --cached --quiet; then
             echo "Both generated HMI and TFT match the current fork dev."
           else
