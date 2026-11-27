@@ -1,18 +1,18 @@
 # Nextion flow.io 7.0.0 — NX4832K035_011 (480 × 320)
 
-> **État : HMI 7.0.0 corrigé, ouverture et compilation dans Nextion Editor validées par l'utilisateur ; test sur écran réel restant.**
-> Source expérimentale : la version 6.0.0 reste le retour arrière stable. `common.nextion_firmware_version` vaut désormais `7.0.0` sur `dev`, et l'export complet nécessite le TFT 7.0.0 compilé dans ce dossier.
+> **État : nouveau design Home intégré dans le HMI 7.0.0 sur `dev` ; contrôles structure/CRC réussis, ouverture et compilation Nextion Editor de CETTE VERSION non encore confirmées.**
+> Version maintenue : `7.0.0`. La version 7.0.0 précédente, déjà compilée et testée sur matériel (jauges après veille OK), est conservée sur la branche [`backup/nextion-v7-validated-20261127`](https://github.com/stephdust/Flow.io-Waveshare/tree/backup/nextion-v7-validated-20261127). Ne pas installer le nouveau HMI tant que Nextion Editor n'a pas validé la compilation.
 
 ## Périmètre validé
 
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
 - Source de référence existante : [FlowIO_Nextion_NX4832K035_011-6.0.0.HMI (6.0.0)](../6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI).
-- **HMI corrigé validé dans Nextion Editor :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) (généré depuis la source 6.0.0 du dépôt). L'ancien fichier `..._TEST.HMI` était invalide (checksum du répertoire erroné) et ne doit pas être utilisé.
-- Générateur reproductible : [`nextion/tools/build_3p5_v7_hmi.py`](../../tools/build_3p5_v7_hmi.py) ; une action GitHub peut le régénérer. Le binaire créé à partir de la source versionnée peut différer octet pour octet d'une source HMI fournie séparément.
+- **HMI 7.0.0 avec nouveau design Home (à compiler) :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) : 480 × 320 uniquement, jauges modernisées, logo officiel, thermomètre de piscine rouge, Wi-Fi coloré et redessin après veille. Version précédente sauvegardée sur la branche indiquée ci-dessus.
+- Générateur du nouveau design : [`build_3p5_v7_modern.py`](../../tools/build_3p5_v7_modern.py) avec [`validate_3p5_v7_modern.py`](../../tools/validate_3p5_v7_modern.py). Le workflow [`nextion-7-modern.yml`](../../../.github/workflows/nextion-7-modern.yml) reconstruit toujours le HMI depuis la 7.0.0 validée archivée (et non depuis un HMI déjà modifié).
 - **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
 - Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
 
-## Changements UI à effectuer dans Nextion Editor
+## Points de contrôle du nouveau design dans Nextion Editor
 
 1. Sur la page Home, réorganiser **seulement le bandeau** : logo flow.io à gauche, date `JJ/MM/AA` et heure `HH:MM` au centre, état Wi-Fi à droite. Vérifier la lisibilité à **480 × 320** et les éventuels recouvrements.
 2. Préserver la variable / l'objet `tTime.txt` déjà alimenté par l'ESP ; ne pas le renommer sans modifier simultanément le firmware.
@@ -31,11 +31,11 @@
 - Confirmer que les commandes tactiles et les événements de la page Home n'ont pas régressé.
 - Confirmer les transferts OTA Nextion et la compatibilité modèle avant de renommer le binaire.
 - Ouvrir et compiler d'abord le HMI de test ci-dessus ; publier le TFT compilé sous `FlowIO_Nextion_NX4832K035_011-7.0.0.tft` **uniquement après les contrôles**.
-- Changer ensuite `common.nextion_firmware_version` dans `platformio.ini` et valider la génération de `binary/` / du manifeste.
+- **Ne pas changer** `common.nextion_firmware_version` dans `platformio.ini` : il doit rester à `7.0.0`. Compiler le nouveau HMI pour obtenir un nouveau `.tft` 7.0.0 seulement après validation.
 
 Références : [protocole ESP/Nextion](../../../docs/integration/nextion-esp-protocol.md) · [documentation hardware](../../../docs/hardware/nextion-displays.md).
 
-## Validation automatique Nextion2Text
+## Validation historique de la 7.0.0 précédente (Nextion2Text)
 
 Un controle reproductible est lance sur la branche `dev` pour le NX4832K035_011 :
 
@@ -54,3 +54,13 @@ La validation automatique n'est **pas** une preuve de compilation par Nextion Ed
 Elle ne prouve pas non plus la correction du probleme de jauges invisibles apres reveil.
 **Attention** : verifier que la source 6.0.0 de GitHub est bien la meme que votre
 source locale avant de considerer un fichier 7.0.0 comme finalise.
+
+
+## Modernisation Home (27 novembre 2026) — modèle 480 × 320 seulement
+
+- Les ressources modifiées sont strictement `pageHome` (19.pa), l'atlas d'images des jauges (36.i) et les cinq images de filtration (4.i, 8.i, 28.i, 29.i, 26.i).
+- `globals` (5.pa), le manifeste matériel (`main.HMI`), les autres pages, les identifiants des composants et les références des objets série sont conservés.
+- Les chiffres verts de référence pH et ORP sont présentés **sans encadrement** ; nouveau logo Flow.io, pictogramme thermomètre + piscine, interface bleu nuit.
+- Validation GitHub : [workflow de génération et contrôle des ressources](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/45987260043), avec CRC des pages et répertoire, version 7.0.0 inchangée et comparaison à la source validée.
+- **La validation d'ouverture/compilation dans Nextion Editor et la validation réelle du redessin des jauges sur cette version restent à faire.**
+- Ni les projets ni les TFT des **Nextion 5″ ou 7″** ne sont concernés.
