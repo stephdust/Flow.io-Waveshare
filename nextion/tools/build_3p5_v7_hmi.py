@@ -30,11 +30,35 @@ def crc(page):
     return seed
 
 
+
+def directory_checksum(directory_bytes):
+    """CRC32_T over the directory followed by the ADEC sentinel (eseverson/nextion-hmi)."""
+    data = directory_bytes + b'ADEC'
+    assert len(data) % 4 == 0
+    table = []
+    for i in range(256):
+        x = i << 24
+        for _ in range(8):
+            x = ((x << 1) ^ (0x04C11DB7 if x & 0x80000000 else 0)) & 0xFFFFFFFF
+        table.append(x)
+    seed = 0xFFFFFFFF
+    for pos in range(0, len(data), 4):
+        seed ^= int.from_bytes(data[pos:pos + 4], 'little')
+        for _ in range(4):
+            seed = ((seed << 8) & 0xFFFFFFFF) ^ table[seed >> 24]
+    return seed
+
+
 def entries(buf):
     count = struct.unpack_from('<I', buf)[0]
     assert 20 < count < 400
     mirror_len = 4 + 28 * count
-    assert buf[:mirror_len] == buf[0x80000:0x80000+mirror_len], 'directory mirrors differ'
+    # The four-byte directory checksum follows the directory in both mirrors.
+    assert buf[:mirror_len + 4] == buf[0x80000:0x80000 + mirror_len + 4], 'directory mirrors differ'
+    assert buf[0x6FFFF8:0x700000] == b'ver21234', 'HMI magic missing'
+    stored = struct.unpack_from('<I', buf, mirror_len)[0]
+    expected = directory_checksum(buf[:mirror_len])
+    assert stored == expected, f'directory CRC mismatch: stored={stored:08x}, expected={expected:08x}'
     data = {}
     for i in range(count):
         name, at, size, deleted, *_ = struct.unpack_from('<16sIIBBBB', buf, 4 + 28*i)
