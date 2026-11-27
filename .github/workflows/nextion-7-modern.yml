@@ -6,6 +6,8 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/nextion-7-modern.yml'
+      - 'nextion/tools/build_3p5_v7_modern.py'
+      - 'nextion/tools/validate_3p5_v7_modern.py'
 
 permissions:
   contents: write
