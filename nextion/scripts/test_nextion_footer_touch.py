@@ -70,11 +70,12 @@ assert "d.polygon([(143*S,273*S)" not in art
 assert "d.arc((130*S,300*S,161*S,314*S)" not in art
 assert "for xx in (93,110):" in art
 assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
-assert "# Two compact bottom frames:" in art
-assert "image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))" in art
-assert "image=panel(image,(291,269,470,311),11,(3,25,48),(6,180,216))" in art
-assert "image=panel(image,(5,262,475,315)" not in art
-assert "line(d,[(401,278),(401,302)]" in art, "right frame divider missing"
+# The entire footer is a flat navy canvas with three floating icons.
+# No frames/filled trays and no separators may be drawn behind hotspots.
+assert "# Entire page uses one uniform navy background." in art
+assert "image=panel(image" not in art, "removed header/footer frame returned"
+assert "line(d,[(401,278),(401,302)]" not in art, "removed footer divider returned"
+assert "for x in (154,300,413):" not in art, "removed header dividers returned"
 assert "FAN_X,FAN_Y,FAN_SIZE=205,239,70" in art
 assert abs((205+35)-(123+356)/2) < 1, "rotor must be centered between both gauges"
 assert 239 >= 89+150, "rotor should not overlap gauge image rectangles"
@@ -114,5 +115,5 @@ assert "for tooth in range(10):" in art, "the gear must not revert to sun-like s
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
-print("PASS: separated footer panels, right divider and rotor clear of gauges")
+print("PASS: frameless header/footer without separators; centered rotor clear of gauges")
 print("PASS: no footer button paints opaque rectangles over icons")
