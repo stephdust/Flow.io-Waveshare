@@ -32,7 +32,7 @@ assert "m2" not in byname, "redundant play hotspot must stay removed"
 assert "vaWaterTemp" in global_components and "vaAirTemp" in global_components
 assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
-assert water["x"] == air["x"] == 218
+assert water["x"] == air["x"] == 228
 assert water["w"] == air["w"] == 84
 assert water["font"] == air["font"] == "Segoe24_MenuItems"
 assert byname["tDate"]["font"] == "Segoe24_MenuItems"
@@ -46,20 +46,23 @@ assert water["ycen"] == air["ycen"] == 1
 assert water["xcen"] == air["xcen"] == 0, (
     "both live temperatures must START immediately after their respective icons"
 )
-assert 154 < water["x"] and water["x"] + water["w"] <= 302
-assert 154 < air["x"] and air["x"] + air["w"] <= 302
+assert 154 < water["x"] and water["x"] + water["w"] <= 312
+assert 154 < air["x"] and air["x"] + air["w"] <= 312
 assert water["y"] == 5 and water["h"] == 25
 assert air["y"] == 30 and air["h"] == 25
 assert water["y"] + water["h"] <= air["y"]
 assert air["y"] + air["h"] <= 58
 for field in ("tTime", "tDate", "tWifiState"):
     other = byname[field]
-    assert other["x"] >= 304, f"{field} overlaps temperature column"
-assert byname["tTime"]["x"] == 304 and byname["tTime"]["w"] == 106
-assert byname["tDate"]["x"] == 304 and byname["tDate"]["w"] == 109
+    assert other["x"] >= 314, f"{field} overlaps temperature column"
+assert byname["tTime"]["x"] == 314 and byname["tTime"]["w"] == 106
+assert byname["tDate"]["x"] == 314 and byname["tDate"]["w"] == 99
 assert byname["tTime"]["y"] + byname["tTime"]["h"] <= byname["tDate"]["y"]
 assert byname["tDate"]["y"] + byname["tDate"]["h"] <= 58
 assert byname["tDate"]["x"] + byname["tDate"]["w"] <= 413
+assert water["x"] + water["w"] <= byname["tTime"]["x"], (
+    "temperature fields must not overlap the native clock/date widgets"
+)
 
 post = event("pageHome.loadend")
 update = event("bUpdateGauge.down")
@@ -74,19 +77,23 @@ assert "fill=(242,48,62,255)" in renderer
 assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
 assert "weather_icons=Image.new('RGBA'" in renderer
-assert "weather_icons.crop((159*S,5*S,184*S,30*S)),(191*S,5*S)" in renderer
-assert "weather_icons.crop((159*S,30*S,184*S,55*S)),(191*S,30*S)" in renderer
-assert water["x"] >= 218 and air["x"] >= 218, (
+assert "weather_icons.crop((159*S,5*S,184*S,30*S)),(201*S,5*S)" in renderer
+assert "weather_icons.crop((159*S,30*S,184*S,55*S)),(201*S,30*S)" in renderer
+assert water["x"] >= 228 and air["x"] >= 228, (
     "native Nextion text widget would erase the adjacent temperature icons"
 )
 assert "cloud=(3,26,52,255)" in renderer
-assert "d.text((218,18),'27.3°C',font=preview_font(22)" in renderer
-assert "d.text((218,43),'7.3°C',font=preview_font(22)" in renderer
+assert "d.text((228,18),'27.3°C',font=preview_font(22)" in renderer
+assert "d.text((228,43),'7.3°C',font=preview_font(22)" in renderer
 assert "d.text((187,20),'27.3°C'" not in renderer
 print("PASS: water/outdoor temperatures use existing ESP32 globals")
 assert "fill=WHITE,anchor='lm')" in renderer, (
     "preview must align actual first digit beside each icon, regardless of digit count"
 )
-assert "d.text((357,44),'27/11/26',font=preview_font(20)" in renderer
-print("PASS: 24px water/air temperatures begin at x218, immediately beside icons")
+assert "d.text((367,44),'27/11/26',font=preview_font(20)" in renderer
+assert "d.text((370,22),'10:47',font=preview_font(25)" in renderer
+assert "image.paste(wave,(20*S," in renderer
+assert "text(d,'flow',63,31,20" in renderer
+assert "text(d,'.io',113,31,20" in renderer
+print("PASS: temperatures +10px right, complete Flow.io logo +12px right, no field overlap")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
