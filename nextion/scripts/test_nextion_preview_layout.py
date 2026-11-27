@@ -91,8 +91,27 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
     "pH gauge lost its white scale graduations"
 )
 
+# Optional comparison is required on each graphic build. It must remove
+# ONLY the cyan contour of the top header, not shift widgets or alter TFT.
+comparison_path=args.preview.with_name("preview-header-borderless.png")
+assert comparison_path.is_file(), "missing borderless-header comparison PNG"
+with Image.open(comparison_path) as candidate:
+    borderless=candidate.convert("RGB")
+assert borderless.size==image.size
+normal_edge=at(240,5)
+no_edge=borderless.getpixel((240,5))
+assert normal_edge[1] > no_edge[1]+35, (
+    f"header contour missing from bordered comparison: {normal_edge}/{no_edge}"
+)
+assert no_edge[1]<75, f"borderless comparison still has cyan header frame: {no_edge}"
+assert (borderless.crop((0,60,480,320)).tobytes() ==
+        image.crop((0,60,480,320)).tobytes()), (
+    "borderless comparison also changed the gauges/footer"
+)
+
 print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: compact twin footer frames, free pump gap, lowered 3D turbine")
+print("PASS: separate borderless-header comparison, identical gauges and footer")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
