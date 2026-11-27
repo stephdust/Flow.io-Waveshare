@@ -1,14 +1,10 @@
-name: Publish Nextion 3.5in HMI 7.0.0 test
+name: Archive previously validated Nextion 3.5in HMI 7.0.0 source
 
 on:
-  push:
-    branches: [dev]
-    paths:
-      - .github/workflows/nextion-7-hmi-preview.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-hmi:
@@ -30,16 +26,3 @@ jobs:
           name: Nextion-NX4832K035-HMI-7.0.0-CRC-FIX
           path: nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           retention-days: 7
-      - name: Commit HMI to dev
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
-          if git diff --cached --quiet; then
-            echo 'HMI unchanged; nothing to commit.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'test(nextion): add CRC-fixed NX4832K035 HMI 7.0.0 test [skip ci]'
-          git push origin HEAD:dev
