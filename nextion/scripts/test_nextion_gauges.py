@@ -54,9 +54,9 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
         # uses ties-to-even. Allow at most one pixel for that difference,
         # without weakening the colour, 21-position or alignment checks.
         match = re.search(
-            rf"if\\(sys2=={i}\\)\\s*\\{{\\s*line [^\\n]+2047\\s*"
-            rf"line (\\d+),(\\d+),(\\d+),(\\d+),65535\\s*"
-            rf"line [^\\n]+2047",
+            rf"if\(sys2=={i}\)\s*\{{\s*line [^\n]+2047\s*"
+            rf"line (\d+),(\d+),(\d+),(\d+),65535\s*"
+            rf"line [^\n]+2047",
             update,
         )
         assert match, f"missing {field} measurement bar at phase {i}"
