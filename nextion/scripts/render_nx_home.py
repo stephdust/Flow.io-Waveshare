@@ -512,6 +512,32 @@ def wifi_frame(bg,level):
     return image.convert('RGB')
 
 
+# Red alert overlay is drawn in a separate atlas tile so HMI can switch
+# from static amber to active red using globals.vaAlarms, without redrawing
+# any gauges or altering their live cursor / temperature widgets.
+ALARM_X,ALARM_Y,ALARM_W,ALARM_H=418,269,44,40
+ALARM_NORMAL_ATLAS_X=500
+ALARM_ACTIVE_ATLAS_X=544
+
+
+def alarm_active_sprite():
+    im=Image.new('RGB',(ALARM_W*S,ALARM_H*S),NAVY)
+    d=ImageDraw.Draw(im)
+    triangle=[(22,2),(2,37),(42,37)]
+    d.polygon([((x+1)*S,(y+2)*S) for x,y in triangle],
+              fill=(62,5,20))
+    d.polygon([(x*S,y*S) for x,y in triangle],
+              fill=(189,22,50))
+    d.line([(x*S,y*S) for x,y in triangle+[triangle[0]]],
+           fill=(255,83,104),width=3*S,joint='curve')
+    d.line([(20*S,8*S),(6*S,34*S)],
+           fill=(255,184,184),width=S)
+    d.rounded_rectangle((20*S,14*S,24*S,27*S),
+                        radius=2*S,fill=(255,251,245))
+    d.ellipse((19*S,30*S,25*S,36*S),fill=(255,251,245))
+    return im.resize((ALARM_W,ALARM_H),Image.Resampling.LANCZOS)
+
+
 def render(source,preview):
     project=(source/'app.toml').read_text(encoding='utf-8')
     if 'screen = "NX4832K035"' not in project or 'rotation = 90' not in project:
@@ -527,6 +553,13 @@ def render(source,preview):
     orp=gauge_sprite('ORP').resize((207,150),Image.Resampling.LANCZOS)
     atlas.paste(ph,(0,0))
     atlas.paste(orp,(207,0))
+    # Static amber tile + red alarm tile from same 44x40 screen rectangle.
+    # The Nextion chooses the tile using the ESP32's vaAlarms bit mask.
+    atlas.paste(bg.crop((ALARM_X*S,ALARM_Y*S,
+                         (ALARM_X+ALARM_W)*S,(ALARM_Y+ALARM_H)*S))
+                .resize((ALARM_W,ALARM_H),Image.Resampling.LANCZOS),
+                (ALARM_NORMAL_ATLAS_X,0))
+    atlas.paste(alarm_active_sprite(),(ALARM_ACTIVE_ATLAS_X,0))
     for state in range(5):
         ring=ring_frame(bg,state).resize((FAN_SIZE,FAN_SIZE),Image.Resampling.LANCZOS)
         atlas.paste(ring,(state*FAN_SIZE,FAN_RING_ATLAS_Y))
