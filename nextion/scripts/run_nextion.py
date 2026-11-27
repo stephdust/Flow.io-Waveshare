@@ -117,6 +117,9 @@ def compile_nextion() -> None:
     python = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     execute(str(python), str(renderer), "--source", str(SOURCE),
             "--preview", str(preview))
+    # Pixel-level gate runs with the isolated Pillow interpreter and examines
+    # actual rendered turbine sprites before any HMI/TFT is published.
+    execute(str(python), str(ROOT / "nextion/scripts/test_nextion_turbine_3d.py"))
     RELEASE.mkdir(parents=True, exist_ok=True)
     (ROOT / ".pio").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="nextion-build-", dir=ROOT / ".pio") as folder:
