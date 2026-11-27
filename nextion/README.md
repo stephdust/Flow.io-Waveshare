@@ -63,3 +63,46 @@ Voir [la procédure et ses limites](docs/nxwright-7-0-audit.md) ; l'audit compar
 
 
 La compilation nxwright de la nouvelle Home utilise `nextion/scripts/modernize_3p5_nxsource.py` et `nextion/scripts/compile_nxwright_test.sh`. Le firmware système Nextion Editor 1.68.2 est acquis par `nxwright compile --download` dans un runner temporaire. Le HMI et le TFT expérimentaux sont désormais committés dans `nextion/releases/7.0.0/` **sur notre fork `dev` uniquement**. Lors des builds PlatformIO de ce fork, le TFT peut être exporté dans `binary/` pour essai. Rien n'est encore proposé à Christophe.
+
+
+## Compilation Nextion via PlatformIO (méthode unique)
+
+`platformio.ini` possède une section isolée **`[env:nextion]`** :
+
+```bash
+pio run -e nextion
+```
+
+Cette commande exécute uniquement la chaîne du **NX4832K035_011, 480 × 320, version 7.0.0** :
+`nxwright check` → `nxwright build` → réextraction et validation du HMI →
+`nxwright compile --download` → vérification TFT → copie dans
+`nextion/releases/7.0.0/` → export dans `binary/` → régénération
+de `binary/manifest.json`.
+
+Pour simplement republier le **TFT déjà compilé et le manifeste**, sans
+installer nxwright, sans compilation ni SPIFFS :
+
+```bash
+pio run -e nextion -t manifest
+```
+
+Ces deux cibles utilisent **le même environnement PlatformIO**, avec une seule
+implémentation dans `nextion/scripts/` :
+`pio_nextion_targets.py` → `run_nextion.py` →
+`refresh_nextion_manifest.py` (appel interne à l'exporteur existant).
+
+Lors de la première compilation Nextion complète, une installation isolée de
+nxwright à un commit Git précis dans `.pio/nextion-nxwright-venv/` et le
+téléchargement du firmware système Nextion Editor peuvent nécessiter Internet.
+Les compilations suivantes réutilisent l'environnement. Aucun code C++
+ESP32 ni image SPIFFS n'est construit.
+
+La version reste `7.0.0`. Sur notre fork `dev`, les HMI/TFT sont
+expérimentaux jusqu'aux tests réels. La branche amont de Christophe et les
+modèles Nextion 5″/7″ ne sont pas modifiés.
+
+**Mise à jour à distance :** après la commande rapide, il faut publier le TFT
+**et** `binary/manifest.json` ensemble au même emplacement HTTP. Sinon Flow.io
+peut afficher `Nextion artifact HTTP response invalid` malgré un manifeste
+local correct. Les manifests `flowio-release-*.json` / `release.json` et le
+ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
