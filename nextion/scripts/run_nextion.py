@@ -104,6 +104,7 @@ def compile_nextion() -> None:
     for test_name in (
         "test_nextion_wake.py",
         "test_nextion_animation.py",
+        "test_nextion_gauges.py",
         "test_nextion_outdoor_temp.py",
         "test_nextion_footer_touch.py",
     ):
