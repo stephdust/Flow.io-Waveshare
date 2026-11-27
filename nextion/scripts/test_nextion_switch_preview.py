@@ -7,7 +7,7 @@ This is a deterministic rendering/layout gate, not a physical touch test.
 import argparse
 from pathlib import Path
 import tomllib
-from PIL import Image
+from PIL import Image, ImageChops
 
 p=argparse.ArgumentParser()
 p.add_argument("--source",type=Path,required=True)
@@ -39,7 +39,9 @@ for name,xy in zip(names,expected):
     chosen=active if name in on else off
     part=im.crop((*xy,xy[0]+70,xy[1]+65))
     assert part.tobytes()==chosen.crop((0,0,70,65)).tobytes(),f"{name}: preview differs from HMI sprite"
-    assert any(px!=navy for px in chosen.getdata()),f"{name}: missing 3D glyph"
+    # Avoid deprecated Image.getdata() while checking for actual icon pixels.
+    background=Image.new("RGB",chosen.size,navy)
+    assert ImageChops.difference(chosen,background).getbbox() is not None, f"{name}: missing 3D glyph"
 home=buttons["bHome"]
 assert (home["x"],home["y"],home["w"],home["h"])==(0,267,56,52)
 assert home["pic"]=="picture-0040" and home["pic2"]=="picture-0041"
