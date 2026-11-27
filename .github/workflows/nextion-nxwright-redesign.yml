@@ -16,6 +16,7 @@ on:
       - 'nextion/scripts/test_nextion_outdoor_temp.py'
       - 'nextion/scripts/test_nextion_footer_touch.py'
       - 'nextion/scripts/test_nextion_turbine_3d.py'
+      - 'nextion/scripts/test_nextion_preview_layout.py'
       - 'nextion/scripts/test_nextion_wake.py'
       - 'scripts/tests/test_nextion_wifi_rssi.py'
       - 'nextion/scripts/refresh_nextion_manifest.py'
