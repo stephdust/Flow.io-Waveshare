@@ -105,6 +105,7 @@ def compile_nextion() -> None:
         "test_nextion_wake.py",
         "test_nextion_animation.py",
         "test_nextion_gauges.py",
+        "test_nextion_picture_refs.py",
         "test_nextion_outdoor_temp.py",
         "test_nextion_footer_touch.py",
     ):

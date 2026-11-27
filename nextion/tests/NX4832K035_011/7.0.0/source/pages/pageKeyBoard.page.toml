@@ -16,7 +16,7 @@ x = 10
 y = 232
 w = 61
 h = 78
-pic = "picture-0025"
+pic = "picture-0021"
 
 [[component]]
 name = "tc0"
