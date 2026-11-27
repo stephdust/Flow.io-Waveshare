@@ -34,7 +34,7 @@ for x,y in (
     (5,31),(240,5),(475,31),  # no header perimeter
     (154,23),(300,24),(413,24),  # no header dividers
     (29,290),(193,290),(291,290),(470,290),  # no footer trays
-    (360,290),  # no divider between equipment and alarm icons
+    (390,290),  # no divider between equipment and alarm icons
 ):
     assert at(x,y)==navy, (
         f"frame, separator or non-uniform background at {(x,y)}: {at(x,y)}"
