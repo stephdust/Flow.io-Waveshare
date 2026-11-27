@@ -175,7 +175,7 @@ FAN_FRAMES=11
 
 def _cubic(a,b,c,d,steps=12):
     return [((1-t)**3*a[0]+3*(1-t)**2*t*b[0]+3*(1-t)*t*t*c[0]+t**3*d[0],
-             (1-t)**3*a[1]+3*(1-t)**2*t*b[1]+t**3*d[1]*0+3*(1-t)*t*t*c[1]+t**3*d[1])
+             (1-t)**3*a[1]+3*(1-t)**2*t*b[1]+3*(1-t)*t*t*c[1]+t**3*d[1])
             for t in (i/steps for i in range(steps+1))]
 
 
