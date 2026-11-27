@@ -30,7 +30,11 @@ RELEASE = ROOT / "nextion" / "releases" / VERSION
 HMI_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.HMI"
 TFT_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.tft"
 # Match the HMI name exactly, changing only the extension.
-PREVIEW_NAME = Path(HMI_NAME).with_suffix(".png").name
+# Each HMI contains several Nextion pages. Today only the pageHome preview
+# is rendered, so its page name MUST appear in its PNG filename.
+# Future page renderers can use the same naming rule for pageAlarms, etc.
+PREVIEW_PAGE = "pageHome"
+PREVIEW_NAME = f"{Path(HMI_NAME).stem}-{PREVIEW_PAGE}.png"
 NXWRIGHT_COMMIT = "e9443a409cc9deb866db7486854fa962d382accc"
 VENV = ROOT / ".pio" / "nextion-nxwright-venv"
 # All regular build outputs are ignored by Git. Tracked releases/previews and
@@ -43,6 +47,7 @@ LEGACY_PREVIEWS = (
     ROOT / "binary" / "nextion-preview.png",
     OUTPUT / "preview.png",
     OUTPUT / MODEL / VERSION / "preview.png",
+    OUTPUT / MODEL / VERSION / Path(HMI_NAME).with_suffix(".png").name,
 )
 
 
@@ -63,6 +68,10 @@ def check_source() -> None:
     if not app.is_file() or not home.is_file():
         raise RuntimeError(f"Nextion nxwright sources not found: {SOURCE}")
     text = app.read_text(encoding="utf-8")
+    # Never label one page with another page's name.
+    import tomllib
+    if PREVIEW_PAGE not in tomllib.loads(text).get("pages", []):
+        raise RuntimeError(f"Nextion preview page missing in app.toml: {PREVIEW_PAGE}")
     if not re.search(r'(?m)^screen\s*=\s*"NX4832K035"\s*$', text):
         raise RuntimeError("Only NX4832K035 Nextion 480x320 is supported")
     if not re.search(r'(?m)^rotation\s*=\s*90\s*$', text):
@@ -172,7 +181,7 @@ def compile_nextion() -> None:
         publish_file(work_preview, PREVIEW_OUTPUT)
         publish_file(work_source / "pictures/picture-0003.png",
                      OUTPUT / "picture-0003.png")
-        print(f"[NEXTION] Per-screen preview: {PREVIEW_OUTPUT.relative_to(ROOT)}",
+        print(f"[NEXTION] Preview for page {PREVIEW_PAGE}: {PREVIEW_OUTPUT.relative_to(ROOT)}",
               flush=True)
         print("[NEXTION] HMI/TFT built in ignored .pio/nextion-output; "
               "tracked release files and source PNGs untouched.", flush=True)
