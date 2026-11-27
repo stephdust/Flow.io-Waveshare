@@ -14,10 +14,13 @@ SRC = ROOT / "nextion/tests/NX4832K035_011/7.0.0/source"
 app = tomllib.loads((SRC / "app.toml").read_text(encoding="utf-8"))
 program = (SRC / "program.nx").read_text(encoding="utf-8")
 pictures = app["pictures"]
-expected = [f"picture-{i:04d}" for i in range(24)]
-assert pictures == expected, "compact Nextion picture order changed"
+expected = [f"picture-{i:04d}" for i in range(42)]
+assert pictures == expected, "Nextion picture order changed"
 found = sorted(p.stem for p in (SRC / "pictures").glob("picture-*.png"))
-assert found == expected, "missing or unlisted picture-XXXX.png in source"
+assert found == expected[:24], "original 24 source pictures changed"
+# The new 24..41 sprites are generated into the scratch copy at build time.
+renderer = ROOT / "nextion/scripts/render_nx_switches.py"
+assert renderer.is_file(), "missing pageHomeSwtch bitmap renderer"
 
 # References preserved by ID, including old numeric expressions on the RTC.
 for expr in ("int HomeGaugepic=3", "int LEDpic=1", "int PSIGaugepic=20",
@@ -43,11 +46,11 @@ board = (SRC / "pages/pageKeyBoard.page.toml").read_text(encoding="utf-8")
 sw = (SRC / "pages/pageHomeSwtch.page.toml").read_text(encoding="utf-8")
 date = (SRC / "pages/pageSetTime.page.toml").read_text(encoding="utf-8")
 assert '"picture-0021"' in board
-assert '"picture-0022"' in sw and '"picture-0023"' in sw
+assert '"picture-0024"' in sw and '"picture-0041"' in sw
 assert '"picture-0005"' in date, "date/time page still uses picture 0005"
 assert '"picture-0025"' not in board
-assert '"picture-0031"' not in sw and '"picture-0032"' not in sw
+assert '"picture-0031"' in sw and '"picture-0032"' in sw
 assert (SRC / "pictures/picture-0005.png").is_file()
-print("PASS: 24 compact image slots, all source PNGs accounted for")
+print("PASS: original 24 source images plus 18 build-time 3D switch sprites")
 print("PASS: Home, PSI/LED, keypad, date/time, switches IDs preserved")
 print("PASS: no dangling named picture references across 9 HMI pages")
