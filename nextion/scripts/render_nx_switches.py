@@ -7,6 +7,7 @@ The native button IDs and touch/serial events are deliberately untouched.
 from pathlib import Path
 import argparse
 import math
+import tomllib
 from PIL import Image, ImageDraw, ImageFont
 
 NAVY=(4,18,37)
@@ -76,6 +77,7 @@ def make_sprite(kind, on, w=70, h=75):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--source",type=Path,required=True)
+    p.add_argument("--preview",type=Path)
     args=p.parse_args()
     dst=args.source/"pictures"
     dst.mkdir(parents=True,exist_ok=True)
@@ -84,6 +86,45 @@ def main():
             make_sprite(kind,bool(state)).save(dst/f"picture-{24+2*i+state:04d}.png")
     for state in range(2):
         make_sprite("home",bool(state),56,52).save(dst/f"picture-{40+state:04d}.png")
+    # Produce a true-size preview from the EXACT picture files used by nxwright,
+    # never from a separate concept illustration. Sample states are illustrative.
+    if args.preview:
+        page=tomllib.loads((args.source/"pages/pageHomeSwtch.page.toml").read_text(encoding="utf-8"))
+        components={c["name"]:c for c in page["component"]}
+        canvas=Image.new("RGB",(480,320),NAVY)
+        enabled={"btAuto","btAutoPH","btLight"}
+        names=("btAuto","btAutoORP","btAutoPH","btPHPump",
+               "btWinter","btLight","btRobot","btCHLPump")
+        for name in names:
+            c=components[name]
+            which="pic2" if name in enabled else "pic"
+            sprite=Image.open(dst/(c[which]+".png")).convert("RGB")
+            assert sprite.size==(c["w"],c["h"]),(name,sprite.size)
+            canvas.paste(sprite,(c["x"],c["y"]))
+        home=components["bHome"]
+        sprite=Image.open(dst/(home["pic"]+".png")).convert("RGB")
+        assert sprite.size==(home["w"],home["h"])
+        canvas.paste(sprite,(home["x"],home["y"]))
+        draw=ImageDraw.Draw(canvas)
+        font_candidates=("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                         "C:/Windows/Fonts/arialbd.ttf","DejaVuSans.ttf")
+        def font(size):
+            for path in font_candidates:
+                try: return ImageFont.truetype(path,size)
+                except OSError: pass
+            return ImageFont.load_default()
+        # Text is rendered at the 480x320 target resolution for audit,
+        # with original Nextion text component rectangles and coordinates.
+        for i in range(8):
+            c=components[f"t{i}"]
+            linebreaks=c["txt"].replace("\\r\\n","\\n").replace("   ","").replace("  ","").strip()
+            cx=c["x"]+c["w"]/2
+            draw.multiline_text((cx,c["y"]+c["h"]/2),linebreaks,
+                font=font(12),fill=(255,255,255),anchor="mm",
+                align="center",spacing=0)
+        args.preview.parent.mkdir(parents=True,exist_ok=True)
+        canvas.save(args.preview,optimize=True)
+        print("[NEXTION] Switch preview from actual generated sprite images:",args.preview)
     print("[NEXTION] Generated 18 pageHomeSwtch bitmaps (including Home).")
 
 if __name__=="__main__":
