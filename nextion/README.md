@@ -55,7 +55,7 @@ noms ambigus ou les doublons modèle/version.
 - `tests/NX4832K035_011/7.0.0/source/` : sources nxwright éditables (pages, images, polices).
 - `.github/workflows/nextion-*.yml` (hors `nextion/`) : lanceurs GitHub Actions obligatoirement situés dans le répertoire reconnu par GitHub.
 
-La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `platformio.ini` et le point d'entrée partagé `scripts/export_binaries.py`. Celui-ci lit les `.tft` dans `nextion/releases/<version>/`, et ne compile ni ne modifie les HMI. Il reste sous `scripts/` pour ne pas casser les hooks PlatformIO d'autres sous-systèmes. Les tests OTA firmware restent sous `scripts/tests/`.
+La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `platformio.ini` et le point d'entrée `scripts/export_binaries.py`. Le `pio run` standard enchaîne désormais les **deux cibles `buildprog, nextion`**, y compris lorsque seul le projet Nextion a changé. La cible Nextion appelle la même chaîne `run_nextion.py` que `pio run -e nextion`, puis publie le TFT et le manifeste dans `binary/`. Les tests OTA firmware restent sous `scripts/tests/`.
 
 ### Chaîne nxwright actuellement maintenue
 
@@ -63,7 +63,7 @@ L'ancien décompilateur Nextion2Text, les scripts de patchage binaire HMI et
 leurs workflows expérimentaux ont été retirés. Une **seule méthode** reste
 active : modifier directement les sources nxwright dans
 [`tests/NX4832K035_011/7.0.0/source/`](tests/NX4832K035_011/7.0.0/source/),
-puis utiliser `pio run -e nextion` ou `pio run -e nextion -t manifest`.
+puis utiliser `pio run` (firmware + Nextion), `pio run -e nextion` (Nextion seul) ou `pio run -e nextion -t manifest` (copie seule).
 
 Le générateur d'images actuel est `scripts/render_nx_home.py`. Les scripts
 `scripts/test_nextion_wake.py` et `scripts/test_nextion_animation.py`
@@ -114,6 +114,26 @@ modèles Nextion 5″/7″ ne sont pas modifiés.
 peut afficher `Nextion artifact HTTP response invalid` malgré un manifeste
 local correct. Les manifests `flowio-release-*.json` / `release.json` et le
 ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
+
+## Optimisation de la release 7.0.0 pour l'OTA
+
+- **Fond Home uniformisé** : le dégradé et les halos de panneau ont été
+  remplacés par des couleurs fixes pour réduire les données de l'image.
+- **Turbine** : cinq couronnes colorées (70×70) indépendantes de onze petits
+  centres rotatifs (48×48), au lieu de 55 images de turbine complètes.
+  Le timer reste à 50 ms, les quatre pales tournent sur dix phases.
+- **Atlas compact** : `1035×728` au lieu de `1035×1160`, avec
+  repositionnement conjoint des appels `xpic`. Le RSSI conserve ses cinq
+  couleurs et les jauges pH/ORP leurs cinq états.
+- **OTA ESP32** : le TFT complet est maintenant préchargé dans des segments
+  PSRAM de 64 KiB, vérifié par SHA-256 puis envoyé via UART. Il n'est plus
+  nécessaire de réserver un seul bloc PSRAM de la taille du TFT. La réserve
+  totale de **2 MiB** demeure obligatoire.
+
+**Ordre de test :** après `pio run`, installer d'abord le nouveau firmware
+ESP32 et son SPIFFS, puis tenter la mise à jour Nextion avec le nouveau TFT
+et `manifest.json` publiés ensemble sur le serveur HTTP. L'ancienne version
+du firmware ESP32 n'a pas encore le préchargement PSRAM segmenté.
 
 ## RSSI Wi-Fi réel pour le petit Nextion 7.0.0
 
