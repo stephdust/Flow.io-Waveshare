@@ -18,17 +18,17 @@ components = {c["name"]: c for c in page["component"]}
 # x/y/width/height: visible hit zones, tuned to the drawn icon plus finger
 # margin. No zone should capture a neighbouring button or a gauge.
 targets = {
-    "b0": (64, 268, 72, 45),      # centered grid / configuration
+    "b0": (89, 266, 68, 48),      # 3D grid centred exactly under pH (x=123)
     "m1": (205, 239, 70, 70),     # central pump / filtration toggle
-    "m0": (309, 268, 78, 45),     # gear / equipment switches
-    "b1": (412, 268, 62, 45),     # triangle alarm / alarms page
+    "m0": (288, 266, 64, 48),     # jade gear centred at x=320
+    "b1": (369, 266, 62, 48),     # amber warning centred at x=400
 }
 # Grounded visible artwork bounds (x0, y0, x1, y1).
 drawings = {
-    "b0": (93, 276, 122, 305),
+    "b0": (108, 275, 138, 310),
     "m1": (205, 239, 275, 309),
-    "m0": (332, 273, 366, 307),
-    "b1": (427, 276, 457, 304),
+    "m0": (301, 271, 339, 310),
+    "b1": (380, 271, 420, 308),
 }
 
 def bounds(name):
@@ -68,7 +68,7 @@ assert "m2" not in components
 assert "on m2.down:" not in source
 assert "d.polygon([(143*S,273*S)" not in art
 assert "d.arc((130*S,300*S,161*S,314*S)" not in art
-assert "for xx in (93,110):" in art
+assert "for xx in (108,124):" in art
 assert "for x in (194,294,387):" not in art, "footer dividers must be removed"
 # The entire footer is a flat navy canvas with three floating icons.
 # No frames/filled trays and no separators may be drawn behind hotspots.
@@ -104,16 +104,32 @@ assert "page pageAlarms" in event("b1.down")
 assert "on b1.up:" not in source
 
 # The old footer arrow has been replaced by a clear gear.
-assert "gear_x,gear_y=349,290" in art
+assert "grid_cx,grid_cy=123,290" in art
+assert "gear_x,gear_y=320,290" in art
+assert "alarm_x,alarm_y=400,290" in art
+assert 320-240 == 400-320 == 480-400, (
+    "gear and alarm must divide space from pump to right edge into three equal gaps"
+)
+assert 123 == 20+103, "grid must be directly under centred pH title"
+assert "fill=(7,100,172,255)" in art and "fill=(90,234,255,255)" in art, (
+    "cyan/blue glass facets were lost from config icon"
+)
+assert "fill=(4,134,132,255)" in art and "fill=(237,190,69,255)" in art, (
+    "jade gear and gold 3D bearing were lost"
+)
+assert "fill=(255,193,53,255)" in art and "fill=(129,49,26,255)" in art, (
+    "amber/bronze warning icon lost its faceted colours"
+)
 assert "text(d,\'flow\',51,31,20" in art
 assert "text(d,\'.io\',101,31,20" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
-assert "line(d,[(442,276),(427,304),(457,304),(442,276)]" in art
+assert "line(d,[(442,276),(427,304),(457,304),(442,276)]" not in art
 assert "gear_points=[]" in art, "the equipment button must have real gear teeth"
 assert "for tooth in range(10):" in art, "the gear must not revert to sun-like spokes"
 
 print("PASS: four visible controls have aligned, non-overlapping hotspots")
 print("PASS: play triangle and duplicate touch action have been removed")
 print("PASS: central turbine remains the only filtration toggle")
-print("PASS: frameless header/footer without separators; centered rotor clear of gauges")
+print("PASS: floating 3D cyan/jade/amber nav icons at x=123/320/400")
+print("PASS: pH-aligned grid, evenly spaced right-side icons, centered rotor")
 print("PASS: no footer button paints opaque rectangles over icons")
