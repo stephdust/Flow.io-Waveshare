@@ -120,7 +120,7 @@ ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
 - **Fond Home uniformisé** : le dégradé et les halos de panneau ont été
   remplacés par des couleurs fixes pour réduire les données de l'image.
 - **Turbine** : cinq couronnes colorées (70×70) indépendantes de onze petits
-  centres rotatifs (48×48), au lieu de 55 images de turbine complètes.
+  centres rotatifs (42×42), au lieu de 55 images de turbine complètes.
   Le timer reste à 50 ms, les quatre pales tournent sur dix phases.
 - **Atlas compact** : `1035×728` au lieu de `1035×1160`, avec
   repositionnement conjoint des appels `xpic`. Le RSSI conserve ses cinq
