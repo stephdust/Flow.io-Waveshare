@@ -332,10 +332,10 @@ txt_maxl = 31
 [[component]]
 name = "m0"
 type = "hotspot"
-x = 196
-y = 0
-w = 284
-h = 272
+x = 305
+y = 268
+w = 82
+h = 46
 
 [[component]]
 name = "m1"
