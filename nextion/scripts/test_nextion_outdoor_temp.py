@@ -92,8 +92,8 @@ assert "fill=WHITE,anchor='lm')" in renderer, (
 )
 assert "d.text((367,44),'27/11/26',font=preview_font(20)" in renderer
 assert "d.text((370,22),'10:47',font=preview_font(25)" in renderer
-assert "image.paste(wave,(20*S," in renderer
-assert "text(d,'flow',63,31,20" in renderer
-assert "text(d,'.io',113,31,20" in renderer
-print("PASS: temperatures +10px right, complete Flow.io logo +12px right, no field overlap")
+assert "image.paste(wave,(32*S," in renderer
+assert "text(d,'flow',75,31,20" in renderer
+assert "text(d,'.io',125,31,20" in renderer
+print("PASS: temperatures +10px right, complete Flow.io logo +24px right, no field overlap")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
