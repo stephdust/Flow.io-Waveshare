@@ -201,59 +201,154 @@ def _cubic(a,b,c,d,steps=12):
             for t in (i/steps for i in range(steps+1))]
 
 
+def _turn(point, theta, centre=FAN_CORE_SIZE/2):
+    """Rotate a blade point around the exact 21px centre."""
+    u, v = point
+    cs, sn = math.cos(theta), math.sin(theta)
+    return ((centre + u*cs - v*sn)*S,
+            (centre + u*sn + v*cs)*S)
+
+
+def _blend(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(round(a[i]*(1-t)+b[i]*t) for i in range(3))
+
+
 def ring_frame(bg,status):
-    """Pressure status ring, shared by every turbine animation frame."""
-    assert 0<=status<=4
-    im=bg.crop((FAN_X*S,FAN_Y*S,(FAN_X+FAN_SIZE)*S,
-                (FAN_Y+FAN_SIZE)*S)).convert('RGBA')
-    colors=((152,176,195),(107,248,44),(246,216,40),
-            (248,146,30),(245,71,81))
-    active=colors[status]
-    # Keep the coloured ring entirely outside the 42x42 opaque centre.
-    # Square corners are at radius ~29.7; the status ring begins at 31px.
-    rect=(1*S,1*S,69*S,69*S)
-    im=halo(im,lambda d:d.ellipse(rect,outline=(*AQUA,150),width=2*S),2)
-    d=ImageDraw.Draw(im)
-    d.ellipse(rect,fill=(4,24,44,255),outline=(*AQUA,255),width=S)
-    d.ellipse((4*S,4*S,66*S,66*S),
-              fill=(3,17,31,255),outline=(111,158,188,255),width=S)
-    d.arc(rect,5,170,fill=(185,205,222,255),width=3*S)
-    d.arc(rect,187,338,fill=(*active,255),width=3*S)
-    return im.convert('RGB')
+    """Full 360-degree glossy cyan bezel; pressure adds a small accent.
+
+    The earlier split arcs looked like a broken circle. All five PSI
+    variants now use the same uninterrupted 70px circular frame.
+    The opaque 42px core sits entirely inside the bezel (its corners are
+    29.7px from centre, while the bezel starts at radius 31px).
+    """
+    assert 0 <= status <= 4
+    im = bg.crop((FAN_X*S, FAN_Y*S, (FAN_X+FAN_SIZE)*S,
+                  (FAN_Y+FAN_SIZE)*S)).convert("RGBA")
+    shades = ((120,153,181), (96,239,79), (255,216,73),
+              (255,143,54), (255,70,92))
+    active = shades[status]
+
+    # Soft outer glow, without any opaque corners in the HMI bitmap.
+    glow = Image.new("RGBA", im.size, (0,0,0,0))
+    gd = ImageDraw.Draw(glow)
+    gd.ellipse((4*S,4*S,66*S,66*S),
+               outline=(0,185,250,115), width=3*S)
+    im = Image.alpha_composite(im, glow.filter(ImageFilter.GaussianBlur(2*S)))
+
+    d = ImageDraw.Draw(im)
+    # Continuous dark recessed basin. The 42px animation sprite uses the
+    # same flat inner RGB value, so no central square is visible.
+    d.ellipse((2*S,2*S,68*S,68*S),
+              fill=(3,17,31,255), outline=(5,77,133,255),width=2*S)
+    d.ellipse((3*S,3*S,67*S,67*S),
+              outline=(8,207,250,255),width=3*S)
+    # Upper-left specular reflection + lower-right depth create a true 3D rim.
+    d.arc((4*S,4*S,66*S,66*S),194,325,
+          fill=(220,250,255,255),width=2*S)
+    d.arc((4*S,4*S,66*S,66*S),15,143,
+          fill=(4,89,162,255),width=2*S)
+    d.ellipse((7*S,7*S,63*S,63*S),
+              outline=(17,114,171,255),width=S)
+    # Thin status cue *inside* the full cyan circumference; no more broken
+    # or detached pressure arcs.
+    d.arc((9*S,9*S,61*S,61*S),224,306,
+          fill=(*active,255),width=S)
+    return im.convert("RGB")
 
 
 def blade_frame(frame):
-    """One pressure-independent 42x42 turbine core, 0=OFF, 1..10=rotation.
+    """Four curved, metallic cyan 3D blades + a reflective raised hub.
 
-    The centre has a solid fill matching the inner ring and never overlaps
-    the outer status arcs. Symmetric four blades repeat after 90 degrees.
+    0 = muted stationary OFF, 1..10 = glossy ON rotation phases.
+    These eleven pressure-independent 42px frames keep the compact
+    1035x728 atlas and 50ms animation, with no extra memory allocation.
     """
-    assert 0<=frame<FAN_FRAMES
-    im=Image.new('RGBA',(FAN_CORE_SIZE*S,FAN_CORE_SIZE*S),(3,17,31,255))
-    d=ImageDraw.Draw(im)
-    curves=[
-      ((-3,-7),(-8,-9),(-18,-23),(-8,-26)),
-      ((-8,-26),(-5,-30),(10,-29),(13,-25)),
-      ((13,-25),(16,-20),(13,-17),(9,-13)),
-      ((9,-13),(7,-11),(6,-7),(-3,-7)),
+    assert 0 <= frame < FAN_FRAMES
+    im = Image.new("RGBA", (FAN_CORE_SIZE*S,FAN_CORE_SIZE*S),
+                   (3,17,31,255))
+    phase = (max(0, frame-1)*math.pi/20) if frame else 0
+    is_on = frame != 0
+
+    # Curved asymmetric outline, repeated by a precise quarter-turn:
+    # four identical swept blades like the approved dashboard mock-up.
+    blade_curves = [
+        ((1,-4),(-2,-5),(-7,-8),(-9,-12)),
+        ((-9,-12),(-11,-15),(-11,-19),(-6,-19)),
+        ((-6,-19),(-1,-20),(5,-18),(7,-14)),
+        ((7,-14),(9,-11),(8,-7),(4,-4)),
+        ((4,-4),(3,-3),(2,-3),(1,-4)),
     ]
-    phase=(max(0,frame-1)*math.pi/20) if frame else 0
-    cx=cy=FAN_CORE_SIZE/2
+    outline = [point for curve in blade_curves
+               for point in _cubic(*curve, steps=9)]
+    w, h = im.size
+
     for blade in range(4):
-        angle=phase+blade*math.pi/2
-        co,si=math.cos(angle),math.sin(angle)
-        outline=[pt for c in curves for pt in _cubic(*c)]
-        coords=[((cx+.65*(u*co-v*si))*S,(cy+.65*(u*si+v*co))*S)
-                for u,v in outline]
-        d.polygon(coords,fill=(23,195,244,255))
-        d.line(coords+[coords[0]],fill=(228,252,255,255),width=S)
-        highlights=[(-6,-21),(1,-26),(8,-25)]
-        d.line([((cx+.65*(u*co-v*si))*S,(cy+.65*(u*si+v*co))*S)
-                for u,v in highlights],
-               fill=(144,235,255,255),width=S)
-    d.ellipse(((cx-3)*S,(cy-3)*S,(cx+3)*S,(cy+3)*S),
-              fill=(6,74,128,255),outline=(*WHITE,255),width=S)
-    return im.convert('RGB')
+        angle = phase + blade*math.pi/2
+        co, si = math.cos(angle),math.sin(angle)
+        coords = [_turn(pt, angle) for pt in outline]
+
+        # A soft offset silhouette provides thickness behind each blade.
+        shadow_mask = Image.new("L", (w,h),0)
+        sd = ImageDraw.Draw(shadow_mask)
+        sd.polygon([(x+0.9*S,y+1.15*S) for x,y in coords],fill=185)
+        shadow = Image.new("RGBA", (w,h), (0,4,22,0))
+        shadow.putalpha(shadow_mask.filter(ImageFilter.GaussianBlur(1.0*S)))
+        im = Image.alpha_composite(im,shadow)
+
+        mask = Image.new("L", (w,h),0)
+        ImageDraw.Draw(mask).polygon(coords,fill=255)
+        # Per-pixel light across the swept surface. Blue shadow at the
+        # lower edge rises to a pale cyan ridge on the opposite edge.
+        # The gradient follows each rotation rather than rotating a static
+        # highlight independently of the shape.
+        surface = Image.new("RGB",(w,h))
+        px = surface.load()
+        cx = cy = FAN_CORE_SIZE/2
+        for yy in range(h):
+            ry = yy/S-cy
+            for xx in range(w):
+                rx = xx/S-cx
+                local_x = rx*co+ry*si
+                local_y = -rx*si+ry*co
+                t = (local_x+11)/20
+                if t < 0.53:
+                    colour = _blend((7,68,146),(2,181,244),t/0.53)
+                else:
+                    colour = _blend((2,181,244),(194,252,255),
+                                    (t-0.53)/0.47)
+                # Tip is slightly darker than the lit curved shoulder.
+                depth = 0.86 if local_y < -17 else 1.0
+                if not is_on:
+                    colour = _blend((24,57,79),(94,152,177),t)
+                px[xx,yy] = tuple(round(v*depth) for v in colour)
+        im.paste(surface,(0,0),mask)
+
+        d = ImageDraw.Draw(im)
+        d.line(coords+[coords[0]],fill=(5,113,193,255),width=max(1,S//2))
+        if is_on:
+            # Fine curved reflective ridge; not a thick white stick.
+            shine = [(-6,-13),(-5,-16),(-3,-17),(-1,-17),(2,-15)]
+            d.line([_turn(pt,angle) for pt in shine],
+                   fill=(208,251,255,215),width=max(1,S//2))
+
+    # Layered central bearing: dark drop shadow, polished steel/cyan rim,
+    # recessed blue centre and a small upper-left specular glint.
+    d = ImageDraw.Draw(im)
+    cx = cy = FAN_CORE_SIZE/2
+    d.ellipse(((cx-4+0.8)*S,(cy-4+1.1)*S,
+               (cx+4+0.8)*S,(cy+4+1.1)*S),fill=(0,5,28,255))
+    d.ellipse(((cx-4.1)*S,(cy-4.1)*S,
+               (cx+4.1)*S,(cy+4.1)*S),
+              fill=(17,156,214,255),outline=(224,251,255,255),
+              width=max(1,S//2))
+    d.ellipse(((cx-2.6)*S,(cy-2.6)*S,
+               (cx+2.6)*S,(cy+2.6)*S),
+              fill=(2,53,128,255))
+    d.ellipse(((cx-1.6)*S,(cy-2.0)*S,
+               (cx-0.2)*S,(cy-0.5)*S),
+              fill=(236,254,255,255))
+    return im.convert("RGB")
 
 
 WIFI_X,WIFI_Y,WIFI_W,WIFI_H=428,11,43,38
@@ -318,7 +413,7 @@ def render(source,preview):
     demo=bg.resize((480,320),Image.Resampling.LANCZOS)
     demo.paste(atlas.crop((414,0,621,150)),(20,89))
     demo.paste(atlas.crop((414,150,621,300)),(253,89))
-    # Preview frame is the same real turbine bitmap used by the Nextion timer.
+    # Preview uses the exact shaded 3D sprites from the firmware atlas.
     demo.paste(ring_frame(bg,1).resize((70,70),Image.Resampling.LANCZOS),
                (FAN_X,FAN_Y))
     demo.paste(blade_frame(4).resize((42,42),Image.Resampling.LANCZOS),
