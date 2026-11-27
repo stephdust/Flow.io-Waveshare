@@ -21,6 +21,7 @@ y = 5
 w = 113
 h = 25
 font = "SegoeUI_16"
+xcen = 2
 bco = "#041225"
 pco = "#ffffff"
 ycen = 1
@@ -265,10 +266,10 @@ txt_maxl = 3
 [[component]]
 name = "b0"
 type = "hotspot"
-x = 64
-y = 268
-w = 72
-h = 45
+x = 89
+y = 266
+w = 68
+h = 48
 
 [[component]]
 name = "bDateTime"
@@ -324,10 +325,10 @@ txt_maxl = 31
 [[component]]
 name = "m0"
 type = "hotspot"
-x = 309
-y = 268
-w = 78
-h = 45
+x = 288
+y = 266
+w = 64
+h = 48
 
 [[component]]
 name = "m1"
@@ -340,10 +341,10 @@ h = 70
 [[component]]
 name = "b1"
 type = "hotspot"
-x = 412
-y = 268
+x = 369
+y = 266
 w = 62
-h = 45
+h = 48
 
 [[component]]
 name = "vaPrvWifiLevel"
@@ -359,6 +360,7 @@ y = 30
 w = 113
 h = 25
 font = "SegoeUI_16"
+xcen = 2
 bco = "#041225"
 pco = "#ffffff"
 ycen = 1
