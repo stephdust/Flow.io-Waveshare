@@ -1,0 +1,45 @@
+name: Publish Nextion 3.5in HMI 7.0.0 test
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/nextion-7-hmi-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-hmi:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: true
+      - name: Patch the existing 6.0.0 HMI into a 7.0.0 test HMI
+        run: python3 nextion/tools/build_3p5_v7_hmi.py
+      - name: Print file fingerprint
+        run: sha256sum nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_TEST.HMI
+      - name: Publish test HMI as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nextion-NX4832K035-HMI-7.0.0-TEST
+          path: nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_TEST.HMI
+          retention-days: 7
+      - name: Commit HMI to dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_TEST.HMI
+          if git diff --cached --quiet; then
+            echo 'HMI unchanged; nothing to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(nextion): add generated NX4832K035 HMI 7.0.0 source [skip ci]'
+          git push origin HEAD:dev
