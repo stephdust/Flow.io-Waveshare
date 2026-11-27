@@ -1,0 +1,57 @@
+name: Validate Nextion 3.5in HMI 7.0.0
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'nextion/tools/compare_3p5_hmi.py'
+      - 'nextion/tools/build_3p5_v7_hmi.py'
+      - 'nextion/releases/6.0.0/Flowio_Enhanced_480x320.HMI'
+      - 'nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI'
+      - '.github/workflows/nextion-hmi-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Fetch and verify Nextion2Text source (MPL-2.0)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            'https://raw.githubusercontent.com/MMMZZZZ/Nextion2Text/master/Nextion2Text.py' \
+            --output "$RUNNER_TEMP/Nextion2Text.py"
+          # Pin Git blob SHA, so a changed upstream script never executes unnoticed.
+          test "$(git hash-object "$RUNNER_TEMP/Nextion2Text.py")" = '415a4454f58b8681e1241cd44b16ef38d9533945'
+      - name: Validate HMI structure and compare source code / GUI / events
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 nextion/tools/compare_3p5_hmi.py \
+            --v6 nextion/releases/6.0.0/Flowio_Enhanced_480x320.HMI \
+            --v7 nextion/releases/7.0.0/Flowio_Enhanced_480x320_v7.0.0_CRC_FIX.HMI \
+            --converter "$RUNNER_TEMP/Nextion2Text.py" \
+            --out "$RUNNER_TEMP/nextion-hmi-validation"
+      - name: Add validation report to Actions summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/nextion-hmi-validation/VALIDATION.md" ]; then
+            cat "$RUNNER_TEMP/nextion-hmi-validation/VALIDATION.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Archive Nextion2Text exports, JSON and unified diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nextion-NX4832K035-HMI-7.0.0-VALIDATION
+          path: ${{ runner.temp }}/nextion-hmi-validation/
+          if-no-files-found: warn
+          retention-days: 14
