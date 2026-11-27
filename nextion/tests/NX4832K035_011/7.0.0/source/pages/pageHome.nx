@@ -115,9 +115,9 @@ on bUpdateGauge.down:
   tpH.txt=globals.vaPhValue.txt
   tWaterTemp.txt=globals.vaWaterTemp.txt
   tAirTemp.txt=globals.vaAirTemp.txt
-  // ESP32 already transmits Home alarm bits. The normal amber triangle
-  // becomes red when one of the forwarded alarms is active, then returns
-  // to amber when clear. This also redraws after page wake/refresh.
+  // ESP32 already transmits Home alarm bits. The normal GREEN triangle
+  // becomes RED when any forwarded alarm bit is active, then turns GREEN
+  // again after clearing. This also redraws after page wake/refresh.
   if(globals.vaAlarms.val>0)
   {
     xpic 418,269,44,40,544,0,HomeGaugepic
