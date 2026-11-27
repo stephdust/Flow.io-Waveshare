@@ -32,8 +32,8 @@ assert "m2" not in byname, "redundant play hotspot must stay removed"
 assert "vaWaterTemp" in global_components and "vaAirTemp" in global_components
 assert water["type"] == air["type"] == "text"
 assert water["vscope"] == air["vscope"] == 1
-assert water["x"] == air["x"] == 185
-assert water["w"] == air["w"] == 113
+assert water["x"] == air["x"] == 207
+assert water["w"] == air["w"] == 91
 assert water["font"] == air["font"] == "Segoe24_MenuItems"
 assert byname["tDate"]["font"] == "Segoe24_MenuItems"
 assert byname["tDate"]["xcen"] == byname["tDate"]["ycen"] == 1
@@ -71,6 +71,10 @@ assert "d.rounded_rectangle((169*S,12*S,173*S,24*S)" in renderer
 assert "fill=(242,48,62,255)" in renderer
 assert "fill=(248,48,60,255)" in renderer
 assert "sun=(175,39)" in renderer
+assert "weather_icons=Image.new('RGBA'" in renderer
+assert "weather_icons.crop((159*S,5*S,184*S,30*S)),(182*S,5*S)" in renderer
+assert "weather_icons.crop((157*S,30*S,186*S,55*S)),(176*S,30*S)" in renderer
+assert water["x"] > 204 and air["x"] > 204, "Nextion text widget may erase shifted temperature icons"
 assert "cloud=(3,26,52,255)" in renderer
 assert "d.text((296,18),'27.3°C',font=preview_font(22)" in renderer
 assert "d.text((296,43),'7.3°C',font=preview_font(22)" in renderer
@@ -78,5 +82,5 @@ assert "d.text((187,20),'27.3°C'" not in renderer
 print("PASS: water/outdoor temperatures use existing ESP32 globals")
 assert "fill=WHITE,anchor='rm')" in renderer, "right edge should align with native widget"
 assert "d.text((357,44),'27/11/26',font=preview_font(20)" in renderer
-print("PASS: clearer Segoe 24 temperatures/date, aligned and nonoverlapping header")
+print("PASS: Segoe 24 temperature fields start at x207, shared weather icons centred at x194")
 print("PASS: appended component keeps legacy IDs; wake refresh restores both values")
