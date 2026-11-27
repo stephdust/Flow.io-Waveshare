@@ -90,12 +90,21 @@ def make_background():
     d=ImageDraw.Draw(image)
     text(d,'flow',65,31,20,anchor='lm')
     text(d,'.io',115,31,20,(11,212,248),anchor='lm')
-    # Pool thermometer / water ripples; water temperature stays live text.
-    line(d,[(170,13),(170,39)],WHITE,5.4)
-    line(d,[(170,16),(170,41)],(248,44,55),3.2)
-    d.ellipse((163*S,37*S,177*S,51*S),fill=(252,42,50),outline=WHITE,width=2*S)
-    for j in range(2):
-        line(d,[(182+k,36+j*7+1.6*math.sin(k/2)) for k in range(15)],(10,218,244),1.6)
+    # Two real temperatures share the 154..300px header column:
+    # drop = pool water (top), sun/cloud = outdoor air (bottom).
+    # Readings remain native text widgets, never baked into the bitmap.
+    # Compact icons deliberately leave x=187..296 clear for dynamic text.
+    drop=[(171,9),(167,14),(164,19),(163,23),(164,27),(167,29),
+          (171,30),(175,28),(178,25),(178,21),(175,15),(171,9)]
+    line(d,drop,(188,237,255),1.5)
+    line(d,[(166,22),(167,25),(170,27)],(9,207,244),1.4)
+    # Partly cloudy outline like the 5"/7" Home pages, simplified for 480x320.
+    d.arc((163*S,33*S,171*S,41*S),185,355,fill=(255,216,96),width=2*S)
+    for a,b in [((167,30),(167,32)),((160,35),(162,36)),((172,34),(174,33))]:
+        line(d,[a,b],(255,216,96),1.1)
+    d.arc((160*S,40*S,172*S,53*S),130,280,fill=WHITE,width=1.6*S)
+    d.arc((169*S,37*S,181*S,51*S),188,356,fill=WHITE,width=1.6*S)
+    line(d,[(162,50),(178,50)],WHITE,1.6)
     # Nominal markers, WITHOUT colored value capsules.
     for x,value in ((123,'7.5'),(357,'700')):
         text(d,value,x,72,16,(94,249,50))
@@ -113,7 +122,7 @@ def make_background():
     line(d,[(450,276),(433,304),(467,304),(450,276)],WHITE,2)
     line(d,[(450,285),(450,296)],WHITE,2)
     d.ellipse((448*S,298*S,452*S,302*S),fill=WHITE)
-    # Time, date, and water temperature remain live native widgets. Wi-Fi
+    # Time, date, water and outdoor-air temperatures stay live widgets. Wi-Fi
     # signal tiers are drawn dynamically from atlas frames (RSSI from ESP32).
     return image.convert('RGB')
 
@@ -307,8 +316,10 @@ def render(source,preview):
     sample_font=preview_font(26)
     d.text((123,184),'7.50',font=sample_font,fill=WHITE,anchor='mm')
     d.text((357,184),'706',font=sample_font,fill=WHITE,anchor='mm')
-    d.text((248,32),'22.7°C',font=preview_font(21),
-           fill=WHITE,anchor='mm')
+    d.text((187,20),'27.3°C',font=preview_font(16),
+           fill=WHITE,anchor='lm')
+    d.text((187,42),'7.3°C',font=preview_font(16),
+           fill=WHITE,anchor='lm')
     d.text((360,22),'10:47',font=preview_font(20),
            fill=WHITE,anchor='mm')
     d.text((360,42),'27/11/26',font=preview_font(12),
