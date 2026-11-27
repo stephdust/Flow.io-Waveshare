@@ -2010,12 +2010,13 @@ void HMIModule::handleDriverEvent_(const HmiEvent& e)
     }
     if (e.type == HmiEventType::DisplayWake) {
         LOGI("HMI display reported wake");
+        // pageHomeSimple's xpic cache must be reset even if the module's
+        // home-visible flag temporarily lags behind the driver page report.
+        // The driver only writes on the confirmed primary Home page.
+        (void)nextion_.requestHomeGaugeRedraw();
         if (alarmPageActive_ || configMenuActive_) {
             viewDirty_ = true;
         } else if (homePageVisible_) {
-            // Nextion wup=255 refreshes components but not the cache of
-            // xpic gauge arcs in pageHomeSimple's timer script.
-            (void)nextion_.requestHomeGaugeRedraw();
             resetClockPublishStamps_();
             queueHomePublish_(kHomePublishAll);
         }
