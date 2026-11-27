@@ -34,7 +34,7 @@ for x,y in (
     (5,31),(240,5),(475,31),  # no header perimeter
     (154,23),(300,24),(413,24),  # no header dividers
     (29,290),(193,290),(291,290),(470,290),  # no footer trays
-    (401,290),  # no gear/alarm divider
+    (360,290),  # no divider between equipment and alarm icons
 ):
     assert at(x,y)==navy, (
         f"frame, separator or non-uniform background at {(x,y)}: {at(x,y)}"
@@ -50,6 +50,32 @@ assert len(rim) >= 5, "filtration rim not visible on generated preview"
 assert abs((min(rim)+max(rim))/2 - 240) <= 1.5, (
     f"turbine image shifted sideways: visible centre={(min(rim)+max(rim))/2}"
 )
+
+# Inspect the actual 3D icon colours, not merely their Python source.
+# The artwork is centered exactly under pH (x=123), then x=320 and x=400;
+# the rotor remains x=240 regardless of navigation styling.
+def colored_pixels(x0,x1,y0,y1,predicate):
+    return [(x,y) for y in range(y0,y1) for x in range(x0,x1)
+            if predicate(at(x,y))]
+
+grid = colored_pixels(102,145,272,311,
+    lambda q: q[2]>125 and q[2]>q[0]+45 and q[1]>75)
+gear = colored_pixels(298,342,269,312,
+    lambda q: q[1]>110 and q[1]>q[0]*1.18 and q[1]>q[2]*0.85)
+alarm = colored_pixels(378,422,269,312,
+    lambda q: q[0]>155 and q[1]>70 and q[2]<155 and q[0]>q[2]*1.4)
+assert len(grid)>35, f"cyan glass grid not visible: {len(grid)} pixels"
+assert len(gear)>35, f"jade 3D gear not visible: {len(gear)} pixels"
+assert len(alarm)>35, f"amber warning triangle not visible: {len(alarm)} pixels"
+for name,px,target in (("grid",grid,123),("gear",gear,320),("alert",alarm,400)):
+    center=(min(x for x,y in px)+max(x for x,y in px))/2
+    assert abs(center-target)<=3.5, (
+        f"{name} icon shifted: x={center}, expected x={target}"
+    )
+assert 320-240==400-320==480-400
+# The three buttons remain separate on the uniform navy base.
+for x in (161,180,285,355,360,451):
+    assert at(x,290)==navy, f"footer has unwanted frame or glow at x={x}"
 
 # The wordmark must begin soon after the official turquoise waves.
 wordmark=[at(x,y) for x in range(49,62) for y in range(19,40)]
@@ -98,7 +124,8 @@ assert sum(r>185 and g>185 and b>185 for r,g,b in ticks)>55, (
 )
 
 print("PASS: generated preview.png is 480x320 with uniform navy")
-print("PASS: frameless header/footer without separators, independent floating icons")
+print("PASS: frameless footer with 3 distinct raised cyan, jade and amber icons")
+print("PASS: icon centres x123/320/400, 80px equal spacing from pump to edge")
 print("PASS: 70px turbine correctly centered between gauges")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
