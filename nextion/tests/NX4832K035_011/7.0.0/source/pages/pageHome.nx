@@ -115,6 +115,16 @@ on bUpdateGauge.down:
   tpH.txt=globals.vaPhValue.txt
   tWaterTemp.txt=globals.vaWaterTemp.txt
   tAirTemp.txt=globals.vaAirTemp.txt
+  // ESP32 already transmits Home alarm bits. The normal amber triangle
+  // becomes red when one of the forwarded alarms is active, then returns
+  // to amber when clear. This also redraws after page wake/refresh.
+  if(globals.vaAlarms.val>0)
+  {
+    xpic 418,269,44,40,544,0,HomeGaugepic
+  }else
+  {
+    xpic 418,269,44,40,500,0,HomeGaugepic
+  }
   // Pump ring severity is read by tmAnim. Legacy tProp stays hidden.
   // Real RSSI 0..4, encoded by ESP32 in Home state bits 16..18.
   // Previous WiFi/MQTT state bits 7/8 remain available to legacy screens.
