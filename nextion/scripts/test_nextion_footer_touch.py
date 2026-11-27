@@ -122,10 +122,11 @@ assert "fill=(63,244,147,255)" in art and "fill=(6,107,71,255)" in art, (
 )
 assert "ALARM_ACTIVE_ATLAS_X=544" in art and "def alarm_active_sprite():" in art
 assert "fill=(255,83,104)" in art, "active alarm symbol must be red"
-assert "text(d,\'flow\',51,31,20" in art
-assert "text(d,\'.io\',101,31,20" in art
+assert "text(d,\'flow\',63,31,20" in art
+assert "text(d,\'.io\',113,31,20" in art
 assert "d.arc((331*S,273*S,362*S,305*S)" not in art
 assert "line(d,[(442,276),(427,304),(457,304),(442,276)]" not in art
+assert "image.paste(wave,(20*S," in art, "Flow.io waves must move with wordmark"
 assert "gear_points=[]" in art, "the equipment button must have real gear teeth"
 assert "for tooth in range(10):" in art, "the gear must not revert to sun-like spokes"
 
