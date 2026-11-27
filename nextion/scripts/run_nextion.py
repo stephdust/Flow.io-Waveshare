@@ -111,6 +111,9 @@ def compile_nextion() -> None:
         "test_nextion_footer_touch.py",
     ):
         execute(sys.executable, str(ROOT / "nextion" / "scripts" / test_name))
+    # Keep ESP32 RSSI packing and the Home atlas in sync during LOCAL builds,
+    # not just in GitHub CI; otherwise a stale Wi-Fi test can break CI later.
+    execute(sys.executable, str(ROOT / "scripts/tests/test_nextion_wifi_rssi.py"))
     nx = nxwright_path()
     # Use the same isolated Python that installed nxwright (and Pillow).
     # All Home artwork is regenerated deterministically from the source script.
