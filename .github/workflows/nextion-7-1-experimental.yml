@@ -1,0 +1,59 @@
+name: Publish experimental Nextion 3.5in HMI 7.1.0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - 'nextion/tools/build_3p5_v7_1_experimental.py'
+      - '.github/workflows/nextion-7-1-experimental.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nextion-hmi-experimental-v7-1-dev
+  cancel-in-progress: false
+
+jobs:
+  build-hmi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install image authoring dependencies
+        run: python -m pip install 'Pillow>=10,<12' 'numpy>=1.26,<3'
+      - name: Build experimental 7.1.0 HMI from the validated 7.0.0 source
+        run: |
+          python nextion/tools/build_3p5_v7_1_experimental.py \
+            --source nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI \
+            --out nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI \
+            --logo data/webinterface/logo-flowio.png \
+            --preview nextion/releases/7.1.0/preview.png
+      - name: Archive HMI and preview for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nextion-NX4832K035-HMI-7.1.0-EXPERIMENTAL
+          path: |
+            nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI
+            nextion/releases/7.1.0/preview.png
+          retention-days: 14
+      - name: Commit HMI and preview to dev (not a TFT)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- nextion/releases/7.1.0/FlowIO_Nextion_NX4832K035_011-7.1.0.HMI nextion/releases/7.1.0/preview.png
+          if git diff --cached --quiet; then
+            echo 'Generated source already committed on dev.'
+            exit 0
+          fi
+          git commit -m 'test(nextion): generate experimental modern 7.1.0 source and preview [skip ci]'
+          git push origin HEAD:dev
