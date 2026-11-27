@@ -22,10 +22,10 @@ assert "colors=((254,39,86),(255,212,32),(98,252,55)," in art
 assert "(255,212,32),(254,39,86))" in art
 assert "text(d,value,x,72" not in art, "legacy setpoint labels reappeared"
 assert "for x,value in ((123,'7.5'),(357,'700')):" not in art
-assert "text(d,'6.8',21,109,16)" in art
-assert "text(d,'8.2',187,109,16)" in art
-assert "text(d,'600',21,109,15)" in art
-assert "text(d,'800',187,109,15)" in art
+assert "text(d,'6.8',21,116,16)" in art
+assert "text(d,'8.2',187,116,16)" in art
+assert "text(d,'600',21,116,15)" in art
+assert "text(d,'800',187,116,15)" in art
 
 def event(name):
     match = re.search(r"(?ms)^on " + re.escape(name) +
@@ -128,5 +128,5 @@ assert byname["tpH"]["x"] == 87 and byname["tORP"]["x"] == 321
 assert "m2" not in byname
 print("PASS: original-style danger/attention/good/attention/danger gauge colours")
 print("PASS: 21 full-length layered 3D needles and bearings on each dial (0..280)")
-print("PASS: no static setpoint arrows and larger range endpoint labels")
+print("PASS: no static setpoint arrows, both gauge endpoint labels moved down 7px")
 print("PASS: central green zone at configured setpoints, no false warning")
