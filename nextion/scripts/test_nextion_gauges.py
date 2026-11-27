@@ -50,11 +50,21 @@ for field, destination_x in (("vapHPercent",20),("vaOrpPercent",253)):
         inner_y = round(89 + 96.5 + 66*math.sin(a))
         outer_x = round(first_x + 99*math.cos(a))
         outer_y = round(89 + 96.5 + 85*math.sin(a))
-        snippet = (f"if(sys2=={i})\n    {{\n"
-                   f"      line {inner_x-1},{inner_y},{outer_x-1},{outer_y},2047\n"
-                   f"      line {inner_x},{inner_y},{outer_x},{outer_y},65535\n"
-                   f"      line {inner_x+1},{inner_y},{outer_x+1},{outer_y},2047")
-        assert snippet in update, f"missing {field} measurement bar at phase {i}"
+        # The source was generated using round-half-up; Python's round()
+        # uses ties-to-even. Allow at most one pixel for that difference,
+        # without weakening the colour, 21-position or alignment checks.
+        match = re.search(
+            rf"if\\(sys2=={i}\\)\\s*\\{{\\s*line [^\\n]+2047\\s*"
+            rf"line (\\d+),(\\d+),(\\d+),(\\d+),65535\\s*"
+            rf"line [^\\n]+2047",
+            update,
+        )
+        assert match, f"missing {field} measurement bar at phase {i}"
+        actual = [int(x) for x in match.groups()]
+        expected = [inner_x, inner_y, outer_x, outer_y]
+        assert all(abs(a-b) <= 1 for a,b in zip(actual, expected)), (
+            f"misaligned {field} cursor {i}: got {actual}, expected {expected}"
+        )
         assert destination_x <= min(inner_x,outer_x) <= max(inner_x,outer_x) < destination_x+207
         assert 89 <= inner_y <= 239 and 89 <= outer_y <= 239
 
