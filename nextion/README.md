@@ -34,3 +34,16 @@ Lors de la compilation FlowIOS3, les TFT de la release correspondant à
 `TFT_FIRMW` sont copiés dans `binary/`. Le générateur reporte dans
 `manifest.json` la clé `display_compatibility` extraite du nom et refuse les
 noms ambigus ou les doublons modèle/version.
+
+## Organisation des ressources Nextion
+
+- `releases/<version>/` : HMI et TFT par version et modèle, avec éventuelles prévisualisations.
+- `scripts/` : générateurs HMI, scripts de comparaison, de validation et d'audit nxwright.
+- `docs/` : procédures Nextion et rapports d'audit.
+- `.github/workflows/nextion-*.yml` (hors `nextion/`) : lanceurs GitHub Actions obligatoirement situés dans le répertoire reconnu par GitHub.
+
+La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `platformio.ini` et le point d'entrée partagé `scripts/export_binaries.py`. Celui-ci lit les `.tft` dans `nextion/releases/<version>/`, et ne compile ni ne modifie les HMI. Il reste sous `scripts/` pour ne pas casser les hooks PlatformIO d'autres sous-systèmes. Les tests OTA firmware restent sous `scripts/tests/`.
+
+### Tester l'intégration nxwright (sans génération de TFT)
+
+Voir [la procédure et ses limites](docs/nxwright-7-0-audit.md) ; l'audit compare uniquement le HMI 7.0.0 du `NX4832K035_011` à sa source sauvegardée. Les HMI/TFT des Nextion 5″ et 7″ ne doivent pas être modifiés.

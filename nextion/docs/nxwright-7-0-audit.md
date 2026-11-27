@@ -9,7 +9,7 @@ du dépôt, ne compile pas de TFT, n'installe rien sur un écran et ne change pa
 - Projet tiers : https://github.com/nixiewright/nxwright
 - Commit nxwright épinglé : `e9443a409cc9deb866db7486854fa962d382accc`.
 - Workflow : [nextion-nxwright-audit.yml](../../.github/workflows/nextion-nxwright-audit.yml).
-- Script : [audit_3p5_nxwright.py](../tools/audit_3p5_nxwright.py).
+- Script : [audit_3p5_nxwright.py](../scripts/audit_3p5_nxwright.py).
 - Source fonctionnelle de référence : `backup/nextion-v7-validated-20261127`,
   objet Git `ac941badd17a3f0b8d27da4a29cc5135d5a0986c`.
 - Source en cours de développement :

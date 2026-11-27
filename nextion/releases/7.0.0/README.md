@@ -8,7 +8,7 @@
 - **Écran unique pour cette étape :** Nextion Enhanced `NX4832K035_011`, 3,5″ (appelé parfois 4″), 480 × 320.
 - Source de référence existante : [FlowIO_Nextion_NX4832K035_011-6.0.0.HMI (6.0.0)](../6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI).
 - **HMI 7.0.0 avec nouveau design Home (à compiler) :** [`FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`](FlowIO_Nextion_NX4832K035_011-7.0.0.HMI) : 480 × 320 uniquement, jauges modernisées, logo officiel, thermomètre de piscine rouge, Wi-Fi coloré et redessin après veille. Version précédente sauvegardée sur la branche indiquée ci-dessus.
-- Générateur du nouveau design : [`build_3p5_v7_modern.py`](../../tools/build_3p5_v7_modern.py) avec [`validate_3p5_v7_modern.py`](../../tools/validate_3p5_v7_modern.py). Le workflow [`nextion-7-modern.yml`](../../../.github/workflows/nextion-7-modern.yml) reconstruit toujours le HMI depuis la 7.0.0 validée archivée (et non depuis un HMI déjà modifié).
+- Générateur du nouveau design : [`build_3p5_v7_modern.py`](../../scripts/build_3p5_v7_modern.py) avec [`validate_3p5_v7_modern.py`](../../scripts/validate_3p5_v7_modern.py). Le workflow [`nextion-7-modern.yml`](../../../.github/workflows/nextion-7-modern.yml) reconstruit toujours le HMI depuis la 7.0.0 validée archivée (et non depuis un HMI déjà modifié).
 - **Les modèles 5″ et 7″ sont hors périmètre** : aucun HMI/TFT n'est modifié pour eux dans cette étape.
 - Conserver tous les noms de variables, IDs d'objets, gestion des pages, codes d'actions et messages série déjà utilisés par le firmware Waveshare.
 
@@ -40,7 +40,7 @@ Références : [protocole ESP/Nextion](../../../docs/integration/nextion-esp-pro
 Un controle reproductible est lance sur la branche `dev` pour le NX4832K035_011 :
 
 - Workflow : [Validate Nextion 3.5in HMI 7.0.0](../../../.github/workflows/nextion-hmi-validate.yml).
-- Script : [compare_3p5_hmi.py](../../tools/compare_3p5_hmi.py).
+- Script : [compare_3p5_hmi.py](../../scripts/compare_3p5_hmi.py).
 - Verification : signature `ver21234`, CRC du repertoire et de ses miroirs, CRC des 9 pages,
   positions/longueurs des composants, et absence de changements dans les autres ressources.
 - Nextion2Text (`MMMZZZZ/Nextion2Text`, MPL-2.0) est telecharge et verifie a l'execution,

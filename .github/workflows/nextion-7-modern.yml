@@ -6,8 +6,8 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/nextion-7-modern.yml'
-      - 'nextion/tools/build_3p5_v7_modern.py'
-      - 'nextion/tools/validate_3p5_v7_modern.py'
+      - 'nextion/scripts/build_3p5_v7_modern.py'
+      - 'nextion/scripts/validate_3p5_v7_modern.py'
 
 permissions:
   contents: write
@@ -42,7 +42,7 @@ jobs:
       - name: Build modern NX4832K035_011 HMI — still version 7.0.0
         shell: bash
         run: |
-          python nextion/tools/build_3p5_v7_modern.py \
+          python nextion/scripts/build_3p5_v7_modern.py \
             --source "$RUNNER_TEMP/Nextion-v7-validated.HMI" \
             --out nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI \
             --logo data/webinterface/logo-flowio.png \
@@ -50,7 +50,7 @@ jobs:
       - name: Verify resource integrity, scope and unchanged version stamp
         shell: bash
         run: |
-          python nextion/tools/validate_3p5_v7_modern.py \
+          python nextion/scripts/validate_3p5_v7_modern.py \
             --original "$RUNNER_TEMP/Nextion-v7-validated.HMI" \
             --modern nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           sha256sum nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI

@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 nextion/tools/compare_3p5_hmi.py \
+          python3 nextion/scripts/compare_3p5_hmi.py \
             --v6 nextion/releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.HMI \
             --v7 nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI \
             --converter "$RUNNER_TEMP/Nextion2Text.py" \
