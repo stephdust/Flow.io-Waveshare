@@ -65,11 +65,14 @@ def panel(im,coords,r,fill,edge):
     return im
 
 
-def make_background():
+def make_background(header_frame=True):
     # Uniform dark base reduces encoded RGB565 variation without altering
     # native text, hot spots, gauge/turbine icons or screen coordinates.
     image=Image.new('RGBA',(480*S,320*S),(*NAVY,255))
-    image=panel(image,(5,4,475,58),13,(3,26,52),(7,197,245))
+    # The comparison retains the dark header plate and removes only
+    # its outer cyan outline; the normal TFT stays framed.
+    image=panel(image,(5,4,475,58),13,(3,26,52),
+                (7,197,245) if header_frame else (3,26,52))
     # Slim, balanced navigation trays: leave the center open for the
     # raised, independent 70px turbine. Keep the navy canvas flat.
     image=panel(image,(29,269,193,311),11,(3,25,48),(6,180,216))
@@ -96,31 +99,30 @@ def make_background():
     # Tighten wordmark to the official waves, while staying left of x=154.
     text(d,'flow',51,31,20,anchor='lm')
     text(d,'.io',101,31,20,(11,212,248),anchor='lm')
-    # Upper temperature: a compact, polished *water-thermometer droplet*.
-    # A dark blue core and turquoise thermometer replace the oversized
-    # white solid teardrop, leaving the outdoor sun/cloud unchanged below.
+    # Water temperature: sharp small blue droplet with a RED thermometer.
+    # No Gaussian halo and no thick overlapping white contours: crisp at
+    # the actual 480x320 resolution and after RGB565 conversion.
     d=ImageDraw.Draw(image)
     water_drop=[
-        (171,6),(175,11),(179,17),(181,21),(180,25),
-        (177,28),(171,29),(165,28),(162,25),(161,21),
-        (163,17),(167,11)
+        (171,6),(174,10),(178,16),(180,20),(180,23),
+        (177,27),(173,29),(168,29),(164,27),(162,23),
+        (162,20),(165,14)
     ]
     d.polygon([(x*S,y*S) for x,y in water_drop],
-              fill=(4,70,145,255))
+              fill=(3,48,103,255))
     d.line([(x*S,y*S) for x,y in water_drop+[water_drop[0]]],
-           fill=(216,249,255,255),width=2*S,joint='curve')
-    # A shaded left flank gives depth but never changes the flat navy header.
-    d.polygon([(166*S,19*S),(168*S,13*S),(171*S,9*S),
-               (168*S,21*S),(169*S,26*S),(165*S,24*S)],
-              fill=(8,170,235,255))
-    # Tiny thermometer and liquid bulb visible at 480x320.
-    d.rounded_rectangle((169*S,13*S,173*S,23*S),
-                        radius=2*S,fill=(10,190,242,255),
-                        outline=(231,253,255,255),width=S)
-    d.ellipse((167*S,20*S,175*S,28*S),
-              fill=(0,177,243,255),outline=(241,253,255,255),width=S)
-    d.line([(171*S,15*S),(171*S,24*S)],
-           fill=(231,253,255,255),width=S)
+           fill=(39,203,251,255),width=S,joint='curve')
+    # White glass tube, red mercury column and a distinct red bulb.
+    d.rounded_rectangle((169*S,12*S,173*S,24*S),
+                        radius=2*S,fill=(233,251,255,255))
+    d.rounded_rectangle((170*S,15*S,172*S,25*S),
+                        radius=S,fill=(242,48,62,255))
+    d.ellipse((167*S,21*S,175*S,29*S),
+              fill=(230,249,255,255))
+    d.ellipse((169*S,23*S,173*S,27*S),
+              fill=(248,48,60,255))
+    d.ellipse((170*S,23*S,171*S,24*S),
+              fill=(255,129,111,255))
 
     # Sun behind the cloud: genuine cloud silhouette, not two tiny
     # disconnected curves that looked like a malformed symbol on hardware.
@@ -527,6 +529,28 @@ def render(source,preview):
            fill=WHITE,anchor='mm')
     preview.parent.mkdir(parents=True,exist_ok=True)
     demo.save(preview,optimize=True)
+    # Comparison ONLY: the unchanged firmware continues to use the bordered
+    # header. This extra image lets us decide visually before altering HMI.
+    borderless=demo.copy()
+    header_no_frame=make_background(header_frame=False).resize(
+        (480,320),Image.Resampling.LANCZOS)
+    borderless.paste(header_no_frame.crop((0,0,480,60)),(0,0))
+    borderless.paste(
+        wifi_frame(header_no_frame.resize((480*S,320*S),
+                        Image.Resampling.NEAREST),4).resize(
+                            (WIFI_W,WIFI_H),Image.Resampling.LANCZOS),
+        (WIFI_X,WIFI_Y))
+    h=ImageDraw.Draw(borderless)
+    h.text((185,18),'27.3°C',font=preview_font(23),
+           fill=WHITE,anchor='lm')
+    h.text((185,43),'7.3°C',font=preview_font(23),
+           fill=WHITE,anchor='lm')
+    h.text((360,22),'10:47',font=preview_font(20),
+           fill=WHITE,anchor='mm')
+    h.text((360,42),'27/11/26',font=preview_font(12),
+           fill=WHITE,anchor='mm')
+    borderless.save(preview.with_name('preview-header-borderless.png'),
+                    optimize=True)
     print('Home atlas=1035x728: 5 rings + 11 small turbine frames + 5 RSSI tiers')
     print('Preview SHA256',hashlib.sha256(preview.read_bytes()).hexdigest())
 
