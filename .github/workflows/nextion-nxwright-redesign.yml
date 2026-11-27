@@ -68,7 +68,9 @@ jobs:
           assert (source_dir / 'pages/pageHome.nx').is_file()
           assert (compiled / 'FlowIO_Nextion_NX4832K035_011-7.0.0.HMI').stat().st_size > 1000000
           tft = compiled / name
-          assert (compiled / 'preview.png').stat().st_size > 4096
+          assert (compiled / 'NX4832K035_011/7.0.0/preview.png').stat().st_size > 4096
+          assert not (Path('binary') / 'nextion-preview.png').exists()
+          assert not (compiled / 'preview.png').exists()
           assert (compiled / 'picture-0003.png').stat().st_size > 4096
           copied = Path('binary') / name
           assert tft.stat().st_size > 1000000
@@ -98,7 +100,7 @@ jobs:
           path: |
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
             .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
-            .pio/nextion-output/preview.png
+            .pio/nextion-output/NX4832K035_011/7.0.0/preview.png
             .pio/nextion-output/picture-0003.png
             binary/manifest.json
           include-hidden-files: true
@@ -113,8 +115,8 @@ jobs:
           cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI nextion/releases/7.0.0/
           cp .pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft nextion/releases/7.0.0/
           cp .pio/nextion-output/picture-0003.png nextion/tests/NX4832K035_011/7.0.0/source/pictures/
-          cp .pio/nextion-output/preview.png nextion/tests/NX4832K035_011/7.0.0/preview.png
-          cp .pio/nextion-output/preview.png nextion/releases/7.0.0/preview-modern.png
+          cp .pio/nextion-output/NX4832K035_011/7.0.0/preview.png nextion/tests/NX4832K035_011/7.0.0/preview.png
+          cp .pio/nextion-output/NX4832K035_011/7.0.0/preview.png nextion/releases/7.0.0/preview-modern.png
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI
           git add -- nextion/releases/7.0.0/FlowIO_Nextion_NX4832K035_011-7.0.0.tft
           git add -- nextion/tests/NX4832K035_011/7.0.0/source/pictures/picture-0003.png
