@@ -2,10 +2,11 @@
 """Single PlatformIO Nextion pipeline: nxwright HMI/TFT or quick TFT manifest.
 
 Use from the repository root:
-  pio run -e nextion                 # nxwright check/build/compile; refresh manifest
+  pio run -e nextion                 # ignored .pio/ output; refresh binary/ manifest
   pio run -e nextion -t manifest     # no compile: just TFT copy + manifest
 
 Only NX4832K035_011, 480x320, release 7.0.0 on the development fork.
+Does NOT touch tracked HMI, TFT, preview.png or picture-0003.png.
 Never compiles ESP32, SPIFFS, 5-inch/7-inch displays, or flashes hardware.
 """
 from __future__ import annotations
@@ -30,6 +31,9 @@ HMI_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.HMI"
 TFT_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.tft"
 NXWRIGHT_COMMIT = "e9443a409cc9deb866db7486854fa962d382accc"
 VENV = ROOT / ".pio" / "nextion-nxwright-venv"
+# All regular build outputs are ignored by Git. Tracked releases/previews and
+# the source picture atlas are modified only by an explicit release promotion.
+OUTPUT = ROOT / ".pio" / "nextion-output"
 
 
 def execute(*argv: str) -> None:
@@ -91,10 +95,11 @@ def publish_file(staged: Path, destination: Path) -> None:
             temporary.unlink()
 
 
-def refresh_manifest() -> None:
+def refresh_manifest(tft_source: Path | None = None) -> None:
     helper = ROOT / "nextion" / "scripts" / "refresh_nextion_manifest.py"
-    execute(sys.executable, str(helper))
-    print("[NEXTION] Done: binary/TFT and binary/manifest.json updated.", flush=True)
+    arguments = ["--tft-source", str(tft_source)] if tft_source else []
+    execute(sys.executable, str(helper), *arguments)
+    print("[NEXTION] Done: ignored binary/TFT and binary/manifest.json updated.", flush=True)
 
 
 def compile_nextion() -> None:
@@ -115,36 +120,45 @@ def compile_nextion() -> None:
     # not just in GitHub CI; otherwise a stale Wi-Fi test can break CI later.
     execute(sys.executable, str(ROOT / "scripts/tests/test_nextion_wifi_rssi.py"))
     nx = nxwright_path()
-    # Use the same isolated Python that installed nxwright (and Pillow).
-    # All Home artwork is regenerated deterministically from the source script.
-    # Pump blades are *never* drawn into its background pictures.
-    renderer = ROOT / "nextion/scripts/render_nx_home.py"
-    preview = ROOT / "nextion/tests" / MODEL / VERSION / "preview.png"
     python = VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    execute(str(python), str(renderer), "--source", str(SOURCE),
-            "--preview", str(preview))
-    # Pixel-level gate runs with the isolated Pillow interpreter and examines
-    # actual rendered turbine sprites before any HMI/TFT is published.
-    execute(str(python), str(ROOT / "nextion/scripts/test_nextion_turbine_3d.py"))
-    RELEASE.mkdir(parents=True, exist_ok=True)
+    renderer = ROOT / "nextion/scripts/render_nx_home.py"
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     (ROOT / ".pio").mkdir(exist_ok=True)
+    # Rendering into SOURCE used to dirty tracked picture-0003.png after every
+    # local build; likewise writing to nextion/releases or preview.png made
+    # git pull impossible. Copy the complete editable source into .pio first.
     with tempfile.TemporaryDirectory(prefix="nextion-build-", dir=ROOT / ".pio") as folder:
         scratch = Path(folder)
+        work_source = scratch / "source"
+        shutil.copytree(SOURCE, work_source)
+        work_preview = scratch / "preview.png"
         staged_hmi = scratch / HMI_NAME
         staged_tft = scratch / TFT_NAME
         readback = scratch / "hmi-check"
-        execute(str(nx), "check", str(SOURCE))
-        execute(str(nx), "build", str(SOURCE), str(staged_hmi), "--no-lock")
+
+        execute(str(python), str(renderer), "--source", str(work_source),
+                "--preview", str(work_preview))
+        execute(str(python), str(ROOT / "nextion/scripts/test_nextion_turbine_3d.py"),
+                "--atlas", str(work_source / "pictures" / "picture-0003.png"))
+        execute(str(nx), "check", str(work_source))
+        execute(str(nx), "build", str(work_source), str(staged_hmi), "--no-lock")
         # Validate the rebuilt HMI can be extracted, unlike the old .pa/.i patch.
         execute(str(nx), "extract", str(staged_hmi), str(readback))
         execute(str(nx), "check", str(readback))
-        execute(str(nx), "compile", str(SOURCE), str(staged_tft), "--download")
+        execute(str(nx), "compile", str(work_source), str(staged_tft), "--download")
         execute(str(nx), "tft-read", str(staged_tft))
-        publish_file(staged_hmi, RELEASE / HMI_NAME)
-        publish_file(staged_tft, RELEASE / TFT_NAME)
-        print("[NEXTION] HMI/TFT 7.0.0 rebuilt from the editable nxwright source.", flush=True)
-    refresh_manifest()
 
+        publish_file(staged_hmi, OUTPUT / HMI_NAME)
+        publish_file(staged_tft, OUTPUT / TFT_NAME)
+        publish_file(work_preview, OUTPUT / "preview.png")
+        publish_file(work_source / "pictures/picture-0003.png",
+                     OUTPUT / "picture-0003.png")
+        # Make the preview easy to inspect alongside the binary/TFT, also
+        # on machines where the .pio directory is hidden in the file manager.
+        publish_file(work_preview, ROOT / "binary" / "nextion-preview.png")
+        print("[NEXTION] HMI/TFT built in ignored .pio/nextion-output; "
+              "tracked release files and source PNGs untouched.", flush=True)
+    refresh_manifest(OUTPUT / TFT_NAME)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
