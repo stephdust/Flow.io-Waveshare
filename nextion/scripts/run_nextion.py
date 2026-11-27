@@ -34,6 +34,19 @@ VENV = ROOT / ".pio" / "nextion-nxwright-venv"
 # All regular build outputs are ignored by Git. Tracked releases/previews and
 # the source picture atlas are modified only by an explicit release promotion.
 OUTPUT = ROOT / ".pio" / "nextion-output"
+# Keep each screen's preview in an isolated model/version path. This can
+# coexist with NX8048P050/NX8048P070 previews when their builds are added.
+PREVIEW_OUTPUT = OUTPUT / MODEL / VERSION / "preview.png"
+LEGACY_PREVIEWS = (
+    ROOT / "binary" / "nextion-preview.png",
+    OUTPUT / "preview.png",
+)
+
+
+def cleanup_legacy_previews() -> None:
+    """Remove obsolete preview copies, never the canonical per-model file."""
+    for old in LEGACY_PREVIEWS:
+        old.unlink(missing_ok=True)
 
 
 def execute(*argv: str) -> None:
@@ -153,12 +166,11 @@ def compile_nextion() -> None:
 
         publish_file(staged_hmi, OUTPUT / HMI_NAME)
         publish_file(staged_tft, OUTPUT / TFT_NAME)
-        publish_file(work_preview, OUTPUT / "preview.png")
+        publish_file(work_preview, PREVIEW_OUTPUT)
         publish_file(work_source / "pictures/picture-0003.png",
                      OUTPUT / "picture-0003.png")
-        # Make the preview easy to inspect alongside the binary/TFT, also
-        # on machines where the .pio directory is hidden in the file manager.
-        publish_file(work_preview, ROOT / "binary" / "nextion-preview.png")
+        print(f"[NEXTION] Per-screen preview: {PREVIEW_OUTPUT.relative_to(ROOT)}",
+              flush=True)
         print("[NEXTION] HMI/TFT built in ignored .pio/nextion-output; "
               "tracked release files and source PNGs untouched.", flush=True)
     refresh_manifest(OUTPUT / TFT_NAME)
@@ -167,6 +179,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("compile", "manifest"))
     args = parser.parse_args()
+    # Also clean old preview copies in manifest-only mode: no legacy PNG
+    # should remain in binary/ after either PlatformIO Nextion target.
+    cleanup_legacy_previews()
     if args.mode == "compile":
         compile_nextion()
     else:
