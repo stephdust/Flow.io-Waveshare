@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refresh the Flow.io 7.0.0 Nextion TFT and binary/manifest.json without PlatformIO.
 
-Run from anywhere: python nextion/scripts/refresh_nextion_manifest.py
+Called internally by: pio run -e nextion -t manifest
 This reuses scripts/export_binaries.py's production naming, hash, and manifest
 logic with a tiny stub PlatformIO environment; it does not compile ESP32/SPIFFS.
 """
@@ -47,8 +47,9 @@ def main() -> None:
     source = release_dir / filename
     if not source.is_file() or source.stat().st_size < 4096:
         parser.error(f"missing or suspiciously small TFT: {source}")
-    if not binary_dir.is_dir():
-        parser.error(f"{binary_dir} is missing; first create/restore your binary directory")
+    # Fresh clones may not have binary/ yet (it is gitignored).
+    # Exporting a Nextion-only manifest must not require an ESP32 build.
+    binary_dir.mkdir(parents=True, exist_ok=True)
     # Avoid accidental exports of 5-inch / 7-inch files from this helper.
     other_tfts = [p.name for p in release_dir.glob("*.tft") if p.name != filename]
     if other_tfts:
@@ -70,7 +71,7 @@ def main() -> None:
     assert manifest.is_file(), "manifest.json not created"
     print(f"OK: {destination.relative_to(root)} ({destination.stat().st_size} bytes)")
     print(f"OK: {manifest.relative_to(root)} updated with TFT SHA-256")
-    print("No pio run; ESP32/SPIFFS .bin and release ZIP were not rebuilt.")
+    print("No ESP32/SPIFFS compile; paired OTA release ZIP remains unchanged.")
     print("If using a separate HTTP server, upload both the TFT and manifest.json there.")
 
 
