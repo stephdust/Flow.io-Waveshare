@@ -73,24 +73,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .nxwright-experimental
+          mkdir -p nextion-experimental-output
           for item in nx-modern-source FlowIO_Nextion_NX4832K035_011-7.0.0.HMI NX4832K035-MODERN-7.0.0-NXWRIGHT-TEST-ONLY.tft preview-nxwright-modern-7.0.0.png roundtrip-source-diff.txt modern-tft-compile.log; do
             if test -e "$RUNNER_TEMP/$item"; then
-              cp -a "$RUNNER_TEMP/$item" .nxwright-experimental/
+              cp -a "$RUNNER_TEMP/$item" nextion-experimental-output/
             fi
           done
           {
             echo "## Nextion NX4832K035 7.0.0 — redesigned via nxwright source"
             echo "This is **experimental** and isolated from release and production TFT."
             echo "The known-good 7.0.0 branch is retained; no 5-inch/7-inch files are touched."
-            ls -lh .nxwright-experimental/
+            ls -lh nextion-experimental-output/
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload source, rebuilt HMI, experimental TFT and preview
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: NX4832K035-7.0.0-NXWRIGHT-MODERN-EXPERIMENTAL
-          path: .nxwright-experimental/
+          path: nextion-experimental-output/
           if-no-files-found: warn
           retention-days: 14
       - name: Confirm no tracked repository modification
