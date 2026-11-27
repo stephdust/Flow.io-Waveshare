@@ -85,9 +85,20 @@ assert sum(r>170 and g>170 and b>170 for r,g,b in wordmark)>8, (
     "Flow.io lettering not brought closer to the waves"
 )
 
-# The upper water symbol must be blue/cyan and contain a thermometer,
-# not the opaque bright white blob shown in the earlier hardware photo.
-water=[at(x,y) for x in range(161,183) for y in range(8,30)]
+# The water and air symbols are grouped on the same x~194 axis and
+# should sit just left of the text fields starting at x207.
+# Crucially, they must NOT be drawn inside the repainting text component.
+water=[at(x,y) for x in range(183,206) for y in range(8,30)]
+air=[at(x,y) for x in range(175,206) for y in range(30,55)]
+assert sum(r>150 and g>150 and b>150 for r,g,b in air)>20, (
+    "outdoor air symbol not visible beside its temperature"
+)
+assert at(171,18)==navy and at(175,46)==navy, (
+    "old weather icons are still detached from the displayed temperatures"
+)
+assert at(207,18)==navy and at(207,43)==navy, (
+    "temperature icons overlap the native right-aligned text area"
+)
 assert sum(b>140 and b>r+40 for r,g,b in water)>35, (
     "water-thermometer droplet lost its blue detail"
 )
@@ -129,6 +140,7 @@ print("PASS: generated preview.png is 480x320 with uniform navy")
 print("PASS: frameless footer with 3 distinct raised cyan, jade and amber icons")
 print("PASS: icon centres x123/346/440, 50px+ gap to pump and neighbour")
 print("PASS: 70px turbine correctly centered between gauges")
+print("PASS: both temperature icons paired at x194 with 3px clearance to native text")
 print("PASS: wordmark, crisp blue droplet with real red thermometer")
 print("PASS: Wi-Fi center aligned in header")
 print("PASS: green safe zones and full-length live needles on both gauges")
