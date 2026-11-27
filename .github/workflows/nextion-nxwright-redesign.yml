@@ -10,6 +10,8 @@ on:
       - 'nextion/scripts/run_nextion.py'
       - 'nextion/scripts/render_nx_home.py'
       - 'nextion/scripts/test_nextion_animation.py'
+      - 'nextion/scripts/test_nextion_wake.py'
+      - 'scripts/tests/test_nextion_wifi_rssi.py'
       - 'nextion/scripts/refresh_nextion_manifest.py'
       - 'nextion/tests/NX4832K035_011/7.0.0/source/**'
 permissions:
@@ -36,6 +38,7 @@ jobs:
         run: |
           python nextion/scripts/test_nextion_wake.py
           python nextion/scripts/test_nextion_animation.py
+          python scripts/tests/test_nextion_wifi_rssi.py
           python -m py_compile nextion/scripts/render_nx_home.py
       - name: Compile nxwright HMI/TFT and refresh manifest via single PlatformIO env
         run: pio run -e nextion

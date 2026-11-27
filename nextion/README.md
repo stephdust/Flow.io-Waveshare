@@ -114,3 +114,15 @@ modèles Nextion 5″/7″ ne sont pas modifiés.
 peut afficher `Nextion artifact HTTP response invalid` malgré un manifeste
 local correct. Les manifests `flowio-release-*.json` / `release.json` et le
 ZIP OTA ESP32/SPIFFS sont indépendants et ne sont pas régénérés ici.
+
+## RSSI Wi-Fi réel pour le petit Nextion 7.0.0
+
+L'ESP32 calcule la puissance Wi-Fi de la station et l'encode en cinq niveaux
+dans les bits 16 à 18 de `globals.vaStates`. Le HMI NX4832K035_011 affiche
+les arcs de force multicolores (gris déconnecté, rouge faible, jaune moyen,
+cyan bon, vert excellent), à partir d'images précompilées. Les mises à
+jour suivent la synchronisation Home, sans commande série supplémentaire.
+Ce changement nécessite une mise à jour **firmware ESP32 + TFT Nextion**.
+
+Les captures du design ne sont pas un test matériel ; valider sur le vrai
+écran la sortie de veille, l'animation et la barre Wi-Fi.

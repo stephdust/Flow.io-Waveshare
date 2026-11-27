@@ -43,3 +43,18 @@ avant tout PR vers Christophe.
 
 Documentation : [Nextion](../../README.md) ·
 [Tests et sources](../../tests/NX4832K035_011/7.0.0/README.md).
+
+## Wi-Fi multicolore réel et retouches Home
+
+La version Nextion 7.0.0 affiche maintenant **le vrai niveau RSSI transmis
+par l'ESP32** (0..4, gris/rouge/jaune/cyan/vert) par le canal existant
+`globals.vaStates`. Les anciens bits de connexion et MQTT sont conservés.
+Les jauges n'ont plus de capsules blanches/cyan, le bandeau d'alarme vide
+est masqué et l'icône de pompe conserve sa rotation avec des pales affinées.
+
+**Attention :** pour ce changement RSSI, mettre à jour **Flow.io ESP32-S3 ET
+Nextion TFT 7.0.0**. Le nouveau TFT seul ne reçoit pas le niveau de signal
+si l'ancien firmware ESP32 est encore installé.
+
+Le rendu matériel, le comportement après veille et la rotation en charge
+restent à valider physiquement avant toute proposition de PR.
