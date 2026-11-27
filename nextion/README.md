@@ -83,12 +83,26 @@ pio run -e nextion
 
 Cette commande exécute uniquement la chaîne du **NX4832K035_011, 480 × 320, version 7.0.0** :
 `nxwright check` → `nxwright build` → réextraction et validation du HMI →
-`nxwright compile --download` → vérification TFT → copie dans
-`nextion/releases/7.0.0/` → export dans `binary/` → régénération
-de `binary/manifest.json`.
+`nxwright compile --download` → vérification TFT → écriture **uniquement**
+dans les dossiers ignorés `.pio/nextion-output/` et `binary/` → régénération
+de `binary/manifest.json`. Une compilation locale ne modifie **jamais**
+les fichiers suivis par Git sous `nextion/releases/7.0.0/`,
+`nextion/tests/NX4832K035_011/7.0.0/preview.png` ni
+`source/pictures/picture-0003.png`. Les fichiers de release suivis par
+Git ne sont promus que dans l'étape dédiée de GitHub Actions, après tous
+les contrôles.
 
-Pour simplement republier le **TFT déjà compilé et le manifeste**, sans
-installer nxwright, sans compilation ni SPIFFS :
+Les fichiers résultants sont disponibles ici :
+
+- `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.HMI`
+- `.pio/nextion-output/FlowIO_Nextion_NX4832K035_011-7.0.0.tft`
+- `.pio/nextion-output/preview.png` (prévisualisation complète)
+- `binary/nextion-preview.png` (copie de la prévisualisation, plus visible)
+- `binary/FlowIO_Nextion_NX4832K035_011-7.0.0.tft` et
+  `binary/manifest.json` (distribution OTA)
+
+**Pour simplement republier le TFT déjà compilé et son manifeste**,
+sans installer nxwright, sans compilation ni SPIFFS :
 
 ```bash
 pio run -e nextion -t manifest
