@@ -82,6 +82,21 @@ avant tout PR vers Christophe.
 Documentation : [Nextion](../../README.md) ·
 [Tests et sources](../../tests/NX4832K035_011/7.0.0/README.md).
 
+## Température extérieure sur Home 3,5″
+
+Le bandeau Home du NX4832K035_011 affiche maintenant **deux températures
+réelles**, comme les Nextion 5″/7″ : eau (goutte, ligne supérieure) et
+air extérieur (soleil/nuage, ligne inférieure). Les valeurs proviennent
+sans nouveau protocole de `globals.vaWaterTemp.txt` et
+`globals.vaAirTemp.txt`, déjà publiées par l'ESP32. Le nouveau champ
+`tAirTemp` est ajouté **en fin de liste** pour préserver les IDs des
+composants existants. Au réveil et pendant les rafraîchissements
+Home, les deux valeurs sont synchronisées.
+
+Le bandeau garde l'heure, la date, le Wi-Fi et le logo. Les textes
+de température utilisent deux lignes de 16 px (x=187..296) dans la
+colonne centrale (x=154..300). Aucun nouvel accès réseau ou RS485.
+
 ## Optimisation mémoire du Nextion 3,5″
 
 Pour limiter la taille du TFT et conserver 10 positions d'animation,
