@@ -47,9 +47,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "This is an experimental NX4832K035 build, not a release artifact."
-          echo "Use only the existing 6.0.0 Nextion TFT as firmware input (no downloads)."
+          echo "Archived TFT uses Nextion Editor 1.68.1; nxwright 0.5.6 requires the official 1.68.2 firmware."
+          echo "Explicitly allow nxwright to download the matching 1.68.2 editor firmware on this ephemeral runner."
           nxwright compile "$RUNNER_TEMP/nx-source" "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
-            --firmware nextion/releases/6.0.0/FlowIO_Nextion_NX4832K035_011-6.0.0.tft \
+            --download \
             2>&1 | tee "$RUNNER_TEMP/nxwright-compile.log"
           test -s "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft"
           sha256sum "$RUNNER_TEMP/NX4832K035-7.0.0-NXWRIGHT-TEST-ONLY.tft" \
@@ -70,6 +71,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Upload extracted editable Nextion 7.0.0 project
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: NX4832K035-7.0.0-NXWRIGHT-EXTRACTED-SOURCE
@@ -79,4 +81,5 @@ jobs:
             ${{ runner.temp }}/source-files.txt
           retention-days: 14
       - name: Ensure repository unchanged
+        if: always()
         run: git diff --exit-code
