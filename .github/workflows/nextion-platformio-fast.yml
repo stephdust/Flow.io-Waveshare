@@ -1,0 +1,59 @@
+name: Nextion PlatformIO native-only targets (no ESP32)
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/nextion-platformio-fast.yml'
+      - 'platformio.ini'
+      - 'nextion/scripts/pio_nextion_targets.py'
+      - 'nextion/scripts/run_nextion.py'
+      - 'nextion/scripts/refresh_nextion_manifest.py'
+permissions:
+  contents: read
+
+jobs:
+  manifest-only:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only PlatformIO Core (no Espressif framework)
+        run: python -m pip install platformio
+      - name: List targets registered under env:nextion
+        run: pio run -e nextion --list-targets
+      - name: Execute quick Nextion manifest target without compilation
+        run: pio run -e nextion -t manifest
+      - name: Validate TFT copied and manifest regenerated exactly
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          name = "FlowIO_Nextion_NX4832K035_011-7.0.0.tft"
+          release = Path("nextion/releases/7.0.0") / name
+          exported = Path("binary") / name
+          manifest = json.loads(Path("binary/manifest.json").read_text(encoding="utf-8"))
+          entries = manifest["artifacts"]["nextion"]
+          assert len(entries) == 1, entries
+          entry = entries[0]
+          expected_hash = hashlib.sha256(release.read_bytes()).hexdigest()
+          assert release.stat().st_size == exported.stat().st_size == 2510144
+          assert expected_hash == hashlib.sha256(exported.read_bytes()).hexdigest()
+          assert entry["sha256"] == expected_hash
+          assert entry["size"] == 2510144
+          assert entry["path"] == name
+          assert entry["display_compatibility"] == "NX4832K035_011"
+          assert entry["version"] == "7.0.0"
+          assert entry["route"] == "/fwupdate/nextion"
+          assert not any(Path("binary").glob("*.bin"))
+          print("PASS: native PlatformIO manifest-only target; ESP32/SPIFFS untouched.")
+          PY
+      - name: Verify tracked repo untouched
+        run: git diff --exit-code
