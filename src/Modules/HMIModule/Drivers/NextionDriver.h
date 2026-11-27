@@ -60,6 +60,8 @@ public:
     bool refreshSleepState(uint16_t timeoutMs = 0U);
     bool isSleeping() const { return sleeping_; }
     bool wakeFromSleep();
+    // Invalidate cached xpic gauge percentages after Nextion wup=255.
+    bool requestHomeGaugeRedraw();
     bool requestPageReport();
     bool currentPage(uint8_t& out) const;
     bool isHomePage() const;
