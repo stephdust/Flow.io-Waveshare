@@ -10,7 +10,20 @@ Les fichiers Nextion sont rangés **uniquement par version** dans `releases/<ver
 
 **Cas 800 × 480 (6.0.0) :** une source HMI historique unique sert aux écrans 5″ (`NX8048P050_011`) et 7″ (`NX8048P070_011`). Elle est rangée sous le nom canonique `FlowIO_Nextion_NX8048P050_011-6.0.0.HMI` ; cela **n'affirme pas** que le fichier compilé est utilisable indifféremment sur les deux écrans. Les TFT restent séparés par modèle.
 
-La valeur de `common.nextion_firmware_version` dans [`platformio.ini`](../platformio.ini) reste **7.0.0**. La source HMI **de référence** dans [`releases/7.0.0/`](releases/7.0.0/) est la **7.0.0 déjà validée sur écran réel**, également sauvegardée sur [`backup/nextion-v7-validated-20261127`](https://github.com/stephdust/Flow.io-Waveshare/tree/backup/nextion-v7-validated-20261127). L'ancien HMI graphique créé par patchage binaire a été retiré de la release après affichage de rectangles blancs sur l'écran réel. Le **nouveau design expérimental**, généré en modifiant les sources texte/PNG avec nxwright et en reconstruisant HMI + TFT, est disponible uniquement dans [l'artefact de test GitHub Actions](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Il doit être validé sur le matériel avant toute publication officielle. **Aucun TFT 7.0.0 de production n'est publié sur GitHub.** Les fichiers des Nextion 5″/7″ restent strictement inchangés.
+La valeur de `common.nextion_firmware_version` dans [`platformio.ini`](../platformio.ini) reste **7.0.0**.
+Sur le **fork `stephdust/dev`**, les fichiers
+[`releases/7.0.0/`](releases/7.0.0/) contiennent maintenant le **nouveau HMI et
+le TFT 7.0.0 compilés avec nxwright** pour le `NX4832K035_011`.
+Les sources éditables, la prévisualisation et les logs sont committés dans
+[`tests/NX4832K035_011/7.0.0/`](tests/NX4832K035_011/7.0.0/).
+Ce sont les **fichiers de développement et de test de notre fork** ; leur
+comportement sur le véritable Nextion doit encore être validé.
+
+**La référence amont est `christophebelmont/Flow.io-Waveshare:dev` et elle
+n'est pas modifiée par ce travail. Aucun PR n'est ouvert à ce stade.**
+Une sauvegarde de notre ancienne 7.0.0 fonctionnelle est disponible dans
+[`backup/nextion-v7-validated-20261127`](https://github.com/stephdust/Flow.io-Waveshare/tree/backup/nextion-v7-validated-20261127).
+Les sources/TFT des Nextion **5″ et 7″ restent strictement inchangés**.
 
 La [version 6.0.0](releases/6.0.0/) reste archivée et intacte, avec ses sources et ses TFT ; elle n'est plus sélectionnée par `platformio.ini`.
 
@@ -49,4 +62,4 @@ La compilation **Waveshare ESP32-S3** et son empaquetage restent pilotés par `p
 Voir [la procédure et ses limites](docs/nxwright-7-0-audit.md) ; l'audit compare uniquement le HMI 7.0.0 du `NX4832K035_011` à sa source sauvegardée. Les HMI/TFT des Nextion 5″ et 7″ ne doivent pas être modifiés.
 
 
-La compilation nxwright de la nouvelle Home utilise `nextion/scripts/modernize_3p5_nxsource.py` et `nextion/scripts/compile_nxwright_test.sh`. Le firmware système Nextion Editor 1.68.2 est acquis par `nxwright compile --download` dans un runner temporaire. Ces artefacts expérimentaux ne sont ni copiés dans `binary/`, ni utilisés par `platformio.ini`.
+La compilation nxwright de la nouvelle Home utilise `nextion/scripts/modernize_3p5_nxsource.py` et `nextion/scripts/compile_nxwright_test.sh`. Le firmware système Nextion Editor 1.68.2 est acquis par `nxwright compile --download` dans un runner temporaire. Le HMI et le TFT expérimentaux sont désormais committés dans `nextion/releases/7.0.0/` **sur notre fork `dev` uniquement**. Lors des builds PlatformIO de ce fork, le TFT peut être exporté dans `binary/` pour essai. Rien n'est encore proposé à Christophe.

@@ -46,6 +46,6 @@ Le [workflow de redesign nxwright](../../.github/workflows/nextion-nxwright-rede
 - extrait les sources, adapte `pages/pageHome.nx`, `pages/pageHome.page.toml`, les images des jauges et du ventilateur ;
 - reconstruit le HMI avec `nxwright build`, le réextrait et passe `nxwright check` ;
 - compile un TFT expérimental avec `nxwright compile --download` et le firmware officiel de **Nextion Editor 1.68.2** ;
-- place la source texte, le HMI, le TFT TEST-ONLY et la prévisualisation uniquement dans un artefact GitHub Actions.
+- publie le HMI et le TFT 7.0.0 dans `nextion/releases/7.0.0/` et les sources éditables dans `nextion/tests/NX4832K035_011/7.0.0/`, uniquement sur le fork `stephdust/dev` ; conserve aussi un artefact Actions.
 
-[Résultat de la compilation source → HMI → TFT : réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Aucune validation sur l'écran réel à ce stade. Ne pas remplacer le TFT de production ni modifier les projets 5″/7″.
+[Résultat de la compilation source → HMI → TFT : réussi](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46004942701). Compilation et commit de test réussis sur le fork `dev` : [exécution de publication](https://github.com/stephdust/Flow.io-Waveshare/actions/runs/46007533865). La branche **`christophebelmont/dev` reste la référence avant PR**. Aucune validation sur l'écran réel à ce stade, et aucun changement aux modèles 5″/7″.
