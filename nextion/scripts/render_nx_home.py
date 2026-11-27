@@ -109,7 +109,8 @@ def make_background():
     for x,value in ((123,'7.5'),(357,'700')):
         text(d,value,x,72,16,(94,249,50))
         d.polygon([(x*S,87*S),((x-6)*S,78*S),((x+6)*S,78*S)],fill=WHITE)
-    # Four nav groups: native touch widgets remain active on top.
+    # Footer: grid=config, play=filtration, gear=switches, triangle=alarms.
+    # All have invisible, individually bounded touch hotspots; no buttons painted.
     for xx in (23,39):
         for yy in (273,288):
             d.rounded_rectangle((xx*S,yy*S,(xx+10)*S,(yy+10)*S),
@@ -117,8 +118,21 @@ def make_background():
     d.polygon([(143*S,273*S),(132*S,293*S),(135*S,301*S),
                (143*S,306*S),(152*S,301*S),(155*S,293*S)],fill=(9,214,254))
     d.arc((130*S,300*S,161*S,314*S),180,352,fill=AQUA,width=2*S)
-    d.arc((331*S,273*S,362*S,305*S),45,315,fill=(10,223,237),width=3*S)
-    d.polygon([(360*S,286*S),(367*S,294*S),(358*S,299*S)],fill=(12,227,240))
+    # Home switches / controls. Use a recognizable gear, not the former
+    # ambiguous curved arrow. Its hitbox is m0 (x=309..387, y=268..313).
+    gear_x,gear_y=349,290
+    for spoke in range(8):
+        angle=spoke*math.pi/4
+        co,si=math.cos(angle),math.sin(angle)
+        d.line([(round((gear_x+12*co)*S),round((gear_y+12*si)*S)),
+                (round((gear_x+16*co)*S),round((gear_y+16*si)*S))],
+               fill=(*WHITE,),width=4*S)
+    d.ellipse(((gear_x-12)*S,(gear_y-12)*S,
+               (gear_x+12)*S,(gear_y+12)*S),
+              outline=(*AQUA,),width=2*S)
+    d.ellipse(((gear_x-5)*S,(gear_y-5)*S,
+               (gear_x+5)*S,(gear_y+5)*S),
+              outline=(*WHITE,),width=2*S)
     line(d,[(450,276),(433,304),(467,304),(450,276)],WHITE,2)
     line(d,[(450,285),(450,296)],WHITE,2)
     d.ellipse((448*S,298*S,452*S,302*S),fill=WHITE)
