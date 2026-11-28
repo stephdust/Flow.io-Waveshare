@@ -128,7 +128,7 @@ def nav(kind,on=False,w=50,h=52):
     # Label is part of the actual PNG sprite referenced by the Nextion.
     label={"home":"Home","back":"Back","prev":"Prev",
            "next":"Next","reboot":"Reboot","valid":"Valid"}[kind]
-    font=ImageFont.load_default(size=12*S)
+    font=ImageFont.load_default(size=13*S)
     d.text((round(cx*S),round(37*S)),label,font=font,
            fill=(246,253,255),anchor="mt")
     return shrink(im,w,h)
@@ -138,9 +138,13 @@ def sample_text(canvas,c,text,size=16,color=(239,248,255)):
     # Text is sample data, clipped to native component bounds like the HMI.
     x,y,w,h=[c[k] for k in ("x","y","w","h")]
     try:
-        f=ImageFont.load_default(size=size)
-    except OSError:
-        f=ImageFont.load_default(size=size)
+        # Keep accented French labels readable in the actual preview PNG.
+        # The Pillow built-in default font substitutes missing glyphs with boxes.
+        f=ImageFont.truetype("DejaVuSans.ttf",size)
+    except OSError as exc:
+        raise RuntimeError(
+            "DejaVuSans.ttf is required for French text in the Nextion preview"
+        ) from exc
     layer=Image.new("RGBA",(w,h),(0,0,0,0))
     d=ImageDraw.Draw(layer)
     box=d.textbbox((0,0),text,font=f)

@@ -13,9 +13,9 @@ sta = 2
 name = "tPath"
 type = "text"
 aph = 100
-x = 14
+x = 62
 y = 4
-w = 447
+w = 391
 h = 25
 font = "SegoeUI_16"
 bco = "#041225"
@@ -399,7 +399,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 
@@ -423,7 +423,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 
@@ -447,7 +447,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 
@@ -471,7 +471,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 
@@ -495,7 +495,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 
@@ -519,7 +519,7 @@ txt_maxl = 25
 sta = 2
 pic = "picture-0043"
 pic2 = "picture-0044"
-xcen = 0
+xcen = 1
 ycen = 1
 pco2 = "#ffffff"
 

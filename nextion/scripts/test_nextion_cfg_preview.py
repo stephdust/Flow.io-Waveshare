@@ -47,6 +47,7 @@ for i in range(6):
     assert c[f"tL{i}"]["type"]=="text" and c[f"tL{i}"]["sta"]==0
     assert c[f"tL{i}"]["picc"]=="picture-0042"
     assert c[f"tV{i}"]["type"]=="dual-state-button" and c[f"tV{i}"]["sta"]==2
+    assert c[f"tV{i}"]["xcen"]==1, "values must be centred"
     assert c[f"bR{i}"]["type"]=="button" and c[f"bR{i}"]["sta"]==2
 for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
                      ("bPrev",120,268,50,52),("bNext",232,268,50,52),
@@ -67,6 +68,7 @@ for i,one in enumerate(touch):
 # Keep the original Home sprite, but remove its overlapping text rectangle.
 assert c["tHomeCaption"]["txt"]=="" and c["tHomeCaption"]["w"]<=2
 assert c["tPath"]["sta"]==0 and c["tPath"]["picc"]=="picture-0042"
+assert c["tPath"]["x"]>=60, "gear icons must not overlap breadcrumb"
 for key in ("t0","nPage","nPages"):
     assert c[key]["sta"]==0 and c[key]["picc"]=="picture-0042"
 assert c["nPage"]["x"]==178 and c["nPages"]["x"]+c["nPages"]["w"]==225
@@ -103,3 +105,8 @@ print("PASS: 3D Home/Back/Prev/Next/Valid/Reboot have baked-in readable captions
 print("PASS: Nextion PNG matches all six real footer sprites")
 print("PASS: original Home pictogram, 56px pager, real Nextion text crop")
 print("PASS: Home simple, Reboot long-press 2.5s, row5 Boolean fixed")
+
+# All six sample captions contain accents; the preview font must support them.
+renderer=(Path(__file__).resolve().parents[2]/"nextion/scripts/render_nx_config.py").read_text(encoding="utf-8")
+assert 'ImageFont.truetype("DejaVuSans.ttf",size)' in renderer
+print("PASS: header glyphs do not obscure breadcrumb; accented preview labels supported")
