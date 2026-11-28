@@ -4,6 +4,8 @@
 A generated PNG with mock values is NOT a native Nextion simulator screenshot.
 """
 from pathlib import Path
+import json
+import runpy
 import argparse
 import re
 import tomllib
@@ -162,5 +164,42 @@ assert 'ImageFont.truetype("DejaVuSans.ttf",size)' in renderer
 assert c["tPath"]["font"]=="Segoe24_MenuItems"
 print("PASS: 24px breadcrumb, arrow-free rows and accented preview labels supported")
 
-print("PASS: 24px native fonts on 6 labels and 6 values, fallback icons for hidden navigation")
+
+# The approved preview scene is a *real browse state* of the ConfigStore
+# network branch, not an assortment of fictional editable parameters.
+# This checks both the metadata source and the actual PNG pixels. Tests of
+# hit boxes/event handlers above remain separate: a PNG cannot prove touch.
+root=Path(__file__).resolve().parents[2]
+metadata=json.loads((root/"src/Modules/Network/WifiModule/text/cfgmods.fr.json").read_text(encoding="utf-8"))["meta"]
+network=next(b for b in metadata["cfg_tree_virtual_branches"] if b["display"]=="network")
+assert network["children"]==["ethernet","modbus-tcp","mqtt","time","wifi"], network["children"]
+scene=runpy.run_path(str(root/"nextion/scripts/render_nx_config.py"))
+breadcrumb,labels=scene["network_browse_scene"]()
+assert breadcrumb=="config > network",breadcrumb
+assert labels==["ethernet","modbus-tcp/","mqtt","time/","wifi"],labels
+model_cpp=(root/"src/Modules/HMIModule/ConfigMenuModel.cpp").read_text(encoding="utf-8")
+view_block=model_cpp.split("void ConfigMenuModel::buildHomeView_(",1)[1].split("void ConfigMenuModel::buildModuleView_(",1)[0]
+assert "vr.valueVisible = false;" in view_block
+assert 'snprintf(vr.label, sizeof(vr.label), "%s/", label)' in view_block
+assert 'buildBreadcrumb_(out.breadcrumb' in model_cpp
+
+# Independently reconstruct the authorized browse scene from the metadata
+# against the native background/button sprites. Any old value capsules,
+# extra sixth-row label, wrong title/pagination or arbitrary placeholders
+# make the pixel-for-pixel scene contract fail.
+expected=Image.open(args.source/"pictures/picture-0042.png").convert("RGB")
+for name in ("bHome","bBack","bPrev","bNext","bValid","bReboot"):
+    o=c[name]
+    expected.paste(Image.open(args.source/"pictures"/(o["pic"]+".png")).convert("RGB"),(o["x"],o["y"]))
+for i,label in enumerate(labels):
+    scene["sample_text"](expected,c[f"tL{i}"]," "+label,size=23)
+scene["sample_text"](expected,c["tPath"],breadcrumb,size=23)
+scene["sample_text"](expected,c["nPage"],"1",13)
+scene["sample_text"](expected,c["t0"],"/",13,(119,172,198))
+scene["sample_text"](expected,c["nPages"],"1",13)
+assert ImageChops.difference(expected,image).getbbox() is None, (
+    "pageCfgMenu preview must show real network browse rows without fake values"
+)
+print("PASS: PNG visibly matches ConfigStore network browsing (5 labels, no value fields, sixth row empty, page 1/1)")
+print("PASS: native 24px components, arrow-free row design and disabled-navigation sprites")
 print("PASS: Reboot power symbol stays visible during long-press progress")

@@ -2,7 +2,7 @@ name: Build Nextion 7.0.0 with PlatformIO nxwright (NX4832K035 only)
 on:
   workflow_dispatch:
   push:
-    branches: [dev, experiment/nextion-cfg-3d-20261128]
+    branches: [dev, experiment/nextion-cfg-3d-20261128, experiment/nextion-preview-network-validation-20261128]
     paths:
       - '.github/workflows/nextion-nxwright-redesign.yml'
       - 'platformio.ini'

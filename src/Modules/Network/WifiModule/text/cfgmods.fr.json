@@ -39,10 +39,10 @@
         "display": "network",
         "children": [
           "ethernet",
-          "wifi",
-          "time",
+          "modbus-tcp",
           "mqtt",
-          "modbus-tcp"
+          "time",
+          "wifi"
         ]
       },
       {

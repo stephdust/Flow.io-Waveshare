@@ -2,7 +2,7 @@ name: Verify HMI ConfigStore tree and ESP32 firmware (all Nextion sizes)
 on:
   workflow_dispatch:
   push:
-    branches: [dev]
+    branches: [dev, experiment/nextion-preview-network-validation-20261128]
     paths:
       - '.github/workflows/hmi-config-hierarchy.yml'
       - 'scripts/tests/test_hmi_config_hierarchy.py'

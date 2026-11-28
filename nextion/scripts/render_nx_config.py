@@ -7,6 +7,7 @@ Every decorative button in the preview is a bitmap actually used by Nextion.
 from pathlib import Path
 import argparse
 import tomllib
+import json
 from PIL import Image, ImageDraw, ImageFont
 
 NAVY=(4,18,37)
@@ -171,6 +172,36 @@ def sample_text(canvas,c,text,size=16,color=(239,248,255)):
            font=f,fill=(*color,255))
     canvas.paste(layer,(x,y),layer)
 
+def network_browse_scene():
+    """Preview a real browse state, using the ConfigStore hierarchy metadata.
+
+    Do NOT substitute arbitrary parameter/value pairs for this scene. The
+    ESP32 ConfigMenuModel uses these declared children as the menu contents.
+    The preview is still PIL artwork, not a native Nextion simulator.
+    """
+    root=Path(__file__).resolve().parents[2]
+    meta=json.loads((root/"src/Modules/Network/WifiModule/text/cfgmods.fr.json")
+                    .read_text(encoding="utf-8"))["meta"]
+    branches=meta["cfg_tree_virtual_branches"]
+    network=next(b for b in branches if b["display"]=="network")
+    children=network["children"]
+    if len(children)>6 or children!=sorted(set(children)):
+        raise ValueError("Network ConfigStore children must be ordered/unique and fit 6 rows")
+    aliases={a["display"]:a["store"] for a in meta["cfg_tree_aliases"]}
+    time_docs=json.loads((root/"src/Modules/Network/TimeModule/text/cfgmods.fr.json")
+                         .read_text(encoding="utf-8"))["docs"]
+    items=[]
+    for child in children:
+        full="network/"+child
+        is_virtual=any(b["display"]==full and b["children"] for b in branches)
+        store=aliases.get(full,full)
+        # Match ConfigMenuModel::moduleHasChildren_: descendants of the store
+        # are displayed with a trailing slash, e.g. network/time/.
+        has_submodule=any(k.startswith(store+"/") for k in time_docs)
+        items.append(child+("/" if is_virtual or has_submodule else ""))
+    return "config > network",items
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--source",type=Path,required=True)
@@ -196,25 +227,23 @@ def main():
         for name in ("bHome","bBack","bPrev","bNext","bValid","bReboot"):
             o=c[name]
             image.paste(Image.open(dst/(o["pic"]+".png")).convert("RGB"),(o["x"],o["y"]))
-        labels=("Paramètre 1","Paramètre 2","Paramètre 3","Paramètre 4","Paramètre 5","Paramètre 6")
-        values=("Valeur","7,20","Activé","Auto","700 mV","Réglage")
-        for i in range(6):
-            for name in (f"tV{i}",):
-                o=c[name]
-                image.paste(Image.open(dst/(o["pic"]+".png")).convert("RGB"),(o["x"],o["y"]))
-            # Approximate the HMI's 24px Segoe labels, not the old 16px UI.
-            # Native font identity is verified separately by the source test.
-            sample_text(image,c[f"tL{i}"],labels[i],size=23)
-            sample_text(image,c[f"tV{i}"],values[i],size=23,
-                        color=(205,250,255))
-        sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"),size=23)
+        # This is the actual BROWSE structure of "config > network".
+        # ConfigMenuModel::buildHomeView_ sets valueVisible=false: no tV
+        # widget, value, or placeholder may be pasted on any browse row.
+        # The sixth row remains a blank navigation bar.
+        breadcrumb,labels=network_browse_scene()
+        for i,label in enumerate(labels):
+            # Approximate the embedded 24px Segoe font in the PIL preview.
+            # The HMI build is checked separately by nxwright.
+            sample_text(image,c[f"tL{i}"]," "+label,size=23)
+        sample_text(image,c["tPath"],breadcrumb,size=23)
         # The former HOME caption overlapped Back; the house icon is retained.
         sample_text(image,c["nPage"],"1",13)
         sample_text(image,c["t0"],"/",13,(119,172,198))
-        sample_text(image,c["nPages"],"3",13)
+        sample_text(image,c["nPages"],"1",13)
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         image.save(args.preview,optimize=True)
-        print("[NEXTION] Config preview from actual HMI sprites:",args.preview)
+        print("[NEXTION] Config browse/network preview from actual HMI sprites and declared hierarchy:",args.preview)
     print("[NEXTION] Generated 17 pageCfgMenu pictures (42..58).")
 
 if __name__=="__main__":
