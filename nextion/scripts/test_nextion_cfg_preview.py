@@ -37,7 +37,7 @@ for a,b in ((43,44),(45,46),(47,48),(49,50),(51,52),(53,54),(55,56),(57,58)):
 touch=["tPath"]
 for i in range(6):
     y=37+38*i
-    for name,x,dy,w,h in ((f"tL{i}",15,0,212,34),
+    for name,x,dy,w,h in ((f"tL{i}",15,0,452,34),
                           (f"tV{i}",234,2,185,30),
                           (f"bR{i}",426,0,41,34)):
         o=c[name]
@@ -50,7 +50,10 @@ for i in range(6):
     assert c[f"tV{i}"]["type"]=="dual-state-button" and c[f"tV{i}"]["sta"]==2
     assert c[f"tV{i}"]["xcen"]==1, "values must be centred"
     assert c[f"tV{i}"]["font"]=="Segoe24_MenuItems", "value must be 24px"
-    assert c[f"bR{i}"]["type"]=="button" and c[f"bR{i}"]["sta"]==2
+    assert c[f"bR{i}"]["type"]=="hotspot"
+    # The entire visible caption remains touchable, including the former arrow end.
+    assert c[f"tL{i}"]["x"] + c[f"tL{i}"]["w"] == 467
+    assert "pic" not in c[f"bR{i}"], "native arrow image must not be used"
 for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
                      ("bPrev",120,268,50,52),("bNext",232,268,50,52),
                      ("bValid",365,268,110,52),("bReboot",291,268,62,52)):
@@ -76,7 +79,13 @@ for i,one in enumerate(touch):
     for other in touch[i+1:]:
         b=c[other]
         overlap=a["x"]<b["x"]+b["w"] and b["x"]<a["x"]+a["w"] and a["y"]<b["y"]+b["h"] and b["y"]<a["y"]+a["h"]
-        assert not overlap,(one,other)
+        # The widened text label may be behind its own value/hotspot.
+        # Overlap across DIFFERENT rows or footer/header is never allowed.
+        intentional_same_row = (
+            one.startswith("tL") and other.startswith(("tV", "bR"))
+            and one[-1] == other[-1]
+        )
+        assert not overlap or intentional_same_row,(one,other)
 # Keep the original Home sprite, but remove its overlapping text rectangle.
 assert c["tHomeCaption"]["txt"]=="" and c["tHomeCaption"]["w"]<=2
 assert c["tPath"]["sta"]==0 and c["tPath"]["picc"]=="picture-0042"
@@ -117,7 +126,7 @@ for name in ("bHome","bBack","bValid","bPrev","bNext"):
     assert f'vis {name},1' in driver,name
     assert f'tsw {name},%u' in driver,name
 
-print("PASS: pageCfgMenu original row handlers and 6x3 non-overlapping touch areas")
+print("PASS: pageCfgMenu row handlers and 6 touchable labels, values, arrow-free hotspots")
 print("PASS: 3D Home/Back/Prev/Next/Valid/Reboot have baked-in readable captions")
 print("PASS: Nextion PNG matches all six real footer sprites")
 print("PASS: original Home pictogram, 56px pager, real Nextion text crop")
@@ -126,7 +135,8 @@ print("PASS: Home simple, Reboot long-press 2.5s, row5 Boolean fixed")
 # All six sample captions contain accents; the preview font must support them.
 renderer=(Path(__file__).resolve().parents[2]/"nextion/scripts/render_nx_config.py").read_text(encoding="utf-8")
 assert 'ImageFont.truetype("DejaVuSans.ttf",size)' in renderer
-print("PASS: header glyphs do not obscure breadcrumb; accented preview labels supported")
+assert c["tPath"]["font"]=="Segoe24_MenuItems"
+print("PASS: 24px breadcrumb, arrow-free rows and accented preview labels supported")
 
 print("PASS: 24px native fonts on 6 labels and 6 values, fallback icons for hidden navigation")
 print("PASS: Reboot power symbol stays visible during long-press progress")

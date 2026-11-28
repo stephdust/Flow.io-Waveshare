@@ -220,3 +220,12 @@ for port in (502, 503, 504):
 assert "modbustcp50[234]" not in web
 print(f"PASS: {len(aliases)} Web aliases, shared virtual branches, "
       "real Modbus ConfigStore, MQTT, HA and Web contracts")
+
+# The widened text label is the primary entry point for BOTH folders and
+# leaves, now that the right-hand arrows are intentionally invisible.
+hmi_module_cpp = (ROOT / "src/Modules/HMIModule/HMIModule.cpp").read_text(encoding="utf-8")
+row_dispatch = hmi_module_cpp.split("case HmiEventType::RowActivate: {", 1)[1]
+row_dispatch = row_dispatch.split("case HmiEventType::RowEdit:", 1)[0]
+assert row_dispatch.index("menu_.enterRow(e.row)") < row_dispatch.index("menu_.editRow(e.row)")
+assert "if (!changed) changed = menu_.editRow(e.row);" in row_dispatch
+print("PASS: text tap opens folders first and editable leaf values second")

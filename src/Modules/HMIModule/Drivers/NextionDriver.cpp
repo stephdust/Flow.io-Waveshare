@@ -753,7 +753,7 @@ bool NextionDriver::renderConfigMenu(const ConfigMenuView& view)
         bool showValue = row.visible && row.valueVisible;
         bool showRowButton = row.visible &&
                              view.mode == ConfigMenuMode::Browse &&
-                             (row.canEdit || row.canEnter);
+                             row.valueVisible && (row.canEdit || row.canEnter);
         bool leftTouchable = row.visible && view.mode == ConfigMenuMode::Browse;
         if (alarmRow) {
             showValue = alarmCritical || alarmLatchOk;
@@ -776,7 +776,7 @@ bool NextionDriver::renderConfigMenu(const ConfigMenuView& view)
                 (void)sendCmdFmt_("%s.bco=%lu", rightObj, (unsigned long)(alarmCritical ? 53925U : 64520U));
             }
             if (alarmLatchOk) {
-                (void)sendCmdFmt_("%s.bco=%u", rowButtonObj, 64520U);
+                // 7.0.0: bR is a transparent hotspot; it has no background property.
             }
         }
         (void)sendCmdFmt_("%s.val=%u", editTypeObj, (unsigned)editType);
@@ -829,7 +829,7 @@ bool NextionDriver::refreshConfigMenuValues(const ConfigMenuView& view)
         bool showValue = row.visible && row.valueVisible;
         bool showRowButton = row.visible &&
                              view.mode == ConfigMenuMode::Browse &&
-                             (row.canEdit || row.canEnter);
+                             row.valueVisible && (row.canEdit || row.canEnter);
         if (alarmRow) {
             showValue = alarmCritical || alarmLatchOk;
             showRowButton = alarmLatchOk;
@@ -846,7 +846,7 @@ bool NextionDriver::refreshConfigMenuValues(const ConfigMenuView& view)
             (void)sendCmdFmt_("vis %s,%u", rowButtonObj, showRowButton ? 1U : 0U);
             (void)sendCmdFmt_("tsw %s,%u", rowButtonObj, showRowButton ? 1U : 0U);
             if (alarmLatchOk) {
-                (void)sendCmdFmt_("%s.bco=%u", rowButtonObj, 64520U);
+                // 7.0.0: no background property on the transparent hotspot.
             }
         }
 

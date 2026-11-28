@@ -199,7 +199,7 @@ def main():
         labels=("Paramètre 1","Paramètre 2","Paramètre 3","Paramètre 4","Paramètre 5","Paramètre 6")
         values=("Valeur","7,20","Activé","Auto","700 mV","Réglage")
         for i in range(6):
-            for name in (f"tV{i}",f"bR{i}"):
+            for name in (f"tV{i}",):
                 o=c[name]
                 image.paste(Image.open(dst/(o["pic"]+".png")).convert("RGB"),(o["x"],o["y"]))
             # Approximate the HMI's 24px Segoe labels, not the old 16px UI.
@@ -207,7 +207,7 @@ def main():
             sample_text(image,c[f"tL{i}"],labels[i],size=23)
             sample_text(image,c[f"tV{i}"],values[i],size=23,
                         color=(205,250,255))
-        sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"))
+        sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"),size=23)
         # The former HOME caption overlapped Back; the house icon is retained.
         sample_text(image,c["nPage"],"1",13)
         sample_text(image,c["t0"],"/",13,(119,172,198))
