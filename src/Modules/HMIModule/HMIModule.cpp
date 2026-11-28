@@ -2239,7 +2239,10 @@ void HMIModule::handleDriverEvent_(const HmiEvent& e)
             changed = menu_.prevPage();
             break;
         case HmiEventType::RowActivate: {
+            // A folder opens its children; a leaf module opens its values.
+            // There is no longer a visible arrow button for leaf editing.
             changed = menu_.enterRow(e.row);
+            if (!changed) changed = menu_.editRow(e.row);
             if (!changed) {
                 ConfigMenuView view{};
                 menu_.buildView(view);
