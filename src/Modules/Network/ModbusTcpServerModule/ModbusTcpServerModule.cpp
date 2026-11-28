@@ -5,13 +5,20 @@
 
 namespace {
 constexpr uint8_t kModbusConfigProducerId = 91U;
+constexpr const char* kLegacyModbusKeys[3][7] = {
+    {"mt0mode","mt0dev","mt0baud","mt0par","mt0stop","mt0tmo","mt0err"},
+    {"mt1mode","mt1dev","mt1baud","mt1par","mt1stop","mt1tmo","mt1err"},
+    {"mt2mode","mt2dev","mt2baud","mt2par","mt2stop","mt2tmo","mt2err"}
+};
+// A short independent NVS marker prevents destructive cleanups on later boots.
+constexpr const char* kModbusHierarchyResetMarker = "mbpathv2";
 constexpr MqttConfigRouteProducer::Route kModbusConfigRoutes[] = {
     {1, {(uint8_t)ConfigModuleId::ModbusTcpServer, 1U},
-     "modbustcp502", "modbustcp/502", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
+     "network/modbus-tcp/502", "network/modbus-tcp/502", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
     {2, {(uint8_t)ConfigModuleId::ModbusTcpServer, 2U},
-     "modbustcp503", "modbustcp/503", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
+     "network/modbus-tcp/503", "network/modbus-tcp/503", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_},
     {3, {(uint8_t)ConfigModuleId::ModbusTcpServer, 3U},
-     "modbustcp504", "modbustcp/504", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_}
+     "network/modbus-tcp/504", "network/modbus-tcp/504", (uint8_t)MqttPublishPriority::Normal, &ModbusTcpServerModule::buildConfigMqtt_}
 };
 
 // Editable Home Assistant configuration entities on the existing HAService.
@@ -19,29 +26,29 @@ constexpr MqttConfigRouteProducer::Route kModbusConfigRoutes[] = {
 // which validates and persists each field before republishing the state.
 // Active TCP/RS485 listeners still apply the new settings on the next reboot.
 constexpr HASelectEntry kModbusHaSelects[] = {
-    {"modbustcp", "modbus_tcp_502_mode", "Modbus 502 Liaison RS485", "cfg/modbustcp/502", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'modbustcp502': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_502_parity", "Modbus 502 Parite RS485", "cfg/modbustcp/502", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'modbustcp502': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_502_stop_bits", "Modbus 502 Bits stop RS485", "cfg/modbustcp/502", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'modbustcp502': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_502_error_mode", "Modbus 502 Erreur Modbus", "cfg/modbustcp/502", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'modbustcp502': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_503_mode", "Modbus 503 Liaison RS485", "cfg/modbustcp/503", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'modbustcp503': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_503_parity", "Modbus 503 Parite RS485", "cfg/modbustcp/503", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'modbustcp503': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_503_stop_bits", "Modbus 503 Bits stop RS485", "cfg/modbustcp/503", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'modbustcp503': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_503_error_mode", "Modbus 503 Erreur Modbus", "cfg/modbustcp/503", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'modbustcp503': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_504_mode", "Modbus 504 Liaison RS485", "cfg/modbustcp/504", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'modbustcp504': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_504_parity", "Modbus 504 Parite RS485", "cfg/modbustcp/504", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'modbustcp504': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_504_stop_bits", "Modbus 504 Bits stop RS485", "cfg/modbustcp/504", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'modbustcp504': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
-    {"modbustcp", "modbus_tcp_504_error_mode", "Modbus 504 Erreur Modbus", "cfg/modbustcp/504", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'modbustcp504': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_502_mode", "Modbus 502 Liaison RS485", "cfg/network/modbus-tcp/502", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_502_parity", "Modbus 502 Parite RS485", "cfg/network/modbus-tcp/502", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_502_stop_bits", "Modbus 502 Bits stop RS485", "cfg/network/modbus-tcp/502", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_502_error_mode", "Modbus 502 Erreur Modbus", "cfg/network/modbus-tcp/502", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_503_mode", "Modbus 503 Liaison RS485", "cfg/network/modbus-tcp/503", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_503_parity", "Modbus 503 Parite RS485", "cfg/network/modbus-tcp/503", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_503_stop_bits", "Modbus 503 Bits stop RS485", "cfg/network/modbus-tcp/503", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_503_error_mode", "Modbus 503 Erreur Modbus", "cfg/network/modbus-tcp/503", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_504_mode", "Modbus 504 Liaison RS485", "cfg/network/modbus-tcp/504", "{{ {0:'Aucun',1:'Equipement Flow.io',2:'Manuel'}.get(value_json.mode | int,'Aucun') }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'mode': {'Aucun':0,'Equipement Flow.io':1,'Manuel':2}.get(value,0)}} | to_json }}", "[\"Aucun\",\"Equipement Flow.io\",\"Manuel\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_504_parity", "Modbus 504 Parite RS485", "cfg/network/modbus-tcp/504", "{{ {0:'Aucune',1:'Paire',2:'Impaire'}.get(value_json.parity | int,'Aucune') }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'parity': {'Aucune':0,'Paire':1,'Impaire':2}.get(value,0)}} | to_json }}", "[\"Aucune\",\"Paire\",\"Impaire\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_504_stop_bits", "Modbus 504 Bits stop RS485", "cfg/network/modbus-tcp/504", "{{ {1:'1',2:'2'}.get(value_json.stop_bits | int,'1') }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'stop_bits': {'1':1,'2':2}.get(value,1)}} | to_json }}", "[\"1\",\"2\"]", "mdi:tune", "config"},
+    {"modbustcp", "modbus_tcp_504_error_mode", "Modbus 504 Erreur Modbus", "cfg/network/modbus-tcp/504", "{{ {0:'Exception Modbus',1:'Silence'}.get(value_json.error_mode | int,'Exception Modbus') }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'error_mode': {'Exception Modbus':0,'Silence':1}.get(value,0)}} | to_json }}", "[\"Exception Modbus\",\"Silence\"]", "mdi:tune", "config"},
 };
 constexpr HANumberEntry kModbusHaNumbers[] = {
-    {"modbustcp", "modbus_tcp_502_device_id", "Modbus 502 Equipement RS485", "cfg/modbustcp/502", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'modbustcp502': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_502_baud", "Modbus 502 Baud RS485", "cfg/modbustcp/502", "{{ value_json.baud | int }}", "cfg/set", "{{ {'modbustcp502': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_502_timeout_ms", "Modbus 502 Timeout Modbus (ms)", "cfg/modbustcp/502", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'modbustcp502': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_503_device_id", "Modbus 503 Equipement RS485", "cfg/modbustcp/503", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'modbustcp503': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_503_baud", "Modbus 503 Baud RS485", "cfg/modbustcp/503", "{{ value_json.baud | int }}", "cfg/set", "{{ {'modbustcp503': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_503_timeout_ms", "Modbus 503 Timeout Modbus (ms)", "cfg/modbustcp/503", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'modbustcp503': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_504_device_id", "Modbus 504 Equipement RS485", "cfg/modbustcp/504", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'modbustcp504': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_504_baud", "Modbus 504 Baud RS485", "cfg/modbustcp/504", "{{ value_json.baud | int }}", "cfg/set", "{{ {'modbustcp504': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
-    {"modbustcp", "modbus_tcp_504_timeout_ms", "Modbus 504 Timeout Modbus (ms)", "cfg/modbustcp/504", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'modbustcp504': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_502_device_id", "Modbus 502 Equipement RS485", "cfg/network/modbus-tcp/502", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_502_baud", "Modbus 502 Baud RS485", "cfg/network/modbus-tcp/502", "{{ value_json.baud | int }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_502_timeout_ms", "Modbus 502 Timeout Modbus (ms)", "cfg/network/modbus-tcp/502", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'network/modbus-tcp/502': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_503_device_id", "Modbus 503 Equipement RS485", "cfg/network/modbus-tcp/503", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_503_baud", "Modbus 503 Baud RS485", "cfg/network/modbus-tcp/503", "{{ value_json.baud | int }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_503_timeout_ms", "Modbus 503 Timeout Modbus (ms)", "cfg/network/modbus-tcp/503", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'network/modbus-tcp/503': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_504_device_id", "Modbus 504 Equipement RS485", "cfg/network/modbus-tcp/504", "{{ value_json.device_id | int }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'device_id': value | int}} | to_json }}", 0, (float)(POOL_DEVICE_MAX - 1U), 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_504_baud", "Modbus 504 Baud RS485", "cfg/network/modbus-tcp/504", "{{ value_json.baud | int }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'baud': value | int}} | to_json }}", 1200, 115200, 1, "box", "config", "mdi:tune", nullptr},
+    {"modbustcp", "modbus_tcp_504_timeout_ms", "Modbus 504 Timeout Modbus (ms)", "cfg/network/modbus-tcp/504", "{{ value_json.timeout_ms | int }}", "cfg/set", "{{ {'network/modbus-tcp/504': {'timeout_ms': value | int}} | to_json }}", 100, 120000, 100, "box", "config", "mdi:tune", nullptr},
 };
 } // namespace
 
@@ -65,7 +72,7 @@ MqttBuildResult ModbusTcpServerModule::buildConfigMqtt_(
         return MqttBuildResult::RetryLater;
 
     char suffix[32]{};
-    snprintf(suffix, sizeof(suffix), "cfg/modbustcp/%u",
+    snprintf(suffix, sizeof(suffix), "cfg/network/modbus-tcp/%u",
              (unsigned)ModbusTcpServer::kPorts[portIndex]);
     mqtt->formatTopic(mqtt->ctx, suffix, ctx.topic, ctx.topicCapacity);
     if (ctx.topic[0] == '\0') return MqttBuildResult::PermanentError;
@@ -372,57 +379,28 @@ ModbusTcpServer::PortConfig ModbusTcpServerModule::fromSettings_(uint8_t index) 
 
 void ModbusTcpServerModule::onConfigLoaded(ConfigStore& cfg, ServiceRegistry& services)
 {
-    for (uint8_t i = 0U; i < ModbusTcpServer::kPortCount; ++i) {
-        // Import the original (single NVS blob per port) settings only once.
-        // Write the mode key last as the migration completion marker, so
-        // interrupted migrations can be retried without losing the old blob.
-        bool migrated = false;
-        if (cfg.persistentKeyExists(kConfigKeys_[i][0], migrated) && !migrated) {
-            char oldKey[12]{};
-            snprintf(oldKey, sizeof(oldKey), "mbtcp%u", (unsigned)i);
-            StoredPort old{};
-            size_t actual = 0U;
-            if (cfg.readRuntimeBlob(oldKey, &old, sizeof(old), &actual) &&
-                actual == sizeof(old) && old.version == kConfigVersion &&
-                ModbusTcpServer::validConfig(i, old.config)) {
-                const auto& saved = old.config;
-                ConfigPort& p = portSettings_[i];
-                const uint8_t mode = !saved.enabled ? 0U :
-                    saved.serialSource == ModbusTcpServer::SerialSource::Manual ? 2U : 1U;
-                const uint16_t device = saved.deviceId;
-                const int32_t baud = (int32_t)saved.manualLine.baud;
-                const uint8_t parity = saved.manualLine.parity;
-                const uint8_t stop = saved.manualLine.stopBits;
-                const int32_t timeout = (int32_t)saved.transactionTimeoutMs;
-                const uint8_t error = saved.errorMode == ModbusTcpServer::ErrorMode::Silent ? 1U : 0U;
-                // Copy only configurations that meet all new ConfigStore bounds.
-                if (device < POOL_DEVICE_MAX && baud >= 1200 && baud <= 115200 &&
-                    parity <= 2U && (stop == 1U || stop == 2U) &&
-                    timeout >= 100 && timeout <= 120000) {
-                    const bool ok =
-                        cfg.set(p.deviceVar, device) &&
-                        cfg.set(p.baudVar, baud) &&
-                        cfg.set(p.parityVar, parity) &&
-                        cfg.set(p.stopBitsVar, stop) &&
-                        cfg.set(p.timeoutVar, timeout) &&
-                        cfg.set(p.errorVar, error);
-                    if (ok) {
-                        // Persist every field BEFORE the migration marker.
-                        // A partial or interrupted migration must be retried,
-                        // not silently treated as complete on next boot.
-                        const bool fieldsSaved =
-                            cfg.persistRegisteredValue(&p.deviceId) &&
-                            cfg.persistRegisteredValue(&p.baud) &&
-                            cfg.persistRegisteredValue(&p.parity) &&
-                            cfg.persistRegisteredValue(&p.stopBits) &&
-                            cfg.persistRegisteredValue(&p.timeoutMs) &&
-                            cfg.persistRegisteredValue(&p.errorMode);
-                        if (fieldsSaved && cfg.set(p.modeVar, mode))
-                            (void)cfg.persistRegisteredValue(&p.mode);
-                    }
-                }
+    // Intentional one-time reset: the user approved discarding ONLY the
+    // old Modbus TCP settings. The new n502/n503/n504 NVS keys are never
+    // touched here; the rest of ConfigStore remains completely unchanged.
+    bool alreadyReset = false;
+    if (!cfg.persistentKeyExists(kModbusHierarchyResetMarker, alreadyReset) || !alreadyReset) {
+        bool cleaned = true;
+        for (uint8_t port = 0; port < ModbusTcpServer::kPortCount; ++port) {
+            for (const char* oldKey : kLegacyModbusKeys[port]) {
+                if (!cfg.eraseKey(oldKey)) cleaned = false;
             }
+            char oldBlobKey[12]{};
+            snprintf(oldBlobKey, sizeof(oldBlobKey), "mbtcp%u", (unsigned)port);
+            if (!cfg.eraseKey(oldBlobKey)) cleaned = false;
         }
+        if (cleaned) {
+            const uint8_t resetVersion = 2U;
+            (void)cfg.writeRuntimeBlob(kModbusHierarchyResetMarker,
+                                       &resetVersion, sizeof(resetVersion));
+        }
+    }
+
+    for (uint8_t i = 0U; i < ModbusTcpServer::kPortCount; ++i) {
         const auto config = fromSettings_(i);
         if (ModbusTcpServer::validConfig(i, config)) (void)configurePort(i, config);
     }

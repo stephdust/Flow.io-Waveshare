@@ -14149,7 +14149,7 @@
     }
 
     function configEnumOptionsForField(moduleName, key, doc) {
-      if (/^modbustcp50[234]$/.test(String(moduleName || '').toLowerCase()) &&
+      if (/^network\/modbus-tcp\/(?:502|503|504)$/.test(String(moduleName || '').toLowerCase()) &&
           key === 'device_id' && Array.isArray(modbusDeviceOptions) &&
           modbusDeviceOptions.length > 0) return modbusDeviceOptions;
       const options = (doc && Array.isArray(doc._enumOptions)) ? doc._enumOptions : null;
@@ -15261,7 +15261,7 @@
       const keys = Object.keys(data).sort();
       // Put the RS485 mode first; when set to "Aucun" the remainder of
       // the fields are hidden, making a disabled port a compact single row.
-      if (/^modbustcp50[234]$/.test(String(moduleName || '').toLowerCase())) {
+      if (/^network\/modbus-tcp\/(?:502|503|504)$/.test(String(moduleName || '').toLowerCase())) {
         const order = ['mode', 'device_id', 'baud', 'parity',
           'stop_bits', 'timeout_ms', 'error_mode'];
         keys.sort((left, right) => {
@@ -15847,7 +15847,7 @@
           throw new Error('lecture module impossible');
         }
         await ensureCfgDocsForModule(m);
-        if (/^modbustcp50[234]$/.test(m.toLowerCase())) {
+        if (/^network\/modbus-tcp\/(?:502|503|504)$/.test(m.toLowerCase())) {
           await ensureModbusDeviceOptions();
         }
         if (m.startsWith('tft/s3/sensors/slot')) {

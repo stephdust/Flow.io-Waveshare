@@ -5,13 +5,13 @@
     "version": 1
   },
   "docs": {
-    "modbustcp502/mode": {
+    "network/modbus-tcp/502/mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.mode.label",
       "help_t": "cfgdocs.modbus.mode.help",
       "enum_set": "modbus_tcp_mode"
     },
-    "modbustcp502/device_id": {
+    "network/modbus-tcp/502/device_id": {
       "type": "UInt16",
       "label_t": "cfgdocs.modbus.device.label",
       "help_t": "cfgdocs.modbus.device.help",
@@ -22,7 +22,7 @@
         "equals": 1
       }
     },
-    "modbustcp502/baud": {
+    "network/modbus-tcp/502/baud": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.baud.label",
       "minimum": 1200,
@@ -32,7 +32,7 @@
         "equals": 2
       }
     },
-    "modbustcp502/parity": {
+    "network/modbus-tcp/502/parity": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.parity.label",
       "enum_set": "modbus_tcp_parity",
@@ -41,7 +41,7 @@
         "equals": 2
       }
     },
-    "modbustcp502/stop_bits": {
+    "network/modbus-tcp/502/stop_bits": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.stop.label",
       "enum_set": "modbus_tcp_stop",
@@ -50,7 +50,7 @@
         "equals": 2
       }
     },
-    "modbustcp502/timeout_ms": {
+    "network/modbus-tcp/502/timeout_ms": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.timeout.label",
       "help_t": "cfgdocs.modbus.timeout.help",
@@ -62,7 +62,7 @@
         "not_equals": 0
       }
     },
-    "modbustcp502/error_mode": {
+    "network/modbus-tcp/502/error_mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.error.label",
       "help_t": "cfgdocs.modbus.error.help",
@@ -72,13 +72,13 @@
         "not_equals": 0
       }
     },
-    "modbustcp503/mode": {
+    "network/modbus-tcp/503/mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.mode.label",
       "help_t": "cfgdocs.modbus.mode.help",
       "enum_set": "modbus_tcp_mode"
     },
-    "modbustcp503/device_id": {
+    "network/modbus-tcp/503/device_id": {
       "type": "UInt16",
       "label_t": "cfgdocs.modbus.device.label",
       "help_t": "cfgdocs.modbus.device.help",
@@ -89,7 +89,7 @@
         "equals": 1
       }
     },
-    "modbustcp503/baud": {
+    "network/modbus-tcp/503/baud": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.baud.label",
       "minimum": 1200,
@@ -99,7 +99,7 @@
         "equals": 2
       }
     },
-    "modbustcp503/parity": {
+    "network/modbus-tcp/503/parity": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.parity.label",
       "enum_set": "modbus_tcp_parity",
@@ -108,7 +108,7 @@
         "equals": 2
       }
     },
-    "modbustcp503/stop_bits": {
+    "network/modbus-tcp/503/stop_bits": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.stop.label",
       "enum_set": "modbus_tcp_stop",
@@ -117,7 +117,7 @@
         "equals": 2
       }
     },
-    "modbustcp503/timeout_ms": {
+    "network/modbus-tcp/503/timeout_ms": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.timeout.label",
       "help_t": "cfgdocs.modbus.timeout.help",
@@ -129,7 +129,7 @@
         "not_equals": 0
       }
     },
-    "modbustcp503/error_mode": {
+    "network/modbus-tcp/503/error_mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.error.label",
       "help_t": "cfgdocs.modbus.error.help",
@@ -139,13 +139,13 @@
         "not_equals": 0
       }
     },
-    "modbustcp504/mode": {
+    "network/modbus-tcp/504/mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.mode.label",
       "help_t": "cfgdocs.modbus.mode.help",
       "enum_set": "modbus_tcp_mode"
     },
-    "modbustcp504/device_id": {
+    "network/modbus-tcp/504/device_id": {
       "type": "UInt16",
       "label_t": "cfgdocs.modbus.device.label",
       "help_t": "cfgdocs.modbus.device.help",
@@ -156,7 +156,7 @@
         "equals": 1
       }
     },
-    "modbustcp504/baud": {
+    "network/modbus-tcp/504/baud": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.baud.label",
       "minimum": 1200,
@@ -166,7 +166,7 @@
         "equals": 2
       }
     },
-    "modbustcp504/parity": {
+    "network/modbus-tcp/504/parity": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.parity.label",
       "enum_set": "modbus_tcp_parity",
@@ -175,7 +175,7 @@
         "equals": 2
       }
     },
-    "modbustcp504/stop_bits": {
+    "network/modbus-tcp/504/stop_bits": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.stop.label",
       "enum_set": "modbus_tcp_stop",
@@ -184,7 +184,7 @@
         "equals": 2
       }
     },
-    "modbustcp504/timeout_ms": {
+    "network/modbus-tcp/504/timeout_ms": {
       "type": "Int32",
       "label_t": "cfgdocs.modbus.timeout.label",
       "help_t": "cfgdocs.modbus.timeout.help",
@@ -196,7 +196,7 @@
         "not_equals": 0
       }
     },
-    "modbustcp504/error_mode": {
+    "network/modbus-tcp/504/error_mode": {
       "type": "UInt8",
       "label_t": "cfgdocs.modbus.error.label",
       "help_t": "cfgdocs.modbus.error.help",

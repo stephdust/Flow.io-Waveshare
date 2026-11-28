@@ -4,6 +4,7 @@
  */
 
 #include "Modules/HMIModule/ConfigMenuModel.h"
+#include "Modules/HMIModule/ConfigMenuPaths.h"
 #include "Domain/Pool/PoolDomain.h"
 
 #include "Core/BufferUsageTracker.h"
@@ -373,7 +374,7 @@ bool ConfigMenuModel::enterRow(uint8_t rowOnPage)
 
     const uint8_t idx = (uint8_t)((uint16_t)pageIndex_ * RowsPerPage + rowOnPage);
 
-    char fullPath[28]{};
+    char fullPath[PathCapacity]{};
     char label[28]{};
     bool hasChildren = false;
     bool hasModule = false;
@@ -404,7 +405,7 @@ bool ConfigMenuModel::editRow(uint8_t rowOnPage)
 
     const uint8_t idx = (uint8_t)((uint16_t)pageIndex_ * RowsPerPage + rowOnPage);
 
-    char fullPath[28]{};
+    char fullPath[PathCapacity]{};
     char label[28]{};
     bool hasChildren = false;
     bool hasModule = false;
@@ -461,30 +462,44 @@ uint8_t ConfigMenuModel::currentRowCount_() const
     return moduleRowCount_(currentModule_);
 }
 
-uint8_t ConfigMenuModel::branchRowCount_(const char* branch) const
+uint8_t ConfigMenuModel::collectBranchPaths_(const char* branch, BranchPath* paths) const
 {
-    // Keep the full-store enumeration off the HMI task stack.
+    if (!paths) return 0U;
+    // Keep both the module list and deduplicated display branches in heap,
+    // never on the HMI task stack (some installations have hundreds of vars).
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
     const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
-
-    uint8_t count = 0;
-    char lastFullPath[28]{};
+    uint8_t count = 0U;
     for (size_t i = 0; i < moduleCount; ++i) {
-        char child[28]{};
-        char fullPath[28]{};
-        if (!immediateChildForBranch_(modules[i],
-                                      branch,
-                                      child,
-                                      sizeof(child),
-                                      fullPath,
-                                      sizeof(fullPath))) {
-            continue;
+        char display[PathCapacity]{};
+        if (!HmiConfigPaths::toDisplay(modules[i], display, sizeof(display))) continue;
+        char child[PathCapacity]{};
+        char full[PathCapacity]{};
+        if (!immediateChildForBranch_(display, branch, child, sizeof(child),
+                                      full, sizeof(full))) continue;
+        bool duplicate = false;
+        for (uint8_t j = 0; j < count; ++j) {
+            if (strcmp(paths[j].path, full) == 0) {
+                duplicate = true;
+                break;
+            }
         }
-        if (lastFullPath[0] != '\0' && strcmp(lastFullPath, fullPath) == 0) continue;
-        copyStr_(lastFullPath, sizeof(lastFullPath), fullPath);
-        if (count < MaxRows) ++count;
+        if (duplicate) continue;
+        if (count >= MaxRows) break;
+        copyStr_(paths[count].path, sizeof(paths[count].path), full);
+        ++count;
     }
+    std::sort(paths, paths + count,
+              [](const BranchPath& a, const BranchPath& b) {
+                  return strcmp(a.path, b.path) < 0;
+              });
     return count;
+}
+
+uint8_t ConfigMenuModel::branchRowCount_(const char* branch) const
+{
+    std::unique_ptr<BranchPath[]> paths(new (std::nothrow) BranchPath[MaxRows]{});
+    return paths ? collectBranchPaths_(branch, paths.get()) : 0U;
 }
 
 uint8_t ConfigMenuModel::moduleRowCount_(const char* module) const
@@ -496,8 +511,13 @@ uint8_t ConfigMenuModel::moduleRowCount_(const char* module) const
     jsonBuf[0] = '\0';
 
     bool truncated = false;
+    char store[PathCapacity]{};
+    if (!HmiConfigPaths::toStore(module, store, sizeof(store))) {
+        free(jsonBuf);
+        return 0;
+    }
     const bool ok = cfgSvc_->toJsonModule(cfgSvc_->ctx,
-                                          module,
+                                          store,
                                           jsonBuf,
                                           Limits::Mqtt::Buffers::StateCfg,
                                           &truncated);
@@ -516,7 +536,7 @@ uint8_t ConfigMenuModel::moduleRowCount_(const char* module) const
     for (JsonPairConst kv : obj) {
         if (count >= MaxRows) break;
         Row row{};
-        if (fillRowFromJson_(module, kv.key().c_str(), kv.value(), row)) {
+        if (fillRowFromJson_(store, kv.key().c_str(), kv.value(), row)) {
             ++count;
         }
     }
@@ -533,47 +553,25 @@ bool ConfigMenuModel::branchRowAt_(const char* branch,
                                    bool& hasModule,
                                    bool& hasAttributes) const
 {
-    if (!fullPath || fullPathLen == 0 || !label || labelLen == 0) return false;
+    if (!fullPath || fullPathLen == 0U || !label || labelLen == 0U) return false;
     fullPath[0] = '\0';
     label[0] = '\0';
     hasChildren = false;
     hasModule = false;
     hasAttributes = false;
 
-    // Keep the full-store enumeration off the HMI task stack.
-    std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
-    const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
-
-    uint8_t current = 0;
-    char lastFullPath[28]{};
-    for (size_t i = 0; i < moduleCount; ++i) {
-        char child[28]{};
-        char path[28]{};
-        if (!immediateChildForBranch_(modules[i],
-                                      branch,
-                                      child,
-                                      sizeof(child),
-                                      path,
-                                      sizeof(path))) {
-            continue;
-        }
-        if (lastFullPath[0] != '\0' && strcmp(lastFullPath, path) == 0) continue;
-        copyStr_(lastFullPath, sizeof(lastFullPath), path);
-        if (current != index) {
-            if (current < MaxRows) ++current;
-            continue;
-        }
-
-        copyStr_(fullPath, fullPathLen, path);
-        if (!decorateBranchLabel_(path, child, label, labelLen)) {
-            copyStr_(label, labelLen, child);
-        }
-        hasModule = moduleExists_(path);
-        hasChildren = moduleHasChildren_(path);
-        hasAttributes = hasModule && moduleRowCount_(path) > 0;
-        return fullPath[0] != '\0' && label[0] != '\0';
-    }
-    return false;
+    std::unique_ptr<BranchPath[]> paths(new (std::nothrow) BranchPath[MaxRows]{});
+    if (!paths || index >= collectBranchPaths_(branch, paths.get())) return false;
+    const char* selected = paths[index].path;
+    if (!HmiConfigPaths::copyPath(selected, fullPath, fullPathLen)) return false;
+    const char* slash = strrchr(selected, '/');
+    const char* child = slash ? slash + 1U : selected;
+    if (!decorateBranchLabel_(selected, child, label, labelLen))
+        copyStr_(label, labelLen, child);
+    hasModule = moduleExists_(selected);
+    hasChildren = moduleHasChildren_(selected);
+    hasAttributes = hasModule && moduleRowCount_(selected) > 0U;
+    return label[0] != '\0';
 }
 
 bool ConfigMenuModel::decorateBranchLabel_(const char* fullPath,
@@ -588,6 +586,15 @@ bool ConfigMenuModel::decorateBranchLabel_(const char* fullPath,
     const char* ref = slash ? (slash + 1) : child;
     if (!ref || ref[0] == '\0') ref = child;
     if (!ref || ref[0] == '\0') return false;
+
+    // Match the Web ConfigStore tree: show Port 502/503/504 rather than
+    // anonymous numeric leaves, keeping the real key untouched.
+    if (strncmp(fullPath, "network/modbus-tcp/", 19U) == 0 &&
+        (strcmp(ref, "502") == 0 || strcmp(ref, "503") == 0 ||
+         strcmp(ref, "504") == 0)) {
+        const int n = snprintf(out, outLen, "Port %s", ref);
+        return n > 0 && (size_t)n < outLen;
+    }
 
     char textName[40]{};
     bool hasName = false;
@@ -630,8 +637,13 @@ bool ConfigMenuModel::readModuleNameField_(const char* modulePath,
     jsonBuf[0] = '\0';
 
     bool truncated = false;
+    char store[PathCapacity]{};
+    if (!HmiConfigPaths::toStore(modulePath, store, sizeof(store))) {
+        free(jsonBuf);
+        return false;
+    }
     const bool ok = cfgSvc_->toJsonModule(cfgSvc_->ctx,
-                                          modulePath,
+                                          store,
                                           jsonBuf,
                                           Limits::Mqtt::Buffers::StateCfg,
                                           &truncated);
@@ -677,11 +689,12 @@ const char* ConfigMenuModel::poolDeviceDisplayNameByRef_(const char* ref) const
 bool ConfigMenuModel::moduleExists_(const char* module) const
 {
     if (!module || module[0] == '\0') return false;
-    // Keep the full-store enumeration off the HMI task stack.
+    char store[PathCapacity]{};
+    if (!HmiConfigPaths::toStore(module, store, sizeof(store))) return false;
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
     const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
     for (size_t i = 0; i < moduleCount; ++i) {
-        if (strcmp(modules[i], module) == 0) return true;
+        if (strcmp(modules[i], store) == 0) return true;
     }
     return false;
 }
@@ -689,11 +702,12 @@ bool ConfigMenuModel::moduleExists_(const char* module) const
 bool ConfigMenuModel::moduleHasChildren_(const char* module) const
 {
     if (!module || module[0] == '\0') return false;
-    // Keep the full-store enumeration off the HMI task stack.
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
     const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
     for (size_t i = 0; i < moduleCount; ++i) {
-        if (startsWithBranch_(modules[i], module)) return true;
+        char display[PathCapacity]{};
+        if (!HmiConfigPaths::toDisplay(modules[i], display, sizeof(display))) continue;
+        if (startsWithBranch_(display, module)) return true;
     }
     return false;
 }
@@ -708,8 +722,13 @@ bool ConfigMenuModel::configRowAt_(const char* module, uint8_t index, Row& out) 
     jsonBuf[0] = '\0';
 
     bool truncated = false;
+    char store[PathCapacity]{};
+    if (!HmiConfigPaths::toStore(module, store, sizeof(store))) {
+        free(jsonBuf);
+        return false;
+    }
     const bool ok = cfgSvc_->toJsonModule(cfgSvc_->ctx,
-                                          module,
+                                          store,
                                           jsonBuf,
                                           Limits::Mqtt::Buffers::StateCfg,
                                           &truncated);
@@ -728,7 +747,7 @@ bool ConfigMenuModel::configRowAt_(const char* module, uint8_t index, Row& out) 
     for (JsonPairConst kv : obj) {
         if (current >= MaxRows) break;
         Row row{};
-        if (!fillRowFromJson_(module, kv.key().c_str(), kv.value(), row)) continue;
+        if (!fillRowFromJson_(store, kv.key().c_str(), kv.value(), row)) continue;
         if (current == index) {
             out = row;
             return true;
@@ -910,7 +929,7 @@ void ConfigMenuModel::buildHomeView_(ConfigMenuView& out) const
         const uint8_t idx = (uint8_t)(first + i);
         if (idx >= count) break;
 
-        char fullPath[28]{};
+        char fullPath[PathCapacity]{};
         char label[28]{};
         bool hasChildren = false;
         bool hasModule = false;
@@ -953,8 +972,13 @@ void ConfigMenuModel::buildModuleView_(ConfigMenuView& out) const
     jsonBuf[0] = '\0';
 
     bool truncated = false;
+    char store[PathCapacity]{};
+    if (!HmiConfigPaths::toStore(currentModule_, store, sizeof(store))) {
+        free(jsonBuf);
+        return ;
+    }
     const bool ok = cfgSvc_->toJsonModule(cfgSvc_->ctx,
-                                          currentModule_,
+                                          store,
                                           jsonBuf,
                                           Limits::Mqtt::Buffers::StateCfg,
                                           &truncated);
@@ -976,7 +1000,7 @@ void ConfigMenuModel::buildModuleView_(ConfigMenuView& out) const
         if (total >= MaxRows) break;
 
         Row row{};
-        if (!fillRowFromJson_(currentModule_, kv.key().c_str(), kv.value(), row)) continue;
+        if (!fillRowFromJson_(store, kv.key().c_str(), kv.value(), row)) continue;
 
         if (total >= first && visible < RowsPerPage) {
             ConfigMenuRowView& vr = out.rows[visible];

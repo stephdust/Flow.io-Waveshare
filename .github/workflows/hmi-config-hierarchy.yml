@@ -1,0 +1,39 @@
+name: Verify HMI ConfigStore tree and ESP32 firmware (all Nextion sizes)
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/hmi-config-hierarchy.yml'
+      - 'scripts/tests/test_hmi_config_hierarchy.py'
+      - 'src/Modules/HMIModule/ConfigMenuPaths.h'
+      - 'src/Modules/HMIModule/ConfigMenuModel.cpp'
+      - 'src/Modules/HMIModule/ConfigMenuModel.h'
+      - 'src/Modules/Network/ModbusTcpServerModule/ModbusTcpServerModule.cpp'
+      - 'src/Modules/Network/ModbusTcpServerModule/ModbusTcpServerModule.h'
+      - 'src/Modules/Network/ModbusTcpServerModule/text/cfgdocs.fr.json'
+      - 'src/Modules/Network/WifiModule/text/cfgmods.fr.json'
+      - 'src/Modules/**/text/cfgmods.fr.json'
+      - 'data/webinterface/app.js'
+      - 'platformio.ini'
+permissions:
+  contents: read
+
+jobs:
+  verify-config-hierarchy:
+    if: github.repository == 'stephdust/Flow.io-Waveshare'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate every Web tree alias and MQTT/HA contracts in native C++
+        run: python scripts/tests/test_hmi_config_hierarchy.py
+      - name: Install PlatformIO with pinned firmware environment
+        run: python -m pip install 'platformio>=6.2,<7'
+      - name: Compile real Flow.io ESP32-S3 firmware
+        run: pio run -e Flowio-waveshare-esp32-s3
+      - name: Confirm compiled firmware exists
+        run: test -s .pio/build/Flowio-waveshare-esp32-s3/firmware.bin

@@ -56,7 +56,7 @@ struct ConfigMenuRowView {
     bool canEdit = false;
     ConfigMenuWidget widget = ConfigMenuWidget::Text;
     uint8_t editType = 0; // 0=text, 1=int, 2=float, 3=bool
-    char key[28]{};
+    char key[64]{};
     char label[28]{};
     char value[40]{};
 };
@@ -79,7 +79,7 @@ struct ConfigMenuView {
 class ConfigMenuModel {
 public:
     static constexpr uint8_t RowsPerPage = 6;
-    static constexpr uint8_t MaxRows = 24;
+    static constexpr uint8_t MaxRows = 64; // supports the 32 analog inputs on a paged view
     static constexpr size_t MaxModules = Limits::Config::Capacity::ModuleListMax;
 
     bool begin(const ConfigStoreService* cfgSvc);
@@ -146,12 +146,15 @@ private:
     uint8_t pageIndex_ = 0;
     uint8_t editReturnPageIndex_ = 0;
 
-    char currentModule_[28]{};
-    char previousModule_[28]{};
+    static constexpr size_t PathCapacity = 64;
+    struct BranchPath { char path[PathCapacity]{}; };
+    char currentModule_[PathCapacity]{};
+    char previousModule_[PathCapacity]{};
 
     size_t listSortedModules_(const char** modules, size_t max) const;
     uint8_t currentRowCount_() const;
     uint8_t branchRowCount_(const char* branch) const;
+    uint8_t collectBranchPaths_(const char* branch, BranchPath* paths) const;
     uint8_t moduleRowCount_(const char* module) const;
     bool branchRowAt_(const char* branch,
                       uint8_t index,

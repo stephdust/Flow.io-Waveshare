@@ -280,18 +280,15 @@ private:
     void logWebSnapshot_(uint32_t now, bool stationConnected, bool otaBusy);
     // Each TCP port is one native ConfigStore module. Keys remain under the
     // 15-character NVS limit; the old mbtcp0..2 blobs are migration-only.
-    static constexpr uint32_t kConfigVersion = 1U;
+    // Store module names now match the Web/Nextion physical tree.
+    // The persistent keys are deliberately new (no old port settings imported).
     static constexpr const char* kConfigModules_[3] = {
-        "modbustcp502", "modbustcp503", "modbustcp504"
+        "network/modbus-tcp/502", "network/modbus-tcp/503", "network/modbus-tcp/504"
     };
     static constexpr const char* kConfigKeys_[3][7] = {
-        {"mt0mode","mt0dev","mt0baud","mt0par","mt0stop","mt0tmo","mt0err"},
-        {"mt1mode","mt1dev","mt1baud","mt1par","mt1stop","mt1tmo","mt1err"},
-        {"mt2mode","mt2dev","mt2baud","mt2par","mt2stop","mt2tmo","mt2err"}
-    };
-    struct StoredPort {
-        uint32_t version = 0U;
-        ModbusTcpServer::PortConfig config{};
+        {"n502mode","n502dev","n502baud","n502par","n502stop","n502tmo","n502err"},
+        {"n503mode","n503dev","n503baud","n503par","n503stop","n503tmo","n503err"},
+        {"n504mode","n504dev","n504baud","n504par","n504stop","n504tmo","n504err"}
     };
     struct ConfigPort {
         uint8_t mode = 0; // 0=None; 1=Flow.io equipment; 2=manual RTU
