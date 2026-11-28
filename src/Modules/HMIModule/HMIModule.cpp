@@ -126,6 +126,8 @@ static constexpr uint16_t kLocalNextionRtcReadTimeoutMs = 180U;
 static constexpr uint16_t kRemoteNextionRtcReadTimeoutMs = 200U;
 static constexpr const char* kNextionDisplayVersionExpected = TFT_FIRMW;
 static constexpr const char* kNextionLegacyV2DisplayVersion = "2.0.0";
+// Nextion 5/7-inch screens and remote-display installations may still run 6.0.0.
+static constexpr const char* kNextionLegacyV6DisplayVersion = "6.0.0";
 static constexpr uint8_t kNextionHomePagePrimary = 0U;
 static constexpr uint8_t kNextionHomePageAlias = 1U;
 static constexpr uint8_t kNextionConfigPagePrimary = 10U;
@@ -162,6 +164,7 @@ static bool isSupportedNextionDisplayVersion_(const char* version)
 {
     return version &&
            (strcmp(version, kNextionDisplayVersionExpected) == 0 ||
+            strcmp(version, kNextionLegacyV6DisplayVersion) == 0 ||
             strcmp(version, kNextionLegacyV2DisplayVersion) == 0);
 }
 
@@ -1392,9 +1395,10 @@ bool HMIModule::validateDriverDisplayVersion_(bool requireDetection)
          driver_->driverId());
 
     if (!isSupportedNextionDisplayVersion_(nextionVersion_)) {
-        LOGW("Ecran Nextion version %s non supportee (supportees %s et %s). Affichage Nextion desactive.",
+        LOGW("Ecran Nextion version %s non supportee (supportees %s, %s et %s). Affichage Nextion desactive.",
              nextionVersion_,
              kNextionDisplayVersionExpected,
+             kNextionLegacyV6DisplayVersion,
              kNextionLegacyV2DisplayVersion);
         displayDisabledByVersion_ = true;
         applyOutputConfig_();

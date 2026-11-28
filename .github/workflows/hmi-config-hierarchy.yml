@@ -6,6 +6,11 @@ on:
     paths:
       - '.github/workflows/hmi-config-hierarchy.yml'
       - 'scripts/tests/test_hmi_config_hierarchy.py'
+      - 'scripts/tests/test_hmi_udp_remote_compat.py'
+      - 'scripts/tests/apply_remote_display_menu_patch.py'
+      - 'src/Core/Hmi/HmiUdpConfigTitle.h'
+      - 'src/Modules/Network/HmiUdpServerModule/HmiUdpServerModule.cpp'
+      - 'src/Modules/HMIModule/HMIModule.cpp'
       - 'scripts/generate_hmi_config_paths.py'
       - 'scripts/prepare_spiffs_data.py'
       - 'src/Modules/HMIModule/ConfigMenuPaths.h'
@@ -25,7 +30,7 @@ jobs:
   verify-config-hierarchy:
     if: github.repository == 'stephdust/Flow.io-Waveshare'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,3 +44,21 @@ jobs:
         run: pio run -e Flowio-waveshare-esp32-s3
       - name: Confirm compiled firmware exists
         run: test -s .pio/build/Flowio-waveshare-esp32-s3/firmware.bin
+      - name: Checkout the real RemoteDisplay repository (without writing to it)
+        uses: actions/checkout@v4
+        with:
+          repository: stephdust/Flow.io-RemoteDisplay
+          ref: main
+          path: remote-display
+          persist-credentials: false
+      - name: Assert UDP protocol and native C++ title formatting match both firmwares
+        run: python scripts/tests/test_hmi_udp_remote_compat.py --remote-root remote-display
+      - name: Apply proposed compatibility patch to temporary RemoteDisplay checkout
+        run: python scripts/tests/apply_remote_display_menu_patch.py --remote-root remote-display --apply
+      - name: Verify the patched Nextion 6.0.0/7.0.0 UART renderer and context events
+        run: python scripts/tests/test_hmi_udp_remote_compat.py --remote-root remote-display --patched
+      - name: Compile real FlowConnectDisplay ESP32 firmware (temporary checkout)
+        working-directory: remote-display
+        run: pio run -e FlowConnectDisplay
+      - name: Confirm compiled remote-display firmware exists
+        run: test -s remote-display/.pio/build/FlowConnectDisplay/firmware.bin

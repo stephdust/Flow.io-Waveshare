@@ -37,3 +37,28 @@ La limite reste 64 entrées par niveau, paginées par six. Le même `ConfigMenuM
 ## Validation obligatoire
 
 Le contrôle `python scripts/tests/test_hmi_config_hierarchy.py` génère d'abord le JSON Web pour le profil Waveshare, puis le même tableau C++ que la compilation. Il compile le convertisseur C++ natif et compare **tous les alias et tous les enfants virtuels** au JSON Web effectivement utilisé. Il vérifie aussi qu'un ajout synthétique dans les métadonnées apparaît sans retouche C++, les chemins Modbus, les nouveaux topics MQTT, les commandes HA et l'absence des anciens modules. GitHub Actions compile ensuite le firmware ESP32-S3 réel. Tester sur matériel : root network, network/modbus-tcp, ports 502/503/504, édition, Back/Home, navigation à 32 entrées analogiques, HA et MQTT.
+
+
+## Transport du Nextion : UART local et UDP distant
+
+Les deux transports utilisent **exactement le même `ConfigMenuView`**, produit par `ConfigMenuModel` **dans Flow.io**. La liste unique `cfg_tree_aliases` / `cfg_tree_virtual_branches` n'est jamais recopiée dans `Flow.io-RemoteDisplay`.
+
+- **UART local :** Flow.io construit le menu puis le rend directement par `NextionDriver`.
+- **UDP :** Flow.io construit le même menu puis `RemoteHmiUdpDriver` envoie un `ConfigViewSnapshot` fiable au `FlowConnectDisplayUdpClientModule`, qui rend les six lignes en UART local. Le remote n'effectue **aucune recherche ConfigStore**. Ses événements `RowActivate`, `RowEdit`, `Back`, `NextPage`, `Validate` et `RowSetText` reviennent à Flow.io avec `contextRef`.
+- **Protocole UDP :** version **7** conservée. Le titre reste limité à 24 octets, mais Flow.io le compacte en chemin avec `/` en privilégiant la partie utile à droite (ex. `network/modbus-tcp/502`). Il s'agit uniquement d'un libellé, **pas d'un chemin utilisé pour les commandes**. Les lignes, flags, séquences, ACK et contextes ne changent pas.
+- **Compatibilité TFT :** le Nextion 7.0.0 (design 3D 3,5″) et les TFT 6.0.0 (5″/7″ existants) sont acceptés par Flow.io ; 2.0.0 reste historiquement accepté. Sur la version 7.0.0 du RemoteDisplay, les boutons Home, Back, Prev, Next et Valid restent visibles, même désactivés (touch `tsw=0`). Le TFT 6.0.0 conserve son rendu d'origine.
+
+### Vérification croisée des deux dépôts
+
+Le test `python scripts/tests/test_hmi_udp_remote_compat.py --remote-root /chemin/Flow.io-RemoteDisplay` vérifie le contrat entre les deux dépôts et compile l'algorithme de titre en C++ natif. La CI extrait le vrai dépôt RemoteDisplay en lecture seule, vérifie les sources du protocole, applique en **copie temporaire** `python scripts/tests/apply_remote_display_menu_patch.py --remote-root remote-display --apply`, puis compile **les deux firmwares ESP32**. Ne jamais supposer que le code modifié dans la copie CI a été publié dans RemoteDisplay.
+
+Pour intégrer le correctif dans le vrai dépôt distant (après autorisation GitHub en écriture), créer une branche RemoteDisplay, appliquer le script avec `--apply`, vérifier `pio run -e FlowConnectDisplay` et ouvrir une PR vers `main`. Les fichiers TFT ne changent pas automatiquement ; installer la version adaptée physiquement sur le Nextion.
+
+### Matrice d'essais matériels
+
+Vérifier sur UART direct **et** UDP :
+- navigation `config > network > modbus-tcp > Port 502`, puis édition, validation et retour ;
+- `io/input/analog` avec pagination, `hmi/tft` et dossiers virtuels déclarés ;
+- retour du clavier sur la **même page** avec `contextRef`, sans perte du formulaire ;
+- visibilité des boutons 3D désactivés sur 7.0.0 et fonctionnement normal des TFT 6.0.0 ;
+- déconnexion UDP, reconnexion et réémission du snapshot sans événement exécuté deux fois.

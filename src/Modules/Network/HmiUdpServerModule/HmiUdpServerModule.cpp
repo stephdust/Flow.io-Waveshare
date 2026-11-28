@@ -1,4 +1,5 @@
 #include "Modules/Network/HmiUdpServerModule/HmiUdpServerModule.h"
+#include "Core/Hmi/HmiUdpConfigTitle.h"
 
 #include <string.h>
 #include <WiFi.h>
@@ -161,7 +162,7 @@ bool HmiUdpServerModule::sendConfigStart(const ConfigMenuView& view)
     if (view.canBack) payload.flags |= HMI_UDP_CONFIG_VIEW_CAN_BACK;
     if (view.canValidate) payload.flags |= HMI_UDP_CONFIG_VIEW_CAN_VALIDATE;
     if (view.isHome) payload.flags |= HMI_UDP_CONFIG_VIEW_IS_HOME;
-    copyText_(payload.title, sizeof(payload.title), view.breadcrumb);
+    HmiUdpConfigTitle::format(payload.title, sizeof(payload.title), view.breadcrumb);
     return enqueueReliable_(HmiUdpMsgType::ConfigStart, &payload, sizeof(payload));
 }
 
@@ -194,7 +195,7 @@ bool HmiUdpServerModule::sendConfigViewSnapshot(const ConfigMenuView& view)
     if (view.canBack) payload.flags |= HMI_UDP_CONFIG_VIEW_CAN_BACK;
     if (view.canValidate) payload.flags |= HMI_UDP_CONFIG_VIEW_CAN_VALIDATE;
     if (view.isHome) payload.flags |= HMI_UDP_CONFIG_VIEW_IS_HOME;
-    copyText_(payload.title, sizeof(payload.title), view.breadcrumb);
+    HmiUdpConfigTitle::format(payload.title, sizeof(payload.title), view.breadcrumb);
     for (uint8_t i = 0; i < HMI_UDP_CONFIG_SNAPSHOT_ROWS; ++i) {
         fillConfigRowPayload_(payload.rows[i], i, view.rows[i], view.mode);
     }
