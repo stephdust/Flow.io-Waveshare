@@ -23,7 +23,9 @@ assert page["page"]["pic"]=="picture-0042"
 assert image.getpixel((0,0))==(4,18,37)
 sizes={42:(480,320),43:(185,30),44:(185,30),45:(41,34),46:(41,34)}
 for n in range(47,59):
-    sizes[n]=(56,52) if n in (47,48) else (50,50)
+    sizes[n]=((56,52) if n in (47,48,49,50) else
+              (50,52) if n in (51,52,53,54) else
+              (110,52) if n in (55,56) else (62,52))
 for number,expected in sizes.items():
     img=Image.open(args.source/"pictures"/f"picture-{number:04d}.png")
     assert img.size==expected,(number,img.size)
@@ -46,9 +48,9 @@ for i in range(6):
     assert c[f"tL{i}"]["picc"]=="picture-0042"
     assert c[f"tV{i}"]["type"]=="dual-state-button" and c[f"tV{i}"]["sta"]==2
     assert c[f"bR{i}"]["type"]=="button" and c[f"bR{i}"]["sta"]==2
-for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,50,50),
-                     ("bPrev",126,268,50,50),("bNext",250,268,50,50),
-                     ("bValid",424,268,50,50),("bReboot",362,268,50,50)):
+for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
+                     ("bPrev",120,268,50,52),("bNext",232,268,50,52),
+                     ("bValid",365,268,110,52),("bReboot",291,268,62,52)):
     o=c[name]
     assert (o["x"],o["y"],o["w"],o["h"])==(x,y,w,h)
     assert o["type"]=="button" and o["sta"]==2
@@ -67,7 +69,17 @@ assert c["tHomeCaption"]["txt"]=="" and c["tHomeCaption"]["w"]<=2
 assert c["tPath"]["sta"]==0 and c["tPath"]["picc"]=="picture-0042"
 for key in ("t0","nPage","nPages"):
     assert c[key]["sta"]==0 and c[key]["picc"]=="picture-0042"
-assert 189<=c["nPage"]["x"] and c["nPages"]["x"]+c["nPages"]["w"]<=243
+assert c["nPage"]["x"]==178 and c["nPages"]["x"]+c["nPages"]["w"]==225
+assert c["bBack"]["x"]==c["bHome"]["x"]+c["bHome"]["w"]+4
+# Every caption is IN its real bitmap; disabled buttons still have their label.
+for name in ("bHome","bBack","bPrev","bNext","bReboot","bValid"):
+    button=c[name]
+    sprite=Image.open(args.source/"pictures"/(button["pic"]+".png")).convert("RGB")
+    white=sum(1 for pixel in sprite.crop((3,36,sprite.width-3,49)).getdata()
+              if min(pixel)>210)
+    assert white>=10,(name,"missing native bitmap caption",white)
+# Native Nextion 3D images should not be obscured by text components.
+assert c["tHomeCaption"]["txt"]==""
 for key in ("tPath",)+tuple(f"tL{i}" for i in range(6))+("t0","nPage","nPages"):
     assert c[key]["sta"]==0 and c[key]["picc"]=="picture-0042", key
 assert re.search(r"(?m)^on bHome.down:\n(?:[^\n]*\n)*?  page pageHome",events)
@@ -79,7 +91,15 @@ assert re.search(r"(?m)^on bBack.up:\n  printh 23 02 51 02",events)
 assert "else if(vaEditType5.val==3)" in events
 for name in ("bPrev","bNext","bValid"):
     assert f"on {name}." in events
+# The ESP32 must leave unavailable navigation icons visible but inert.
+driver=(Path(__file__).resolve().parents[2]/
+        "src/Modules/HMIModule/Drivers/NextionDriver.cpp").read_text(encoding="utf-8")
+for name in ("bHome","bBack","bValid","bPrev","bNext"):
+    assert f'vis {name},1' in driver,name
+    assert f'tsw {name},%u' in driver,name
+
 print("PASS: pageCfgMenu original row handlers and 6x3 non-overlapping touch areas")
-print("PASS: real 3D Home/Back/Prev/Next/Valid/Reboot bitmaps match PNG")
-print("PASS: Home sprite unchanged, 62px pager, real Nextion text crop")
+print("PASS: 3D Home/Back/Prev/Next/Valid/Reboot have baked-in readable captions")
+print("PASS: Nextion PNG matches all six real footer sprites")
+print("PASS: original Home pictogram, 56px pager, real Nextion text crop")
 print("PASS: Home simple, Reboot long-press 2.5s, row5 Boolean fixed")

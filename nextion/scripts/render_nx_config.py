@@ -47,14 +47,21 @@ def shrink(im,w,h):
 def background():
     im,d=new(W,H)
     panel(d,(5,3,475,29),7,(7,35,56),(18,80,113),(17,63,90))
+    # Small cyan setting gears, behind the dynamic breadcrumb.
+    for gx,gy in ((22,16),(40,16)):
+        ellipse(d,(gx-6,gy-6,gx+6,gy+6),(86,222,252))
+        ellipse(d,(gx-2,gy-2,gx+2,gy+2),NAVY)
+        for dx,dy in ((-8,0),(8,0),(0,-8),(0,8)):
+            rr(d,(gx+dx-2,gy+dy-2,gx+dx+2,gy+dy+2),1,
+               (85,211,247))
     line(d,[(4,31),(476,31)],(22,108,148))
     for i in range(6):
         y=37+38*i
         panel(d,(5,y,475,y+34),9)
         rr(d,(8,y+8,11,y+25),2,(24,199,244))
     line(d,[(2,267),(478,267)],(25,112,151))
-    # Compact pagination frame: 62 px instead of 84.
-    panel(d,(184,279,246,308),7,(6,40,67),(31,108,153),(18,72,108))
+    # Compact pagination: 56 pixels between Prev and Next.
+    panel(d,(173,279,229,310),7,(6,40,67),(31,108,153),(18,72,108))
     return shrink(im,W,H)
 
 def field(on=False):
@@ -73,54 +80,65 @@ def chevron(on=False):
     poly(d,[(14,10),(24,17),(14,24),(19,24),(29,17),(19,10)],(205,255,255))
     return shrink(im,41,34)
 
-def nav(kind,on=False,w=50,h=50):
+def nav(kind,on=False,w=50,h=52):
+    """3D button with a small symbol AND a caption baked into its real HMI sprite.
+
+    Keep the house glyph identical to the validated Home artwork: only
+    the surrounding panel is reshaped to leave room for a legible label.
+    """
     im,d=new(w,h)
-    cx,cy=w/2,h/2
-    r=min(w,h)/2-3
-    accent=(255,100,75) if kind=="reboot" else (
-        (57,242,166) if kind=="valid" else (42,201,245))
-    rim=accent if on else (
-        (191,75,66) if kind=="reboot" else (
-        (38,196,150) if kind=="valid" else (65,123,169)))
-    ellipse(d,(cx-r+1,cy-r+3,cx+r+1,cy+r+3),(0,7,21))
-    ellipse(d,(cx-r,cy-r,cx+r,cy+r),(4,30,61),rim,2)
-    ellipse(d,(cx-r+3,cy-r+3,cx+r-3,cy+r-3),
-            (17,73,90) if on else (22,52,83))
-    d.arc(B((cx-r+6,cy-r+6,cx+r-6,cy+r-6)),
-          192,337,fill=(146,240,255),width=2*S)
+    cx,cy=w/2,18
+    accent=(65,232,128) if kind=="valid" else (
+        (251,104,101) if kind=="reboot" else (51,192,246))
+    base=(11,113,26) if kind=="valid" else (
+        (158,19,30) if kind=="reboot" else (10,73,137))
+    shine=(64,207,80) if kind=="valid" else (
+        (230,65,68) if kind=="reboot" else (29,158,225))
+    panel(d,(1,1,w-2,h-2),9,base,accent,shine)
+    if on:
+        rr(d,(3,3,w-4,h-4),7,base,(201,252,255),1)
     def L(points,color,width=3):
         line(d,[(cx+x,cy+y) for x,y in points],color,width)
     def P(points,color):
         poly(d,[(cx+x,cy+y) for x,y in points],color)
     if kind=="home":
+        # Unmodified glyph: white walls, cyan roof and dark blue door.
         P([(-13,0),(0,-13),(13,0),(10,3),(10,13),(-10,13),(-10,3)],(235,247,252))
         P([(-15,0),(0,-15),(15,0),(12,3),(0,-9),(-12,3)],(12,172,251))
         rr(d,(cx-3,cy+6,cx+3,cy+13),1,(5,74,112))
     elif kind=="back":
-        # Curved return-arrow glyph, distinct from page navigation arrows.
-        P([(-15,-2),(-2,-14),(-2,-7),(8,-7),(13,-3),(13,8),
-           (7,8),(7,0),(-2,0),(-2,8)],(228,250,255))
-        L([(-15,-2),(-2,-14)],(36,188,245),2)
+        # Curved return-arrow, unlike Prev/Next single chevrons.
+        P([(-15,-4),(-1,-16),(-1,-9),(6,-9),
+           (13,-5),(15,1),(15,9),(8,9),(8,2),
+           (4,-2),(-1,-2),(-1,5)],(239,251,255))
+        L([(-15,-4),(-1,-16)],(86,222,255),1)
     elif kind in ("prev","next"):
-        sign=-1 if kind=="prev" else 1
-        P([(sign*-8,-13),(sign*6,0),(sign*-8,13),
-           (sign*-3,13),(sign*11,0),(sign*-3,-13)],(219,249,255))
+        direction=-1 if kind=="prev" else 1
+        L([(direction*-8,-11),(direction*4,0),(direction*-8,11)],
+          (243,252,255),5)
     elif kind=="valid":
-        L([(-13,0),(-4,10),(13,-10)],(190,255,224),6)
-        L([(-12,-1),(-4,9),(12,-11)],(41,237,147),3)
+        L([(-13,-1),(-4,8),(13,-11)],(221,255,237),6)
+        L([(-12,-2),(-4,7),(12,-12)],(116,252,159),3)
     elif kind=="reboot":
-        d.arc(B((cx-13,cy-11,cx+13,cy+15)),47,315,
-              fill=(255,175,153) if on else (250,119,107),width=4*S)
-        L([(0,-17),(0,-2)],(255,235,218),4)
+        d.arc(B((cx-13,cy-12,cx+13,cy+14)),42,318,
+              fill=(255,238,238),width=4*S)
+        L([(0,-17),(0,-2)],(255,244,240),4)
     else:
         raise ValueError(kind)
+    # Label is part of the actual PNG sprite referenced by the Nextion.
+    label={"home":"Home","back":"Back","prev":"Prev",
+           "next":"Next","reboot":"Reboot","valid":"Valid"}[kind]
+    font=ImageFont.load_default(size=12*S)
+    d.text((round(cx*S),round(37*S)),label,font=font,
+           fill=(246,253,255),anchor="mt")
     return shrink(im,w,h)
+
 
 def sample_text(canvas,c,text,size=16,color=(239,248,255)):
     # Text is sample data, clipped to native component bounds like the HMI.
     x,y,w,h=[c[k] for k in ("x","y","w","h")]
     try:
-        f=ImageFont.truetype("DejaVuSans.ttf",size)
+        f=ImageFont.load_default(size=size)
     except OSError:
         f=ImageFont.load_default(size=size)
     layer=Image.new("RGBA",(w,h),(0,0,0,0))
@@ -128,7 +146,9 @@ def sample_text(canvas,c,text,size=16,color=(239,248,255)):
     box=d.textbbox((0,0),text,font=f)
     if box[2]-box[0]>w-4 or box[3]-box[1]>h-2:
         raise ValueError(f"caption overflow: {c['name']}: {text!r}")
-    d.text((5-box[0],(h-(box[3]-box[1]))/2-box[1]),text,
+    # Center numbers within the compact 1/3 capsule; other text is left aligned.
+    left=((w-(box[2]-box[0]))/2 if c.get("xcen",0)==1 else 5)-box[0]
+    d.text((left,(h-(box[3]-box[1]))/2-box[1]),text,
            font=f,fill=(*color,255))
     canvas.paste(layer,(x,y),layer)
 
@@ -143,11 +163,11 @@ def main():
         42:background,43:lambda:field(False),44:lambda:field(True),
         45:lambda:chevron(False),46:lambda:chevron(True),
         47:lambda:nav("home",False,56,52),48:lambda:nav("home",True,56,52),
-        49:lambda:nav("back",False),50:lambda:nav("back",True),
-        51:lambda:nav("prev",False),52:lambda:nav("prev",True),
-        53:lambda:nav("next",False),54:lambda:nav("next",True),
-        55:lambda:nav("valid",False),56:lambda:nav("valid",True),
-        57:lambda:nav("reboot",False),58:lambda:nav("reboot",True)}
+        49:lambda:nav("back",False,56,52),50:lambda:nav("back",True,56,52),
+        51:lambda:nav("prev",False,50,52),52:lambda:nav("prev",True,50,52),
+        53:lambda:nav("next",False,50,52),54:lambda:nav("next",True,50,52),
+        55:lambda:nav("valid",False,110,52),56:lambda:nav("valid",True,110,52),
+        57:lambda:nav("reboot",False,62,52),58:lambda:nav("reboot",True,62,52)}
     for number,render in assets.items():
         render().save(dst/f"picture-{number:04d}.png")
     if args.preview:
@@ -167,9 +187,9 @@ def main():
             sample_text(image,c[f"tV{i}"],values[i],color=(205,250,255))
         sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"))
         # The former HOME caption overlapped Back; the house icon is retained.
-        sample_text(image,c["nPage"],"1",16)
-        sample_text(image,c["t0"],"/",16,(119,172,198))
-        sample_text(image,c["nPages"],"3",16)
+        sample_text(image,c["nPage"],"1",13)
+        sample_text(image,c["t0"],"/",13,(119,172,198))
+        sample_text(image,c["nPages"],"3",13)
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         image.save(args.preview,optimize=True)
         print("[NEXTION] Config preview from actual HMI sprites:",args.preview)

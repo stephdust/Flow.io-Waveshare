@@ -721,7 +721,7 @@ bool NextionDriver::renderConfigMenu(const ConfigMenuView& view)
 
     (void)sendCmd_("vis tLoading,0");
     (void)sendText_("tPath", view.breadcrumb);
-    (void)sendCmdFmt_("vis bHome,%u", view.canHome ? 1U : 0U);
+    (void)sendCmd_("vis bHome,1");
     (void)sendCmdFmt_("tsw bHome,%u", view.canHome ? 1U : 0U);
     // Keep the 3D Back/Validate icons visible even when unavailable.
     // Disable touch rather than removing the visual button.
@@ -895,9 +895,10 @@ void NextionDriver::updateConfigPagination_(const ConfigMenuView& view)
     const bool canNext = view.pageCount > 1U && (uint16_t)view.pageIndex + 1U < view.pageCount;
     (void)sendCmdFmt_("nPage.val=%u", (unsigned)(view.pageIndex + 1U));
     (void)sendCmdFmt_("nPages.val=%u", (unsigned)view.pageCount);
-    (void)sendCmdFmt_("vis bPrev,%u", canPrev ? 1U : 0U);
+    // Display page navigation consistently, but do not allow invalid taps.
+    (void)sendCmd_("vis bPrev,1");
     (void)sendCmdFmt_("tsw bPrev,%u", canPrev ? 1U : 0U);
-    (void)sendCmdFmt_("vis bNext,%u", canNext ? 1U : 0U);
+    (void)sendCmd_("vis bNext,1");
     (void)sendCmdFmt_("tsw bNext,%u", canNext ? 1U : 0U);
 }
 
