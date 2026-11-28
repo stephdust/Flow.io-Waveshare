@@ -228,4 +228,30 @@ row_dispatch = hmi_module_cpp.split("case HmiEventType::RowActivate: {", 1)[1]
 row_dispatch = row_dispatch.split("case HmiEventType::RowEdit:", 1)[0]
 assert row_dispatch.index("menu_.enterRow(e.row)") < row_dispatch.index("menu_.editRow(e.row)")
 assert "if (!changed) changed = menu_.editRow(e.row);" in row_dispatch
-print("PASS: text tap opens folders first and editable leaf values second")
+model_header = (ROOT / "src/Modules/HMIModule/ConfigMenuModel.h").read_text(encoding="utf-8")
+assert "bool& hasAttributes" not in model_header
+assert "bool& hasAttributes" not in model_cpp
+assert "vr.canEdit = hasModule;" in model_cpp
+assert "vr.editable = hasModule;" in model_cpp
+assert "if (!hasModule) return false;" in model_cpp
+assert "if (!hasModule || !hasAttributes)" not in model_cpp
+assert "hasAttributes = hasModule && moduleRowCount_" not in model_cpp
+driver = (ROOT / "src/Modules/HMIModule/Drivers/NextionDriver.cpp").read_text(encoding="utf-8")
+assert "row.canEnter || row.canEdit" in driver
+assert 'leftTouchable = false; // prevent duplicate events under the hotspot' in driver
+print("PASS: registered ConfigStore leaves are selectable without early JSON field probing")
+print("PASS: folders open first, registered leaves open their values with no virtual-folder edits")
+
+# Browse pages must avoid the former per-row enumerations and JSON exports.
+browse = model_cpp.split("void ConfigMenuModel::buildHomeView_(", 1)[1]
+browse = browse.split("void ConfigMenuModel::buildModuleView_(", 1)[0]
+assert browse.count("collectBranchPaths_(currentModule_, paths.get())") == 1
+assert browse.count("cfgSvc_->listModules(cfgSvc_->ctx, modules.get(), MaxModules)") == 1
+assert "branchRowAt_(" not in browse
+assert "moduleRowCount_(" not in browse
+assert "toJsonModule" not in browse
+assert "vr.canEdit = hasModule;" in browse
+assert "menu_.isEditing() &&" in hmi_module_cpp
+assert 'Config menu build slow ms=' in hmi_module_cpp
+assert 'Config menu transport slow ms=' in hmi_module_cpp
+print("PASS: browse enumerates modules once, does not parse JSON, skips periodic repaint")
