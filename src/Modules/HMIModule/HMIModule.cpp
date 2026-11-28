@@ -2828,7 +2828,13 @@ bool HMIModule::render_()
 #if FLOW_HMI_CONFIG_MENU_ENABLED
     {
         if (!ensureConfigMenuReady_()) return false;
+        const uint32_t buildStartedMs = millis();
         menu_.buildView(view);
+        const uint32_t buildDurationMs = (uint32_t)(millis() - buildStartedMs);
+        if (buildDurationMs >= 250U) {
+            LOGW("Config menu build slow ms=%lu mode=%u",
+                 (unsigned long)buildDurationMs, (unsigned)view.mode);
+        }
         view.contextRef = cacheCurrentConfigContext_();
     }
 #else
@@ -2849,7 +2855,12 @@ bool HMIModule::render_()
         snprintf(view.rows[0].value, sizeof(view.rows[0].value), "disabled");
     }
 #endif
+    const uint32_t sendStartedMs = millis();
     const bool ok = driver_->renderConfigMenu(view);
+    const uint32_t sendDurationMs = (uint32_t)(millis() - sendStartedMs);
+    if (sendDurationMs >= 500U) {
+        LOGW("Config menu transport slow ms=%lu", (unsigned long)sendDurationMs);
+    }
     if (ok) {
         lastRenderMs_ = millis();
         lastConfigValueRefreshMs_ = lastRenderMs_;
@@ -2878,7 +2889,13 @@ bool HMIModule::refreshConfigMenuValues_()
     {
         if (!ensureConfigMenuReady_()) return false;
         ConfigMenuView view{};
+        const uint32_t buildStartedMs = millis();
         menu_.buildView(view);
+        const uint32_t buildDurationMs = (uint32_t)(millis() - buildStartedMs);
+        if (buildDurationMs >= 250U) {
+            LOGW("Config menu build slow ms=%lu mode=%u",
+                 (unsigned long)buildDurationMs, (unsigned)view.mode);
+        }
         view.contextRef = cacheCurrentConfigContext_();
         const bool ok = driver_->refreshConfigMenuValues(view);
         if (ok) lastConfigValueRefreshMs_ = millis();
@@ -3154,9 +3171,13 @@ void HMIModule::loop()
         }
     } else if (kConfigMenuEnabled &&
                configMenuActive_ &&
+               menu_.isEditing() &&
                driver_ &&
                !displaySleeping &&
                (uint32_t)(now - lastConfigValueRefreshMs_) >= 5000U) {
+        // Browse pages are static until a ConfigChanged/page event marks them
+        // dirty. Polling all six navigation rows every 5 s saturates serial
+        // traffic and delays touch handling, especially on remote UDP links.
         (void)refreshConfigMenuValues_();
     }
     if (homePageVisible_) {

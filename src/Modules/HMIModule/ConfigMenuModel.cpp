@@ -378,7 +378,6 @@ bool ConfigMenuModel::enterRow(uint8_t rowOnPage)
     char label[28]{};
     bool hasChildren = false;
     bool hasModule = false;
-    bool hasAttributes = false;
     if (!branchRowAt_(currentModule_,
                       idx,
                       fullPath,
@@ -386,8 +385,7 @@ bool ConfigMenuModel::enterRow(uint8_t rowOnPage)
                       label,
                       sizeof(label),
                       hasChildren,
-                      hasModule,
-                      hasAttributes)) {
+                      hasModule)) {
         return false;
     }
     if (!hasChildren) return false;
@@ -409,7 +407,6 @@ bool ConfigMenuModel::editRow(uint8_t rowOnPage)
     char label[28]{};
     bool hasChildren = false;
     bool hasModule = false;
-    bool hasAttributes = false;
     if (!branchRowAt_(currentModule_,
                       idx,
                       fullPath,
@@ -417,11 +414,12 @@ bool ConfigMenuModel::editRow(uint8_t rowOnPage)
                       label,
                       sizeof(label),
                       hasChildren,
-                      hasModule,
-                      hasAttributes)) {
+                      hasModule)) {
         return false;
     }
-    if (!hasModule || !hasAttributes) return false;
+    // Opening a registered leaf must not depend on its JSON having already
+    // been exported and fully parsed by moduleRowCount_().
+    if (!hasModule) return false;
     return openModule(fullPath);
 }
 
@@ -562,15 +560,13 @@ bool ConfigMenuModel::branchRowAt_(const char* branch,
                                    char* label,
                                    size_t labelLen,
                                    bool& hasChildren,
-                                   bool& hasModule,
-                                   bool& hasAttributes) const
+                                   bool& hasModule) const
 {
     if (!fullPath || fullPathLen == 0U || !label || labelLen == 0U) return false;
     fullPath[0] = '\0';
     label[0] = '\0';
     hasChildren = false;
     hasModule = false;
-    hasAttributes = false;
 
     std::unique_ptr<BranchPath[]> paths(new (std::nothrow) BranchPath[MaxRows]{});
     if (!paths || index >= collectBranchPaths_(branch, paths.get())) return false;
@@ -582,7 +578,8 @@ bool ConfigMenuModel::branchRowAt_(const char* branch,
         copyStr_(label, labelLen, child);
     hasModule = moduleExists_(selected);
     hasChildren = moduleHasChildren_(selected);
-    hasAttributes = hasModule && moduleRowCount_(selected) > 0U;
+    // Browse never requires a successful JSON field snapshot to select a
+    // registered module. The edit screen reads its values after entry.
     return label[0] != '\0';
 }
 
@@ -935,41 +932,68 @@ void ConfigMenuModel::buildView(ConfigMenuView& out) const
 
 void ConfigMenuModel::buildHomeView_(ConfigMenuView& out) const
 {
-    const uint8_t count = branchRowCount_(currentModule_);
-    out.pageCount = count == 0 ? 1 : (uint8_t)((count + RowsPerPage - 1U) / RowsPerPage);
+    // One branch listing and one registered-module listing per page render.
+    // Previously branchRowAt_ repeated enumeration, sorting and heap
+    // allocations for every visible row (as many as six times per render),
+    // plus a complete JSON export for every prospective leaf.
+    std::unique_ptr<BranchPath[]> paths(new (std::nothrow) BranchPath[MaxRows]{});
+    if (!paths) return;
+    const uint8_t count = collectBranchPaths_(currentModule_, paths.get());
+    out.pageCount = count == 0 ? 1 :
+        (uint8_t)((count + RowsPerPage - 1U) / RowsPerPage);
+    if (!count || !cfgSvc_ || !cfgSvc_->listModules) return;
 
-    uint8_t visible = 0;
+    std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
+    if (!modules) return;
+    const size_t moduleCount = std::min(
+        cfgSvc_->listModules(cfgSvc_->ctx, modules.get(), MaxModules), MaxModules);
+
     const uint8_t first = (uint8_t)((uint16_t)pageIndex_ * RowsPerPage);
+    uint8_t visible = 0;
     for (uint8_t i = 0; i < RowsPerPage; ++i) {
         const uint8_t idx = (uint8_t)(first + i);
         if (idx >= count) break;
 
-        char fullPath[PathCapacity]{};
+        const char* selected = paths[idx].path;
+        if (!selected || !selected[0]) break;
+        const char* slash = strrchr(selected, '/');
+        const char* child = slash ? slash + 1U : selected;
+
         char label[28]{};
-        bool hasChildren = false;
+        if (!decorateBranchLabel_(selected, child, label, sizeof(label)))
+            copyStr_(label, sizeof(label), child);
+
+        const bool virtualBranch = HmiConfigPaths::isVirtualBranch(selected);
+        bool hasChildren = virtualBranch &&
+                           HmiConfigPaths::virtualChildCount(selected) != 0U;
         bool hasModule = false;
-        bool hasAttributes = false;
-        if (!branchRowAt_(currentModule_,
-                          idx,
-                          fullPath,
-                          sizeof(fullPath),
-                          label,
-                          sizeof(label),
-                          hasChildren,
-                          hasModule,
-                          hasAttributes)) {
-            break;
+        char store[PathCapacity]{};
+        const bool storeReady = !virtualBranch &&
+                                HmiConfigPaths::toStore(selected, store, sizeof(store));
+
+        for (size_t j = 0; j < moduleCount; ++j) {
+            const char* module = modules[j];
+            if (!module || !module[0]) continue;
+            if (storeReady && !hasModule && strcmp(module, store) == 0)
+                hasModule = true;
+            if (!virtualBranch && !hasChildren) {
+                char display[PathCapacity]{};
+                if (HmiConfigPaths::toDisplay(module, display, sizeof(display)) &&
+                    startsWithBranch_(display, selected))
+                    hasChildren = true;
+            }
+            if (hasModule && hasChildren) break;
         }
 
         ConfigMenuRowView& vr = out.rows[i];
         vr.visible = true;
         vr.valueVisible = false;
-        vr.editable = hasAttributes;
+        vr.editable = hasModule;
         vr.canEnter = hasChildren;
-        vr.canEdit = hasAttributes;
+        vr.canEdit = hasModule;
         vr.widget = ConfigMenuWidget::Text;
         vr.editType = 0U;
-        copyStr_(vr.key, sizeof(vr.key), fullPath);
+        copyStr_(vr.key, sizeof(vr.key), selected);
         if (hasChildren) snprintf(vr.label, sizeof(vr.label), "%s/", label);
         else copyStr_(vr.label, sizeof(vr.label), label);
         vr.value[0] = '\0';

@@ -58,6 +58,20 @@ Les deux transports utilisent **exactement le même `ConfigMenuView`**, produit 
 - **Protocole UDP :** version **7** conservée. Le titre reste limité à 24 octets, mais Flow.io le compacte en chemin avec `/` en privilégiant la partie utile à droite (ex. `network/modbus-tcp/502`). Il s'agit uniquement d'un libellé, **pas d'un chemin utilisé pour les commandes**. Les lignes, flags, séquences, ACK et contextes ne changent pas.
 - **Compatibilité TFT :** le Nextion 7.0.0 (design 3D 3,5″) et les TFT 6.0.0 (5″/7″ existants) sont acceptés par Flow.io ; 2.0.0 reste historiquement accepté. Sur la version 7.0.0 du RemoteDisplay, les boutons Home, Back, Prev, Next et Valid restent visibles, même désactivés (touch `tsw=0`). Le TFT 6.0.0 conserve son rendu d'origine.
 
+### Correctif d'accès aux feuilles ConfigStore
+
+En mode Browse, la touche sur un dossier ouvre ses enfants, puis un appui sur une feuille physique enregistrée ouvre son module pour afficher ses champs. **Ne jamais dépendre de `moduleRowCount_() > 0` pour activer le toucher d'une feuille** : l'export JSON peut être temporairement inaccessible, tronqué ou limité par la mémoire, sans que le module cesse d'exister. La visibilité des touches dépend de `moduleExists_` / `canEdit`, qui vérifient l'enregistrement physique. Une branche purement virtuelle reste non éditable. Le chargement effectif des champs demeure dans `buildModuleView_` lors de l'ouverture et peut être diagnostiqué indépendamment si les champs sont vides.
+
+À vérifier : `network/ethernet`, `network/mqtt`, `network/time`, et `network/modbus-tcp/502`, `503`, `504`, y compris un module avec export JSON momentanément indisponible. Tester Home/Back, retours clavier, UART local et UDP distant et conserver la compatibilité des TFT 6.0.0 et 7.0.0.
+
+### Temps de réponse de la navigation Nextion
+
+Le menu **Browse** calcule les chemins et les modules physiques au maximum une fois par page : aucune prélecture du JSON des valeurs, aucune énumération ou allocation répétée pour chaque ligne. Les modules enregistrés s'ouvrent en mode **Edit** même si leur export JSON est temporairement illisible. Le rafraîchissement automatique des valeurs toutes les 5 s est réservé au mode Edit : les dossiers ne se repeignent que sur un vrai événement (navigation, changement de configuration, changement de page). Cela évite de saturer inutilement l'UART local et le flux UDP distant.
+
+Le journal `HMI` signale séparément une **construction de vue lente** (250 ms ou plus) et un **envoi de page lent** (500 ms ou plus). Ces avertissements permettent de distinguer les accès ConfigStore du transport Nextion ; ils ne changent aucun timeout. Un éventuel timeout UART/UDP ne peut être confirmé qu'avec les mesures sur le matériel réel.
+
+Test supplémentaire : `python scripts/tests/test_hmi_config_leaf_runtime.py`, qui compile et exécute sur l'hôte les véritables méthodes C++ du modèle, avec des modules physiques dont l'export JSON est volontairement indisponible. Il vérifie l'ouverture des feuilles, le retour arrière, la non-édition des dossiers virtuels et l'absence de prélectures JSON.
+
 ### Vérification croisée des deux dépôts
 
 Le test `python scripts/tests/test_hmi_udp_remote_compat.py --remote-root /chemin/Flow.io-RemoteDisplay` vérifie le contrat entre les deux dépôts et compile l'algorithme de titre en C++ natif. La CI extrait le vrai dépôt RemoteDisplay en lecture seule, vérifie les sources du protocole, applique en **copie temporaire** `python scripts/tests/apply_remote_display_menu_patch.py --remote-root remote-display --apply`, puis compile **les deux firmwares ESP32**. Ne jamais supposer que le code modifié dans la copie CI a été publié dans RemoteDisplay.
