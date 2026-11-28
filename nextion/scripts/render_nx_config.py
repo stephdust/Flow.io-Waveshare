@@ -76,12 +76,17 @@ def background():
     return background_image
 
 def field(on=False):
-    # Use the same dimensions as the native HMI value components.
-    im,d=new(185,30)
-    panel(d,(0,0,184,29),7,(11,83,104) if on else (12,54,78),
-          (47,222,227) if on else (31,134,170),
-          (18,115,137) if on else (22,86,121))
-    return shrink(im,185,30)
+    """Value overlay, not a second button.
+
+    The full-width 470px row is already rendered in picture-0042.
+    Reuse the exact crop underneath tV0..tV5 to make the value and caption
+    share ONE continuous blue row. Keep a slight ON tint for boolean values
+    without adding a separate border or inset bevel.
+    """
+    base=background().crop((234,39,419,69))
+    if on:
+        return Image.blend(base,Image.new("RGB",base.size,(18,75,97)),0.10)
+    return base
 
 def chevron(on=False):
     im,d=new(41,34)

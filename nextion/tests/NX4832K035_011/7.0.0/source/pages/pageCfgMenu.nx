@@ -45,22 +45,70 @@ on bValid.down:
   printh 23 02 51 03
 
 on tL0.down:
-  printh 23 02 52 00
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 00
+  }else
+  {
+    click tV0,1
+  }
 
 on tL1.down:
-  printh 23 02 52 01
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 01
+  }else
+  {
+    click tV1,1
+  }
 
 on tL2.down:
-  printh 23 02 52 02
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 02
+  }else
+  {
+    click tV2,1
+  }
 
 on tL3.down:
-  printh 23 02 52 03
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 03
+  }else
+  {
+    click tV3,1
+  }
 
 on tL4.down:
-  printh 23 02 52 04
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 04
+  }else
+  {
+    click tV4,1
+  }
 
 on tL5.down:
-  printh 23 02 52 05
+  // The text is an independent touch object above the full-row hotspot.
+  // Route it identically to the rest of the same visible button.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 05
+  }else
+  {
+    click tV5,1
+  }
 
 on bR0.down:
   // The full row is clickable: browse enters a folder/leaf,

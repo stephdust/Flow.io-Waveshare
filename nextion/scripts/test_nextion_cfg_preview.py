@@ -30,6 +30,17 @@ for number,expected in sizes.items():
     img=Image.open(args.source/"pictures"/f"picture-{number:04d}.png")
     assert img.size==expected,(number,img.size)
     assert ImageChops.difference(img.convert("RGB"),Image.new("RGB",img.size,(4,18,37))).getbbox() is not None,number
+# The previous rendering drew a 185px 3D inset, making each row appear
+# split into two buttons. Every 185px off-state value sprite must now be
+# pixel-identical to the underlying *full-width* row background.
+native_bg=Image.open(args.source/"pictures/picture-0042.png").convert("RGB")
+off=Image.open(args.source/"pictures/picture-0043.png").convert("RGB")
+on=Image.open(args.source/"pictures/picture-0044.png").convert("RGB")
+native_crop=native_bg.crop((234,39,419,69))
+assert ImageChops.difference(off,native_crop).getbbox() is None, (
+    "A separate inset 185px value-button is visible; use a continuous full-width row"
+)
+assert on.size==off.size and on.tobytes()!=off.tobytes(), "boolean ON tint must remain distinct"
 for a,b in ((43,44),(45,46),(47,48),(49,50),(51,52),(53,54),(55,56),(57,58)):
     im1=Image.open(args.source/"pictures"/f"picture-{a:04d}.png")
     im2=Image.open(args.source/"pictures"/f"picture-{b:04d}.png")
@@ -51,10 +62,18 @@ for i in range(6):
     assert c[f"tV{i}"]["xcen"]==1, "values must be centred"
     assert c[f"tV{i}"]["font"]=="Segoe24_MenuItems", "value must be 24px"
     assert c[f"bR{i}"]["type"]=="hotspot"
+    # A full-width visual button must NOT contain a second inset button.
+    assert c[f"bR{i}"]["w"]==470
+    assert c[f"tV{i}"]["x"]>=c[f"bR{i}"]["x"]
     # The entire visible caption remains touchable, including the former arrow end.
     assert c[f"tL{i}"]["x"] + c[f"tL{i}"]["w"] == 467
     assert "pic" not in c[f"bR{i}"], "native arrow image must not be used"
     assert c[f"bR{i}"]["x"] == 5 and c[f"bR{i}"]["x"] + c[f"bR{i}"]["w"] == 475
+    assert f"on tL{i}.down:" in events
+    label_event=events.split(f"on tL{i}.down:",1)[1].split(chr(10)+"on ",1)[0]
+    assert "if(vaCfgEdit.val==0)" in label_event
+    assert f"printh 23 02 52 0{i}" in label_event
+    assert f"click tV{i},1" in label_event
     assert f"on bR{i}.down:" in events
     assert f"click tV{i},1" in events
     assert f"printh 23 02 52 0{i}" in events
@@ -150,7 +169,7 @@ assert "vaCfgEdit.val=0" in events
 for i in range(6):
     assert f"on bR{i}.down:" in events
     assert f"if(vaCfgEdit.val==0)" in events
-print("PASS: six full-width clickable rows, native editors and 2.0s Reboot")
+print("PASS: six 470px continuous visual buttons, label/value touch routing, native editors and 2.0s Reboot")
 print("PASS: 3D Home/Back/Prev/Next/Valid/Reboot have baked-in readable captions")
 print("PASS: Nextion PNG matches all six real footer sprites")
 print("PASS: original Home pictogram, 56px pager, real Nextion text crop")

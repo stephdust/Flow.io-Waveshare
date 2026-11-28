@@ -40,14 +40,14 @@ Vérifier concrètement les sorties du petit Nextion :
 
 ## 4. Comparer les vrais PNG compilés à la référence approuvée — étape bloquante
 
-1. **Ouvrir chaque PNG généré par cette compilation à la taille native** et le placer **côte à côte** avec le dernier visuel approuvé par l'utilisateur.
-2. Contrôler les positions, le centrage, les marges, les tailles d'icônes, la couleur du fond, les contrastes, la disposition des huit commandes, les libellés complets, les retours à la ligne et toute superposition.
+1. **Ouvrir chaque PNG généré par cette compilation à la taille native** et le placer **côte à côte** avec la dernière capture réelle approuvée par l'utilisateur. Un PNG précédent généré avec des erreurs **n'est pas une référence à répliquer**.
+2. Contrôler les positions, le centrage, les marges, les tailles d'icônes, la couleur du fond, les contrastes, la disposition des commandes, les libellés complets, les retours à la ligne et toute superposition. **En particulier, pour pageCfgMenu, chaque rangée doit être un seul bouton visuel de 470 pixels : aucune capsule de valeur de 185 pixels.** Les données fictives de prévisualisation sont acceptées si elles sont clairement identifiées comme telles.
 3. Vérifier séparément les rendus **ON et OFF**, lisibles à la résolution finale. Tester l'absence de disparition de l'icône après changement d'état et retour de veille.
 4. Vérifier que les composants compilés dans le HMI **affichent vraiment** les icônes et polices correspondantes. Un PNG PIL correct ne garantit pas la visibilité d'un composant sur Nextion.
 5. Contrôler dans Nextion Editor / un simulateur adapté les aspects que le PNG PIL ne reproduit pas fidèlement, notamment la police exacte et les événements. Si un tel contrôle n'est pas disponible, le déclarer **non vérifié**.
 6. **Si un écart existe : corriger → recompiler → regénérer le PNG → recommencer la comparaison**, avant tout commit.
 
-Les tests automatiques de pixels et de structure sont nécessaires, mais **ne remplacent jamais** cette inspection côte à côte avec le design validé.
+Les tests automatiques de pixels et de structure sont nécessaires, mais **ne remplacent jamais** cette inspection côte à côte avec le design validé. Le test `test_nextion_cfg_preview.py` compare maintenant le bitmap OFF du champ de valeur à la **découpe exacte du bouton pleine largeur** dans le fond. Une ancienne capsule de 185 pixels doit faire échouer le test, même si la compilation TFT réussit. La géométrie des hotspots de 470 pixels et les gestionnaires de toucher du texte sont testés séparément : un résultat d'image ne prouve pas l'ergonomie tactile.
 
 ## 5. Vérifier les comportements et les régressions
 - Tester le fonctionnement des boutons, les couches d'objets, les handlers tactiles, Home, les commandes série, les états, les timers, les animations, les changements de page et la veille/réveil.
@@ -63,7 +63,7 @@ Les tests automatiques de pixels et de structure sont nécessaires, mais **ne re
 - [ ] Sources/identifiants/commandes préservés ou changements explicitement documentés.
 - [ ] **Compilation réellement exécutée sur les modifications non committées, et réussie.**
 - [ ] **PNG compilé de chaque page modifiée ouvert et comparé côte à côte au PNG approuvé.**
-- [ ] Rendu jugé conforme : vrais objets graphiques, bonnes polices, textes centrés et lisibles, deux états contrastés, aucun chevauchement.
+- [ ] Rendu jugé conforme : vrais objets graphiques, boutons visuellement pleine largeur (pas seulement zones tactiles), bonnes polices, textes centrés et lisibles, deux états contrastés, aucun chevauchement.
 - [ ] Tests de comportement et de non-régression effectués dans la mesure possible ; limitations signalées.
 - [ ] **Impact sur Nextion Remote UDP vérifié :** décision « modification nécessaire / non nécessaire » documentée. Si nécessaire, correctif intégré et compilé dans `stephdust/Flow.io-RemoteDisplay`, ou dépendance non résolue clairement signalée sans revendiquer une compatibilité complète.
 - [ ] **Compatibilité Python/Pillow vérifiée :** test `test_nextion_pillow_compat.py` réussi, aucun avertissement de dépréciation non traité dans les logs, et aucune API vouée à disparaître dans les versions futures (notamment Pillow 14).
