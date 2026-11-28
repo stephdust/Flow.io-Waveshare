@@ -10,6 +10,7 @@ on pageCfgMenu.load:
   }
   tmReboot.en=0
   vaRebtCounter.val=0
+  vaCfgEdit.val=0
   vis tL0,0
   vis tL1,0
   vis tL2,0
@@ -61,23 +62,71 @@ on tL4.down:
 on tL5.down:
   printh 23 02 52 05
 
-on bR0.up:
-  printh 23 02 55 00
+on bR0.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 00
+  }else
+  {
+    click tV0,1
+  }
 
-on bR1.up:
-  printh 23 02 55 01
+on bR1.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 01
+  }else
+  {
+    click tV1,1
+  }
 
-on bR2.up:
-  printh 23 02 55 02
+on bR2.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 02
+  }else
+  {
+    click tV2,1
+  }
 
-on bR3.up:
-  printh 23 02 55 03
+on bR3.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 03
+  }else
+  {
+    click tV3,1
+  }
 
-on bR4.up:
-  printh 23 02 55 04
+on bR4.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 04
+  }else
+  {
+    click tV4,1
+  }
 
-on bR5.up:
-  printh 23 02 55 05
+on bR5.down:
+  // The full row is clickable: browse enters a folder/leaf,
+  // edit delegates to the existing text/number/switch value handler.
+  if(vaCfgEdit.val==0)
+  {
+    printh 23 02 52 05
+  }else
+  {
+    click tV5,1
+  }
 
 on tV0.down:
   if(vaEditType0.val==0) // TEXT
@@ -352,7 +401,7 @@ on bBack.up:
   printh 23 02 51 02
 
 on bReboot.down:
-  // 50 ticks x 50 ms = approximately 2.5 seconds.
+  // 40 ticks x 50 ms = 2 seconds.
   vaRebtCounter.val=0
   tmReboot.en=1
 
@@ -364,7 +413,7 @@ on bReboot.up:
 
 on tmReboot.timer:
   vaRebtCounter.val+=1
-  if(vaRebtCounter.val<=50)
+  if(vaRebtCounter.val<40)
   {
     // Thin hold indicator below the label: never paint over the power icon.
     fill bReboot.x+6,bReboot.y+49,vaRebtCounter.val,2,65535

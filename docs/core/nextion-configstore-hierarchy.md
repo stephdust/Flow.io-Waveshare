@@ -27,13 +27,15 @@ Les dossiers `cfg_tree_virtual_branches` utilisent désormais **exactement leurs
 
 La limite reste 64 entrées par niveau, paginées par six. Le même `ConfigMenuModel` pilote les Nextion 3,5″, 5″ et 7″ ; la hiérarchie partagée ne nécessite pas de modifier les images des 5″/7″. L'ergonomie tactile sans flèches est une modification visuelle spécifique au TFT 7.0.0 du 3,5″.
 
-### Navigation tactile sans flèches — Nextion 3,5″ TFT 7.0.0
+### Ligne tactile complète et Reboot à 2 secondes — TFT 7.0.0 du 3,5″
 
-Sur `pageCfgMenu`, le fil d'Ariane `tPath` utilise une police intermédiaire plus lisible. Les six zones de libellés `tL0..tL5` s'étendent jusqu'à l'extrémité droite (x=15, largeur=452) et sont tactiles. Les flèches `bR0..bR5` ne sont plus dessinées : sur la version 7.0.0, les éventuelles zones `bR` sont des `hotspot` transparents, sans image. Le bouton de valeur `tV` conserve sa propre interaction lorsqu'il existe.
+Sur `pageCfgMenu`, **toute la largeur de chaque barre** est activable, du bord x=5 à x=475. Les six composants `bR0..bR5` ne dessinent plus de flèches : ce sont des hotspots transparents de 470 × 34 pixels, superposés aux intitulés. Le texte et les valeurs restent visuellement inchangés.
 
-Un appui sur le libellé génère toujours `RowActivate` : Flow.io appelle d'abord `ConfigMenuModel::enterRow` pour ouvrir un dossier, puis, seulement si aucun dossier n'a été ouvert, `editRow` pour afficher les valeurs d'une feuille. Le modèle ConfigStore reste centralisé dans Flow.io, sans nouvel alias ni changement du protocole UDP v7. Le TFT 6.0.0 (5″/7″) garde son apparence et ses commandes existantes.
+En navigation, un appui n'importe où sur une ligne déclenche `RowActivate` : `ConfigMenuModel::enterRow` ouvre un dossier, ou `editRow` affiche les paramètres d'une feuille. En édition, l'appui hors de la valeur appelle `click tVx,1` et réutilise **le même traitement natif** de texte, nombre, liste ou interrupteur ; un appui directement sur la valeur conserve son comportement. Le pilote envoie `vaCfgEdit` au TFT 7.0.0 uniquement, sans ajouter de commande aux écrans 6.0.0 (5″/7″), qui conservent leurs touches d'origine.
 
-Tests : `pio run -e nextion`, `python scripts/tests/test_hmi_config_hierarchy.py`, `pio run -e Flowio-waveshare-esp32-s3`, test du firmware distant et examen réel du PNG `pageCfgMenu`. La vérification matérielle tactile UART/UDP reste à faire lors de l'installation.
+Le bouton **Reboot** exige désormais un maintien de **2 secondes** (`tmReboot` : 40 périodes de 50 ms). Un relâchement avant le seuil annule le redémarrage. Le retour écran, les boutons Home/Back/Prev/Next/Valid et le protocole UDP v7 restent inchangés.
+
+Validation requise : `pio run -e nextion`, rendu `pageCfgMenu` 480 × 320, `python scripts/tests/test_hmi_config_hierarchy.py`, firmware ESP32-S3, compilation et test UDP RemoteDisplay, puis essais tactiles physiques sur UART et UDP. Le PNG ne simule pas les événements tactiles ; le test HMI couvre explicitement les six hotspots et la temporisation.
 
 ### Procédure pour ajouter une branche
 
