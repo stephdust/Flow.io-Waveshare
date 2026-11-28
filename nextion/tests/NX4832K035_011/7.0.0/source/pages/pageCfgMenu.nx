@@ -366,7 +366,8 @@ on tmReboot.timer:
   vaRebtCounter.val+=1
   if(vaRebtCounter.val<=50)
   {
-    fill bReboot.x,bReboot.y,vaRebtCounter.val,bReboot.h,63488
+    // Thin hold indicator below the label: never paint over the power icon.
+    fill bReboot.x+6,bReboot.y+49,vaRebtCounter.val,2,65535
   }else
   {
     tmReboot.en=0

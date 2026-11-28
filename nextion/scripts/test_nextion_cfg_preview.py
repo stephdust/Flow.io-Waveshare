@@ -46,8 +46,10 @@ for i in range(6):
         assert f"on {name}." in events,name
     assert c[f"tL{i}"]["type"]=="text" and c[f"tL{i}"]["sta"]==0
     assert c[f"tL{i}"]["picc"]=="picture-0042"
+    assert c[f"tL{i}"]["font"]=="Segoe24_MenuItems", "label must be readable at 24px"
     assert c[f"tV{i}"]["type"]=="dual-state-button" and c[f"tV{i}"]["sta"]==2
     assert c[f"tV{i}"]["xcen"]==1, "values must be centred"
+    assert c[f"tV{i}"]["font"]=="Segoe24_MenuItems", "value must be 24px"
     assert c[f"bR{i}"]["type"]=="button" and c[f"bR{i}"]["sta"]==2
 for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
                      ("bPrev",120,268,50,52),("bNext",232,268,50,52),
@@ -58,6 +60,16 @@ for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
     touch.append(name)
     sprite=Image.open(args.source/"pictures"/(o["pic"]+".png")).convert("RGB")
     assert image.crop((x,y,x+w,y+h)).tobytes()==sprite.tobytes(),name
+    # A muted sprite is embedded in the *real page background*, too:
+    # older ESP32 firmware may hide disabled buttons. They must not vanish.
+    backing=Image.open(args.source/"pictures/picture-0042.png").convert("RGB")
+    faint=backing.crop((x,y,x+w,y+h))
+    bright_pixels=sum(
+        1 for yy in range(8,32) for xx in range(5,w-5)
+        if max(faint.getpixel((xx,yy)))>100
+    )
+    assert bright_pixels>15,(name,"background lacks disabled icon",bright_pixels)
+    assert faint.tobytes()!=sprite.tobytes(),(name,"fallback must look disabled")
 for i,one in enumerate(touch):
     a=c[one]
     assert 0<=a["x"] and 0<=a["y"] and a["x"]+a["w"]<=480 and a["y"]+a["h"]<=320
@@ -92,6 +104,8 @@ assert "on bHome.up:" not in events
 assert "on bReboot.down:" in events and "tmReboot.en=1" in events
 assert "on bReboot.up:" in events and "ref bReboot" in events
 assert "vaRebtCounter.val<=50" in events and "page pageReboot" in events
+assert "fill bReboot.x+6,bReboot.y+49,vaRebtCounter.val,2,65535" in events
+assert "vaRebtCounter.val,bReboot.h" not in events, "old overlay covered Reboot icon"
 assert re.search(r"(?m)^on bBack.up:\n  printh 23 02 51 02",events)
 assert "else if(vaEditType5.val==3)" in events
 for name in ("bPrev","bNext","bValid"):
@@ -113,3 +127,6 @@ print("PASS: Home simple, Reboot long-press 2.5s, row5 Boolean fixed")
 renderer=(Path(__file__).resolve().parents[2]/"nextion/scripts/render_nx_config.py").read_text(encoding="utf-8")
 assert 'ImageFont.truetype("DejaVuSans.ttf",size)' in renderer
 print("PASS: header glyphs do not obscure breadcrumb; accented preview labels supported")
+
+print("PASS: 24px native fonts on 6 labels and 6 values, fallback icons for hidden navigation")
+print("PASS: Reboot power symbol stays visible during long-press progress")

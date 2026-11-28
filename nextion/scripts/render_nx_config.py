@@ -62,7 +62,18 @@ def background():
     line(d,[(2,267),(478,267)],(25,112,151))
     # Compact pagination: 56 pixels between Prev and Next.
     panel(d,(173,279,229,310),7,(6,40,67),(31,108,153),(18,72,108))
-    return shrink(im,W,H)
+    background_image=shrink(im,W,H)
+    # Even older ESP32 firmware hides unavailable controls using 'vis 0'.
+    # A muted version of each REAL button sprite belongs to the native
+    # page background. When a button is enabled, its active sprite overlays
+    # this backup. A disabled button is still visible but not clickable.
+    for kind,x,width in (("home",0,56),("back",60,56),
+                         ("prev",120,50),("next",232,50),
+                         ("reboot",291,62),("valid",365,110)):
+        off=nav(kind,False,width,52)
+        muted=Image.blend(off,Image.new("RGB",off.size,NAVY),0.36)
+        background_image.paste(muted,(x,268))
+    return background_image
 
 def field(on=False):
     # Use the same dimensions as the native HMI value components.
@@ -120,9 +131,13 @@ def nav(kind,on=False,w=50,h=52):
         L([(-13,-1),(-4,8),(13,-11)],(221,255,237),6)
         L([(-12,-2),(-4,7),(12,-12)],(116,252,159),3)
     elif kind=="reboot":
-        d.arc(B((cx-13,cy-12,cx+13,cy+14)),42,318,
-              fill=(255,238,238),width=4*S)
-        L([(0,-17),(0,-2)],(255,244,240),4)
+        # The former arc was open at the RIGHT while its power stem was at
+        # the TOP. Two aligned arcs deliberately leave the gap at the top.
+        # This is an unmistakable white power symbol with a red 3D bezel.
+        bezel=B((cx-12,cy-11,cx+12,cy+13))
+        d.arc(bezel,315,359,fill=(255,246,242),width=4*S)
+        d.arc(bezel,0,225,fill=(255,246,242),width=4*S)
+        L([(0,-16),(0,-1)],(255,250,247),4)
     else:
         raise ValueError(kind)
     # Label is part of the actual PNG sprite referenced by the Nextion.
@@ -187,8 +202,11 @@ def main():
             for name in (f"tV{i}",f"bR{i}"):
                 o=c[name]
                 image.paste(Image.open(dst/(o["pic"]+".png")).convert("RGB"),(o["x"],o["y"]))
-            sample_text(image,c[f"tL{i}"],labels[i])
-            sample_text(image,c[f"tV{i}"],values[i],color=(205,250,255))
+            # Approximate the HMI's 24px Segoe labels, not the old 16px UI.
+            # Native font identity is verified separately by the source test.
+            sample_text(image,c[f"tL{i}"],labels[i],size=23)
+            sample_text(image,c[f"tV{i}"],values[i],size=23,
+                        color=(205,250,255))
         sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"))
         # The former HOME caption overlapped Back; the house icon is retained.
         sample_text(image,c["nPage"],"1",13)
