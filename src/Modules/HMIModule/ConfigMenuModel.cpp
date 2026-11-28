@@ -994,7 +994,9 @@ void ConfigMenuModel::buildHomeView_(ConfigMenuView& out) const
         vr.widget = ConfigMenuWidget::Text;
         vr.editType = 0U;
         copyStr_(vr.key, sizeof(vr.key), selected);
-        if (hasChildren) snprintf(vr.label, sizeof(vr.label), "%s/", label);
+        if (hasChildren)
+            snprintf(vr.label, sizeof(vr.label), "%.*s/",
+                     (int)(sizeof(vr.label) - 2U), label);
         else copyStr_(vr.label, sizeof(vr.label), label);
         vr.value[0] = '\0';
         ++visible;
