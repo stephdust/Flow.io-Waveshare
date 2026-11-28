@@ -77,8 +77,11 @@ assert c["bBack"]["x"]==c["bHome"]["x"]+c["bHome"]["w"]+4
 for name in ("bHome","bBack","bPrev","bNext","bReboot","bValid"):
     button=c[name]
     sprite=Image.open(args.source/"pictures"/(button["pic"]+".png")).convert("RGB")
-    white=sum(1 for pixel in sprite.crop((3,36,sprite.width-3,49)).getdata()
-              if min(pixel)>210)
+    # Count the same bright pixels without Pillow's deprecated getdata().
+    # The caption occupies y=36..48 and x=3..width-4.
+    white=sum(1 for y in range(36,49)
+              for x in range(3,sprite.width-3)
+              if min(sprite.getpixel((x,y)))>210)
     assert white>=10,(name,"missing native bitmap caption",white)
 # Native Nextion 3D images should not be obscured by text components.
 assert c["tHomeCaption"]["txt"]==""
