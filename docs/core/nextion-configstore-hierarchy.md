@@ -14,16 +14,26 @@ Les anciens modules `modbustcp502/503/504` ne sont **plus enregistrés** dans le
 
 Les topics MQTT deviennent `cfg/network/modbus-tcp/{502,503,504}` ; les commandes HA `cfg/set` écrivent maintenant sur ces chemins. Les `unique_id` existants des entités HA sont conservés, mais il faut **rafraîchir la découverte Home Assistant** après la mise à jour. Les anciens topics retenus sur le broker MQTT, le cas échéant, peuvent demander un nettoyage manuel.
 
-## Navigation commune
+## Une seule source de vérité pour le Web et les trois Nextion
 
-Le modèle de navigation applique aussi les correspondances déjà utilisées dans le Web, sans renommer leurs vraies données :
+**Ne plus ajouter manuellement d'alias ou de dossier virtuel dans le C++.**
+Chaque module déclare ses métadonnées dans son fichier `src/Modules/**/text/cfgmods.fr.json`, via les tableaux `meta.cfg_tree_aliases` et `meta.cfg_tree_virtual_branches`. Ces déclarations sont fusionnées et **filtrées selon le profil matériel** par `scripts/generate_config_docs.py` dans le fichier Web transitoire `data/webinterface/cfgmods.json`.
 
-- `network/wifi` ↔ `wifi`, idem ethernet, time et mqtt ;
-- `io/input/analog/aXX` ↔ `io/input/aXX` et `io/input/digital/iXX` ↔ `io/input/iXX` ;
-- `hmi/tft` ↔ `tft/s3`, y compris les sous-modules.
+Le Web lit directement ce résultat. Lors de la même préparation SPIFFS, `scripts/generate_hmi_config_paths.py` transforme **ce même JSON déjà résolu** en `src/Modules/HMIModule/ConfigMenuPaths_Generated.h` pour l'ESP32. Ce fichier C++ est une **sortie générée** et non une deuxième liste à maintenir. `ConfigMenuPaths.h` contient uniquement la mécanique générique de recherche de préfixes, sans alias écrits en dur.
 
-Tous les chemins `config > ...` affichés sont convertis en vrais noms **avant lecture et écriture**, et les chemins restent triés et dédoublonnés. Le menu passe de 24 à 64 entrées par niveau, toujours par pages de six. Aucun changement de dessin HMI/TFT n'est nécessaire.
+Les chemins d'affichage tels que `network/wifi`, `io/input/analog/aXX`, `io/input/digital/iXX` et `hmi/tft` restent traduits vers leurs vrais noms ConfigStore au moment des lectures et des écritures. **Les sous-chemins d'un alias** sont automatiquement conservés. Une correspondance nouvelle ne demande donc que de modifier ses métadonnées, pas le Web et le firmware séparément.
+
+Les dossiers `cfg_tree_virtual_branches` utilisent désormais **exactement leurs enfants déclarés**, même lorsqu'un enfant n'a pas encore de module ConfigStore. Un dossier virtuel permet la navigation mais ne peut pas recevoir d'écriture. Un enfant sans module ni sous-dossier s'affiche sans action d'édition ; cela évite de diriger une commande vers un module inexistant. Les autres dossiers sont reconstruits à partir des modules enregistrés, avec tri et dédoublonnage.
+
+La limite reste 64 entrées par niveau, paginées par six. Le même `ConfigMenuModel` pilote les Nextion 3,5″, 5″ et 7″ ; aucune modification d'images HMI/TFT n'est nécessaire.
+
+### Procédure pour ajouter une branche
+
+1. Ajouter ou modifier **uniquement** `cfg_tree_aliases` et/ou `cfg_tree_virtual_branches` dans les métadonnées du module concerné.
+2. Exécuter `python scripts/tests/test_hmi_config_hierarchy.py` : le test recrée le JSON Web du profil Waveshare, génère le C++, compare les chemins, les sous-arbres et teste une nouvelle entrée synthétique.
+3. Exécuter `pio run -e Flowio-waveshare-esp32-s3`. La préparation SPIFFS régénère systématiquement le C++ avant la compilation du firmware.
+4. Vérifier Web et Nextion sur l'écran réel, notamment l'accès aux nœuds virtuels sans module physique, Retour et Home. **Ne pas créer de table de chemins dans `ConfigMenuPaths.h`.**
 
 ## Validation obligatoire
 
-Le contrôle `python scripts/tests/test_hmi_config_hierarchy.py` compile le convertisseur C++ natif puis compare ses résultats aux alias présents dans **tous** les fichiers `cfgmods.fr.json`. Il vérifie également les chemins Modbus, les nouveaux topics MQTT, les modèles de commandes HA et l'absence des anciens modules. GitHub Actions compile ensuite le firmware ESP32-S3 réel. Tester sur matériel : root network, network/modbus-tcp, ports 502/503/504, édition, Back/Home, navigation à 32 entrées analogiques, HA et MQTT.
+Le contrôle `python scripts/tests/test_hmi_config_hierarchy.py` génère d'abord le JSON Web pour le profil Waveshare, puis le même tableau C++ que la compilation. Il compile le convertisseur C++ natif et compare **tous les alias et tous les enfants virtuels** au JSON Web effectivement utilisé. Il vérifie aussi qu'un ajout synthétique dans les métadonnées apparaît sans retouche C++, les chemins Modbus, les nouveaux topics MQTT, les commandes HA et l'absence des anciens modules. GitHub Actions compile ensuite le firmware ESP32-S3 réel. Tester sur matériel : root network, network/modbus-tcp, ports 502/503/504, édition, Back/Home, navigation à 32 entrées analogiques, HA et MQTT.

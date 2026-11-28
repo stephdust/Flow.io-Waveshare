@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/hmi-config-hierarchy.yml'
       - 'scripts/tests/test_hmi_config_hierarchy.py'
+      - 'scripts/generate_hmi_config_paths.py'
+      - 'scripts/prepare_spiffs_data.py'
       - 'src/Modules/HMIModule/ConfigMenuPaths.h'
       - 'src/Modules/HMIModule/ConfigMenuModel.cpp'
       - 'src/Modules/HMIModule/ConfigMenuModel.h'
@@ -29,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Validate every Web tree alias and MQTT/HA contracts in native C++
+      - name: Generate the Web tree once and validate Nextion C++/MQTT/HA parity
         run: python scripts/tests/test_hmi_config_hierarchy.py
       - name: Install PlatformIO with pinned firmware environment
         run: python -m pip install 'platformio>=6.2,<7'

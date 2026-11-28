@@ -465,8 +465,20 @@ uint8_t ConfigMenuModel::currentRowCount_() const
 uint8_t ConfigMenuModel::collectBranchPaths_(const char* branch, BranchPath* paths) const
 {
     if (!paths) return 0U;
-    // Keep both the module list and deduplicated display branches in heap,
-    // never on the HMI task stack (some installations have hundreds of vars).
+    // Same semantics as the Web: a declared virtual folder uses its
+    // explicit children, not an independently reconstructed list.
+    // These are generated from the SAME Web metadata at build time.
+    if (HmiConfigPaths::isVirtualBranch(branch)) {
+        const size_t count = HmiConfigPaths::virtualChildCount(branch);
+        const uint8_t bounded = (uint8_t)((count < MaxRows) ? count : MaxRows);
+        for (uint8_t i = 0U; i < bounded; ++i) {
+            if (!HmiConfigPaths::virtualChildAt(branch, i,
+                    paths[i].path, sizeof(paths[i].path))) return i;
+        }
+        return bounded;
+    }
+    // Normal folders use registered modules and the generated display aliases.
+    // Keep lists on heap to protect the small ESP32 HMI task stack.
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
     const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
     uint8_t count = 0U;
@@ -688,7 +700,8 @@ const char* ConfigMenuModel::poolDeviceDisplayNameByRef_(const char* ref) const
 
 bool ConfigMenuModel::moduleExists_(const char* module) const
 {
-    if (!module || module[0] == '\0') return false;
+    if (!module || module[0] == '\0' ||
+        HmiConfigPaths::isVirtualBranch(module)) return false;
     char store[PathCapacity]{};
     if (!HmiConfigPaths::toStore(module, store, sizeof(store))) return false;
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
@@ -702,6 +715,8 @@ bool ConfigMenuModel::moduleExists_(const char* module) const
 bool ConfigMenuModel::moduleHasChildren_(const char* module) const
 {
     if (!module || module[0] == '\0') return false;
+    if (HmiConfigPaths::isVirtualBranch(module))
+        return HmiConfigPaths::virtualChildCount(module) != 0U;
     std::unique_ptr<const char*[]> modules(new (std::nothrow) const char*[MaxModules]{});
     const size_t moduleCount = listSortedModules_(modules.get(), MaxModules);
     for (size_t i = 0; i < moduleCount; ++i) {

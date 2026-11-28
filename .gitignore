@@ -45,6 +45,13 @@ compile_commands.json
 .gcc-flags.json
 
 # Generated web and configuration assets
+# Web and Nextion are generated from the same ConfigStore metadata.
+# Neither the resolved Web JSON nor compiled C++ table is maintained by hand.
+src/Modules/HMIModule/ConfigMenuPaths_Generated.h
+data/webinterface/cfgdocs.json
+data/webinterface/cfgmods.json
+data/webinterface/cfgdocs.jz
+data/webinterface/cfgmods.jz
 data/wc/
 data/webinterface/*.gz
 data/webinterface/i18n/*.gz

@@ -1,119 +1,207 @@
 #!/usr/bin/env python3
-"""Check all Web -> Nextion ConfigStore aliases and the new physical hierarchy.
+"""Verify ONE Web ConfigStore hierarchy across Web and all Nextion panels.
 
-The C++ conversion functions are compiled and executed on a host; the test
-sources expected paths from every cfgmods.fr.json, not a copied test table.
-Also verifies Modbus TCP MQTT/HA/ConfigStore contract and paged tree shape.
+Generate the Web metadata in the real Waveshare profile, generate the C++
+header from THAT metadata, then compile/test the native C++ path resolver.
+Also verify every declared virtual branch and the MQTT/HA Modbus contract.
 """
 from pathlib import Path
 import json
+import os
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
+GENERATOR = ROOT / "scripts/generate_hmi_config_paths.py"
+METADATA = ROOT / "data/webinterface/cfgmods.json"
+GENERATED = ROOT / "src/Modules/HMIModule/ConfigMenuPaths_Generated.h"
+
+profile_env = dict(os.environ, FLOW_CFGDOC_PROFILE="waveshare",
+                   FLOW_CFGDOC_TFT_ENABLED="1")
+subprocess.run([sys.executable, "scripts/generate_config_docs.py"],
+               check=True, cwd=ROOT, env=profile_env)
+subprocess.run([sys.executable, str(GENERATOR)], check=True, cwd=ROOT)
+subprocess.run([sys.executable, str(GENERATOR), "--check"], check=True, cwd=ROOT)
+
+web_meta = json.loads(METADATA.read_text(encoding="utf-8"))["meta"]
+aliases = sorted({
+    (item["display"], item["store"])
+    for item in web_meta["cfg_tree_aliases"]
+})
+branches = {
+    item["display"]: sorted(set(item["children"]))
+    for item in web_meta["cfg_tree_virtual_branches"]
+}
+header = (ROOT / "src/Modules/HMIModule/ConfigMenuPaths.h").read_text(encoding="utf-8")
+assert '#include "ConfigMenuPaths_Generated.h"' in header
+assert 'static constexpr Alias kAliases[]' not in header, "manual alias list returned"
+assert "ioRef(" not in header, "manual analog/digital mapping returned"
+assert not any(f'{{"{store}", "{display}"}}' in header for display, store in aliases)
+
 CPP = r"""
 #include "src/Modules/HMIModule/ConfigMenuPaths.h"
 #include <stdio.h>
 #include <string.h>
 int main(int argc, char** argv) {
-    if ((argc - 1) % 2 != 0) return 7;
-    for (int i = 1; i + 1 < argc; i += 2) {
-        char store[128] = {};
-        char display[128] = {};
-        if (!HmiConfigPaths::toStore(argv[i], store, sizeof(store)) ||
-            strcmp(store, argv[i+1]) != 0) {
-            fprintf(stderr, "toStore failed: %s => %s, expected %s\n",
-                    argv[i], store, argv[i+1]); return 1;
+    if (argc < 3) return 7;
+    if (strcmp(argv[1], "aliases") == 0) {
+        if ((argc - 2) % 2 != 0) return 8;
+        for (int i = 2; i < argc; i += 2) {
+            char store[128] = {};
+            char display[128] = {};
+            if (!HmiConfigPaths::toStore(argv[i], store, sizeof(store)) ||
+                strcmp(store, argv[i+1]) != 0) {
+                fprintf(stderr, "toStore: %s => %s, expected %s\n",
+                        argv[i], store, argv[i+1]); return 1;
+            }
+            if (!HmiConfigPaths::toDisplay(argv[i+1], display, sizeof(display)) ||
+                strcmp(display, argv[i]) != 0) {
+                fprintf(stderr, "toDisplay: %s => %s, expected %s\n",
+                        argv[i+1], display, argv[i]); return 2;
+            }
         }
-        if (!HmiConfigPaths::toDisplay(argv[i+1], display, sizeof(display)) ||
-            strcmp(display, argv[i]) != 0) {
-            fprintf(stderr, "toDisplay failed: %s => %s, expected %s\n",
-                    argv[i+1], display, argv[i]); return 2;
-        }
+        return 0;
     }
-    puts("PASS: native C++ bidirectional ConfigStore alias mapping");
-    return 0;
+    if (strcmp(argv[1], "branch") == 0) {
+        const char* branch = argv[2];
+        if (!HmiConfigPaths::isVirtualBranch(branch) ||
+            HmiConfigPaths::virtualChildCount(branch) != (size_t)(argc - 3))
+            return 3;
+        char store[128] = {};
+        if (HmiConfigPaths::toStore(branch, store, sizeof(store)))
+            return 4;  // A virtual folder is NEVER an editable physical module.
+        for (int i = 3; i < argc; ++i) {
+            char child[128] = {};
+            if (!HmiConfigPaths::virtualChildAt(branch, (size_t)(i-3),
+                  child, sizeof(child)) || strcmp(child, argv[i]) != 0) {
+                fprintf(stderr, "virtual child: %s expected %s\n", child, argv[i]);
+                return 5;
+            }
+        }
+        return 0;
+    }
+    if (strcmp(argv[1], "through") == 0 && argc == 4) {
+        char path[128] = {};
+        if (!HmiConfigPaths::toDisplay(argv[2], path, sizeof(path)) ||
+            strcmp(path, argv[3]) != 0) return 6;
+        if (!HmiConfigPaths::toStore(path, path, sizeof(path))) return 9;
+        // Don't alias source/destination in real callers, unlike this test.
+        return 0;
+    }
+    return 10;
 }
 """
 
-aliases = []
-for path in sorted((ROOT / "src/Modules").rglob("cfgmods.fr.json")):
-    meta = json.loads(path.read_text(encoding="utf-8")).get("meta") or {}
-    for pair in meta.get("cfg_tree_aliases", []):
-        display, store = pair["display"], pair["store"]
-        aliases.append((display, store))
-
-for port in (502, 503, 504):
-    aliases.append((f"network/modbus-tcp/{port}", f"network/modbus-tcp/{port}"))
-aliases += [
-    ("hmi/tft/sensors/slot09", "tft/s3/sensors/slot09"),
-    ("io/input/analog/a00/deep", "io/input/a00/deep"),
-    ("io/input/digital/i12", "io/input/i12"),
-    ("network/wifi", "wifi"),
-    ("network/mqtt", "mqtt"),
-    ("other/unrelated", "other/unrelated"),
-]
-
-with tempfile.TemporaryDirectory(prefix="flowio-hmi-tree-") as dirname:
-    source = Path(dirname) / "check.cpp"
-    binary = Path(dirname) / "check"
+with tempfile.TemporaryDirectory(prefix="flowio-shared-menu-") as directory:
+    work = Path(directory)
+    source = work / "check.cpp"
+    binary = work / "check"
     source.write_text(CPP, encoding="utf-8")
     subprocess.run(
         ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
          "-I", str(ROOT), str(source), "-o", str(binary)],
         check=True, cwd=ROOT,
     )
-    args = [str(binary)]
+    args = [str(binary), "aliases"]
     for display, store in aliases:
         args += [display, store]
     subprocess.run(args, check=True, cwd=ROOT)
 
-# Assert that the parent-child hierarchy induced by the alias table matches
-# the requested Web tree, and nothing appears under the old flat names.
-simulated = [
-    "network/modbus-tcp/502", "network/modbus-tcp/503",
-    "network/modbus-tcp/504", "wifi", "ethernet", "time", "mqtt",
-    "io/input/a00", "io/input/a31", "io/input/i00", "io/input/i12",
-    "tft/s3/sensors/slot09", "hmi/leds", "pdm/pd00",
-]
-converted = {
-    next((display for display, store in aliases if store == item), item)
-    for item in simulated
-}
-def immediate(parent):
-    candidates = []
-    for module in converted:
-        if parent:
-            if not module.startswith(parent + "/"): continue
-            relative = module[len(parent)+1:]
-            candidates.append(parent + "/" + relative.split("/")[0])
-        else:
-            candidates.append(module.split("/")[0])
-    return sorted(set(candidates))
+    # Every explicit child shown by the Web is present in the Nextion
+    # virtual branch, including folders without a physical ConfigStore module.
+    for branch, children in branches.items():
+        subprocess.run(
+            [str(binary), "branch", branch] +
+            [f"{branch}/{child}" for child in children],
+            check=True, cwd=ROOT,
+        )
 
-assert "modbustcp502" not in immediate(""), immediate("")
-assert "network" in immediate(""), immediate("")
-assert "network/modbus-tcp" in immediate("network"), immediate("network")
-assert immediate("network/modbus-tcp") == [
-    "network/modbus-tcp/502",
-    "network/modbus-tcp/503",
-    "network/modbus-tcp/504",
-], immediate("network/modbus-tcp")
-assert "io/input/analog" in immediate("io/input")
-assert "io/input/digital" in immediate("io/input")
-assert "hmi/tft" in immediate("hmi")
-assert 32 <= 64, "all analog channels need to fit under the new browse limit"
+    # Longest-prefix mapping must retain arbitrary nested store paths.
+    # A virtual branch itself cannot be edited; its physical descendants can.
+    for display, store in aliases:
+        subprocess.run([str(binary), "aliases",
+                        display + "/sub/field", store + "/sub/field"],
+                       check=True, cwd=ROOT)
 
+    # A new item in Web metadata must flow through without changing any
+    # hand-maintained C++ mapping list. The generated header is untracked data.
+    synthetic = work / "test-web-cfgmods.json"
+    generated = work / "generated.h"
+    modified = {
+        "meta": {
+            "cfg_tree_aliases": web_meta["cfg_tree_aliases"] + [
+                {"display": "example/future-device", "store": "futuredevice"}
+            ],
+            "cfg_tree_virtual_branches": web_meta["cfg_tree_virtual_branches"] + [
+                {"display": "example", "children": ["future-device"]}
+            ],
+        }
+    }
+    synthetic.write_text(json.dumps(modified), encoding="utf-8")
+    subprocess.run([sys.executable, str(GENERATOR),
+                    "--source", str(synthetic),
+                    "--output", str(generated)], check=True, cwd=ROOT)
+    generated_text = generated.read_text(encoding="utf-8")
+    assert '"futuredevice", "example/future-device"' in generated_text
+    assert '{"example",' in generated_text
+    assert '"example/future-device"' in generated_text
+    print(f"PASS: {len(aliases)} exact Web aliases and "
+          f"{len(branches)} explicit virtual folders shared by all Nextion panels")
+
+# Model must use generated virtual children instead of guessing paths.
 model_h = (ROOT / "src/Modules/HMIModule/ConfigMenuModel.h").read_text(encoding="utf-8")
 model_cpp = (ROOT / "src/Modules/HMIModule/ConfigMenuModel.cpp").read_text(encoding="utf-8")
 assert "MaxRows = 64" in model_h
 assert "collectBranchPaths_" in model_cpp
 assert "HmiConfigPaths::toDisplay" in model_cpp
 assert "HmiConfigPaths::toStore" in model_cpp
+assert "HmiConfigPaths::isVirtualBranch(branch)" in model_cpp
+assert "HmiConfigPaths::virtualChildAt(branch," in model_cpp
+assert "HmiConfigPaths::virtualChildCount(module)" in model_cpp
 assert "fillRowFromJson_(store," in model_cpp
 assert '"Port %s"' in model_cpp and '"network/modbus-tcp/"' in model_cpp
-for old in ("char fullPath[28]", "fillRowFromJson_(currentModule_"):
-    assert old not in model_cpp, old
+for old_text in ("char fullPath[28]", "fillRowFromJson_(currentModule_"):
+    assert old_text not in model_cpp, old_text
+
+# Assert the visible parent/child hierarchy from the one metadata list.
+def displayed(store):
+    choices = [(display, prefix) for display, prefix in aliases
+               if store == prefix or store.startswith(prefix + "/")]
+    if not choices: return store
+    target, origin = max(choices, key=lambda a: len(a[1]))
+    return target + store[len(origin):]
+
+simulated = [
+    "network/modbus-tcp/502", "network/modbus-tcp/503",
+    "network/modbus-tcp/504", "wifi", "ethernet", "time", "mqtt",
+    "io/input/a00", "io/input/i00", "tft/s3/sensors/slot09",
+]
+converted = set(displayed(name) for name in simulated)
+def immediate(parent):
+    if parent in branches:
+        return [parent + "/" + child for child in branches[parent]]
+    result = set()
+    for path in converted:
+        if parent:
+            if not path.startswith(parent + "/"): continue
+            remaining = path[len(parent) + 1:]
+            result.add(parent + "/" + remaining.split("/")[0])
+        else:
+            result.add(path.split("/")[0])
+    return sorted(result)
+
+assert "network" in immediate(""), immediate("")
+assert "network/modbus-tcp" in immediate("network")
+assert immediate("network/modbus-tcp") == [
+    "network/modbus-tcp/502",
+    "network/modbus-tcp/503",
+    "network/modbus-tcp/504",
+]
+assert "io/input/analog" in immediate("io/input")
+assert "io/input/digital" in immediate("io/input")
+assert "hmi" in branches and "hmi/tft" in immediate("hmi")
+assert "modbustcp502" not in immediate("")
 
 module_h = (ROOT / "src/Modules/Network/ModbusTcpServerModule/ModbusTcpServerModule.h").read_text(encoding="utf-8")
 module_cpp = (ROOT / "src/Modules/Network/ModbusTcpServerModule/ModbusTcpServerModule.cpp").read_text(encoding="utf-8")
@@ -130,5 +218,5 @@ for port in (502, 503, 504):
     assert f"modbustcp{port}/mode" not in docs["docs"]
     assert f'"modbustcp{port}"' not in module_h
 assert "modbustcp50[234]" not in web
-print(f"PASS: {len(aliases)} Web aliases, virtual branches, 32-channel limit, "
+print(f"PASS: {len(aliases)} Web aliases, shared virtual branches, "
       "real Modbus ConfigStore, MQTT, HA and Web contracts")

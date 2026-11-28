@@ -85,6 +85,10 @@ if src_dir.exists():
         if transient.exists():
             transient.unlink()
     _run_step(["python3", "scripts/generate_config_docs.py"])
+    # The Nextion uses *the same resolved Web hierarchy*, not a copied
+    # list. Profile-specific aliases and virtual branches are generated
+    # before the ESP32 sources are compiled.
+    _run_step(["python3", "scripts/generate_hmi_config_paths.py"])
     _run_step(["python3", "scripts/generate_cfgdoc_chunks.py"])
     # Keep only segmented cfgdoc assets in source data.
     for transient in transients:
