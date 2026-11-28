@@ -194,49 +194,49 @@ ycen = 1
 [[component]]
 name = "bR0"
 type = "hotspot"
-x = 426
+x = 5
 y = 37
-w = 41
+w = 470
 h = 34
 
 [[component]]
 name = "bR1"
 type = "hotspot"
-x = 426
+x = 5
 y = 75
-w = 41
+w = 470
 h = 34
 
 [[component]]
 name = "bR2"
 type = "hotspot"
-x = 426
+x = 5
 y = 113
-w = 41
+w = 470
 h = 34
 
 [[component]]
 name = "bR3"
 type = "hotspot"
-x = 426
+x = 5
 y = 151
-w = 41
+w = 470
 h = 34
 
 [[component]]
 name = "bR4"
 type = "hotspot"
-x = 426
+x = 5
 y = 189
-w = 41
+w = 470
 h = 34
 
 [[component]]
 name = "bR5"
 type = "hotspot"
-x = 426
+x = 5
 y = 227
-w = 41
+w = 470
 h = 34
 
 [[component]]
@@ -516,6 +516,10 @@ type = "variable"
 
 [[component]]
 name = "vaEditType5"
+type = "variable"
+
+[[component]]
+name = "vaCfgEdit"
 type = "variable"
 
 [[component]]

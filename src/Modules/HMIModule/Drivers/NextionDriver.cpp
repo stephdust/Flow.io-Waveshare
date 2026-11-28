@@ -719,8 +719,13 @@ bool NextionDriver::renderConfigMenu(const ConfigMenuView& view)
         return false;
     }
 
+    const bool fullRowMenu = versionDetected_ &&
+                             strcmp(displayVersion_, "7.0.0") == 0;
     (void)sendCmd_("vis tLoading,0");
     (void)sendText_("tPath", view.breadcrumb);
+    if (fullRowMenu)
+        (void)sendCmdFmt_("vaCfgEdit.val=%u",
+                          view.mode == ConfigMenuMode::Edit ? 1U : 0U);
     (void)sendCmd_("vis bHome,1");
     (void)sendCmdFmt_("tsw bHome,%u", view.canHome ? 1U : 0U);
     // Keep the 3D Back/Validate icons visible even when unavailable.
@@ -755,10 +760,18 @@ bool NextionDriver::renderConfigMenu(const ConfigMenuView& view)
                              view.mode == ConfigMenuMode::Browse &&
                              row.valueVisible && (row.canEdit || row.canEnter);
         bool leftTouchable = row.visible && view.mode == ConfigMenuMode::Browse;
+        if (fullRowMenu) {
+            // bR is a single transparent hotspot covering the whole 7.0.0 row.
+            // In Edit mode it delegates to tV's existing keyboard/switch handler.
+            showRowButton = row.visible &&
+                ((view.mode == ConfigMenuMode::Browse && (row.canEnter || row.canEdit)) ||
+                 (view.mode == ConfigMenuMode::Edit && row.valueVisible && row.editable));
+            leftTouchable = false; // prevent duplicate events under the hotspot
+        }
         if (alarmRow) {
             showValue = alarmCritical || alarmLatchOk;
-            showRowButton = alarmLatchOk;
-            leftTouchable = showRowButton;
+            showRowButton = fullRowMenu ? (alarmLatchOk && row.editable) : alarmLatchOk;
+            leftTouchable = fullRowMenu ? false : showRowButton;
         }
         uint8_t editType = row.editType;
         if (editType > 3U) editType = 0U;
@@ -818,6 +831,11 @@ bool NextionDriver::refreshConfigMenuValues(const ConfigMenuView& view)
     if (!started_ || !pageReady_) return false;
     if (sleeping_) return false;
     if (configRebuildRequired_) return renderConfigMenu(view);
+    const bool fullRowMenu = versionDetected_ &&
+                             strcmp(displayVersion_, "7.0.0") == 0;
+    if (fullRowMenu)
+        (void)sendCmdFmt_("vaCfgEdit.val=%u",
+                          view.mode == ConfigMenuMode::Edit ? 1U : 0U);
     updateConfigPagination_(view);
     (void)sendCmdFmt_("vaCtxRef.val=%lu", (unsigned long)view.contextRef);
 
@@ -830,15 +848,26 @@ bool NextionDriver::refreshConfigMenuValues(const ConfigMenuView& view)
         bool showRowButton = row.visible &&
                              view.mode == ConfigMenuMode::Browse &&
                              row.valueVisible && (row.canEdit || row.canEnter);
+        if (fullRowMenu) {
+            showRowButton = row.visible &&
+                ((view.mode == ConfigMenuMode::Browse && (row.canEnter || row.canEdit)) ||
+                 (view.mode == ConfigMenuMode::Edit && row.valueVisible && row.editable));
+        }
         if (alarmRow) {
             showValue = alarmCritical || alarmLatchOk;
-            showRowButton = alarmLatchOk;
+            showRowButton = fullRowMenu ? (alarmLatchOk && row.editable) : alarmLatchOk;
         }
 
         char leftObj[8]{};
         char rowButtonObj[8]{};
         snprintf(leftObj, sizeof(leftObj), "tL%u", (unsigned)i);
         snprintf(rowButtonObj, sizeof(rowButtonObj), "bR%u", (unsigned)i);
+        if (fullRowMenu) {
+            // In-place value refreshes must restore full-row touch as well.
+            (void)sendCmdFmt_("vis %s,%u", rowButtonObj, showRowButton ? 1U : 0U);
+            (void)sendCmdFmt_("tsw %s,%u", rowButtonObj, showRowButton ? 1U : 0U);
+            (void)sendCmdFmt_("tsw %s,0", leftObj);
+        }
 
         if (alarmRow) {
             const uint32_t leftBco = alarmCritical ? 53925U : (alarmLatchOk ? 64520U : 12710U);

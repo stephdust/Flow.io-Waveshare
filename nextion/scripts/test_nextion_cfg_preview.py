@@ -39,7 +39,7 @@ for i in range(6):
     y=37+38*i
     for name,x,dy,w,h in ((f"tL{i}",15,0,452,34),
                           (f"tV{i}",234,2,185,30),
-                          (f"bR{i}",426,0,41,34)):
+                          (f"bR{i}",5,0,470,34)):
         o=c[name]
         assert (o["x"],o["y"],o["w"],o["h"])==(x,y+dy,w,h),name
         touch.append(name)
@@ -54,6 +54,11 @@ for i in range(6):
     # The entire visible caption remains touchable, including the former arrow end.
     assert c[f"tL{i}"]["x"] + c[f"tL{i}"]["w"] == 467
     assert "pic" not in c[f"bR{i}"], "native arrow image must not be used"
+    assert c[f"bR{i}"]["x"] == 5 and c[f"bR{i}"]["x"] + c[f"bR{i}"]["w"] == 475
+    assert f"on bR{i}.down:" in events
+    assert f"click tV{i},1" in events
+    assert f"printh 23 02 52 0{i}" in events
+    assert f"on bR{i}.up:" not in events
 for name,x,y,w,h in (("bHome",0,268,56,52),("bBack",60,268,56,52),
                      ("bPrev",120,268,50,52),("bNext",232,268,50,52),
                      ("bValid",365,268,110,52),("bReboot",291,268,62,52)):
@@ -82,7 +87,8 @@ for i,one in enumerate(touch):
         # The widened text label may be behind its own value/hotspot.
         # Overlap across DIFFERENT rows or footer/header is never allowed.
         intentional_same_row = (
-            one.startswith("tL") and other.startswith(("tV", "bR"))
+            one.startswith(("tL", "tV", "bR"))
+            and other.startswith(("tL", "tV", "bR"))
             and one[-1] == other[-1]
         )
         assert not overlap or intentional_same_row,(one,other)
@@ -112,7 +118,7 @@ assert re.search(r"(?m)^on bHome.down:\n(?:[^\n]*\n)*?  page pageHome",events)
 assert "on bHome.up:" not in events
 assert "on bReboot.down:" in events and "tmReboot.en=1" in events
 assert "on bReboot.up:" in events and "ref bReboot" in events
-assert "vaRebtCounter.val<=50" in events and "page pageReboot" in events
+assert "vaRebtCounter.val<40" in events and "page pageReboot" in events
 assert "fill bReboot.x+6,bReboot.y+49,vaRebtCounter.val,2,65535" in events
 assert "vaRebtCounter.val,bReboot.h" not in events, "old overlay covered Reboot icon"
 assert re.search(r"(?m)^on bBack.up:\n  printh 23 02 51 02",events)
@@ -125,12 +131,30 @@ driver=(Path(__file__).resolve().parents[2]/
 for name in ("bHome","bBack","bValid","bPrev","bNext"):
     assert f'vis {name},1' in driver,name
     assert f'tsw {name},%u' in driver,name
+assert driver.count('"vaCfgEdit.val=%u"') == 2
+assert driver.count('const bool fullRowMenu =') == 2
+assert 'leftTouchable = false; // prevent duplicate events under the hotspot' in driver
+assert 'view.mode == ConfigMenuMode::Edit && row.valueVisible && row.editable' in driver
 
-print("PASS: pageCfgMenu row handlers and 6 touchable labels, values, arrow-free hotspots")
+assert c["vaCfgEdit"]["type"]=="variable"
+# Every full-row hotspot routes browsing to RowActivate, and editing to
+# the *existing* value widget; no duplicate event on release.
+for i in range(6):
+    block = events.split(f"on bR{i}.down:", 1)[1].split(chr(10)+"on ", 1)[0]
+    assert "if(vaCfgEdit.val==0)" in block
+    assert f"printh 23 02 52 0{i}" in block
+    assert f"click tV{i},1" in block
+assert c["tmReboot"]["tim"]==50
+assert "40 ticks x 50 ms = 2 seconds" in events
+assert "vaCfgEdit.val=0" in events
+for i in range(6):
+    assert f"on bR{i}.down:" in events
+    assert f"if(vaCfgEdit.val==0)" in events
+print("PASS: six full-width clickable rows, native editors and 2.0s Reboot")
 print("PASS: 3D Home/Back/Prev/Next/Valid/Reboot have baked-in readable captions")
 print("PASS: Nextion PNG matches all six real footer sprites")
 print("PASS: original Home pictogram, 56px pager, real Nextion text crop")
-print("PASS: Home simple, Reboot long-press 2.5s, row5 Boolean fixed")
+print("PASS: Home simple, Reboot long-press 2.0s, row5 Boolean fixed")
 
 # All six sample captions contain accents; the preview font must support them.
 renderer=(Path(__file__).resolve().parents[2]/"nextion/scripts/render_nx_config.py").read_text(encoding="utf-8")
