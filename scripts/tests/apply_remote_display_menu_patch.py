@@ -78,6 +78,26 @@ PATH = "src/Modules/HMIModule/Drivers/NextionDriver.cpp"
 
 
 def patched_text(original: str) -> tuple[str, bool]:
+    # The current RemoteDisplay firmware already includes the old 6.0.0 /
+    # 7.0.0 fixes and may now add the full-row 7.0.0 renderer. Do not
+    # reapply historical text substitutions to this newer implementation.
+    if "const bool fullRowMenu = threeDMenu;" in original:
+        required = (
+            'setConfigVisibility_(0U, "bHome", threeDMenu || view.canHome)',
+            'setConfigVisibility_(1U, "bBack", threeDMenu || view.canBack)',
+            'setConfigVisibility_(2U, "bValid", threeDMenu || view.canValidate)',
+            'setConfigVisibility_(3U, "bPrev", threeDMenu || canPrev)',
+            'setConfigVisibility_(4U, "bNext", threeDMenu || canNext)',
+            "const bool restoreContext = contextRef != 0U",
+            "out.type = HmiEventType::ConfigEnter;",
+            'vaCfgEdit.val=%u',
+            "leftTouchable = false;",
+        )
+        missing = [marker for marker in required if marker not in original]
+        if missing:
+            raise ValueError(f"{PATH}: incomplete updated remote driver: {missing}")
+        return original, False
+
     updated = original
     changed = False
     for old, new in PATCHES:
