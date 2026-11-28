@@ -8,6 +8,8 @@ on pageCfgMenu.load:
   {
     printh 23 02 50 0A
   }
+  tmReboot.en=0
+  vaRebtCounter.val=0
   vis tL0,0
   vis tL1,0
   vis tL2,0
@@ -28,18 +30,14 @@ on pageCfgMenu.load:
   vis bR5,0
 
 on pageCfgMenu.unload:
+  tmReboot.en=0
   printh 23 02 51 06
 
 on tPath.up:
   printh 23 02 51 02
 
 on bHome.down:
-  tmReboot.en=1
-
-on bHome.up:
-  tmReboot.en=0
-  vaRebtCounter.val=0
-  printh 23 02 51 06
+  // A normal Home press navigates immediately, never rebooting.
   page pageHome
 
 on bValid.down:
@@ -339,7 +337,7 @@ on tV5.down:
     pageKeyPad.tName.txt+=" "
     printh 23 02 50 0B
     page pageKeyPad
-  }else if(vaEditType0.val==3) // BOOLEAN
+  }else if(vaEditType5.val==3) // BOOLEAN
   {
     printh 23 02 52 05
   }
@@ -353,14 +351,24 @@ on bNext.up:
 on bBack.up:
   printh 23 02 51 02
 
+on bReboot.down:
+  // 50 ticks x 50 ms = approximately 2.5 seconds.
+  vaRebtCounter.val=0
+  tmReboot.en=1
+
+on bReboot.up:
+  // Releasing early cancels restart and redraws the visible button.
+  tmReboot.en=0
+  vaRebtCounter.val=0
+  ref bReboot
+
 on tmReboot.timer:
   vaRebtCounter.val+=1
-  if(vaRebtCounter.val<=bHome.w)
+  if(vaRebtCounter.val<=50)
   {
-    fill bHome.x,bHome.y,vaRebtCounter.val,bHome.h,62307
+    fill bReboot.x,bReboot.y,vaRebtCounter.val,bReboot.h,63488
   }else
   {
-    //printh 23 01 43  // Execture arbitrary commands
     tmReboot.en=0
     vaRebtCounter.val=0
     page pageReboot

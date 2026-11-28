@@ -36,6 +36,7 @@ TFT_NAME = f"FlowIO_Nextion_{MODEL}-{VERSION}.tft"
 PREVIEW_PAGE = "pageHome"
 PREVIEW_NAME = f"{Path(HMI_NAME).stem}-{PREVIEW_PAGE}.png"
 SWITCH_PREVIEW_NAME = f"{Path(HMI_NAME).stem}-pageHomeSwtch.png"
+CONFIG_PREVIEW_NAME = f"{Path(HMI_NAME).stem}-pageCfgMenu.png"
 NXWRIGHT_COMMIT = "e9443a409cc9deb866db7486854fa962d382accc"
 VENV = ROOT / ".pio" / "nextion-nxwright-venv"
 # All regular build outputs are ignored by Git. Tracked releases/previews and
@@ -159,6 +160,7 @@ def compile_nextion() -> None:
         shutil.copytree(SOURCE, work_source)
         work_preview = scratch / PREVIEW_NAME
         work_switch_preview = scratch / SWITCH_PREVIEW_NAME
+        work_config_preview = scratch / CONFIG_PREVIEW_NAME
         staged_hmi = scratch / HMI_NAME
         staged_tft = scratch / TFT_NAME
         readback = scratch / "hmi-check"
@@ -172,6 +174,11 @@ def compile_nextion() -> None:
         # Check the switch preview against the exact sprite files used by the HMI.
         execute(str(python), str(ROOT / "nextion/scripts/test_nextion_switch_preview.py"),
                 "--source", str(work_source), "--preview", str(work_switch_preview))
+        # Generate genuine pageCfgMenu pictures and check their touch/layout contract.
+        execute(str(python), str(ROOT / "nextion/scripts/render_nx_config.py"),
+                "--source", str(work_source), "--preview", str(work_config_preview))
+        execute(str(python), str(ROOT / "nextion/scripts/test_nextion_cfg_preview.py"),
+                "--source", str(work_source), "--preview", str(work_config_preview))
         # Never ship graphical changes without checking the generated PNG.
         execute(str(python), str(ROOT / "nextion/scripts/test_nextion_preview_layout.py"),
                 "--preview", str(work_preview))
@@ -189,8 +196,10 @@ def compile_nextion() -> None:
         publish_file(staged_tft, OUTPUT / TFT_NAME)
         publish_file(work_preview, PREVIEW_OUTPUT)
         publish_file(work_switch_preview, PREVIEW_OUTPUT.parent / SWITCH_PREVIEW_NAME)
+        publish_file(work_config_preview, PREVIEW_OUTPUT.parent / CONFIG_PREVIEW_NAME)
         publish_file(work_source / "pictures/picture-0003.png",
                      OUTPUT / "picture-0003.png")
+        print(f"[NEXTION] Config preview: {(PREVIEW_OUTPUT.parent / CONFIG_PREVIEW_NAME).relative_to(ROOT)}")
         print(f"[NEXTION] Switch preview: {(PREVIEW_OUTPUT.parent / SWITCH_PREVIEW_NAME).relative_to(ROOT)}")
         print(f"[NEXTION] Preview for page {PREVIEW_PAGE}: {PREVIEW_OUTPUT.relative_to(ROOT)}",
               flush=True)

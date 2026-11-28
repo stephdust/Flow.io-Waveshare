@@ -14,7 +14,7 @@ SRC = ROOT / "nextion/tests/NX4832K035_011/7.0.0/source"
 app = tomllib.loads((SRC / "app.toml").read_text(encoding="utf-8"))
 program = (SRC / "program.nx").read_text(encoding="utf-8")
 pictures = app["pictures"]
-expected = [f"picture-{i:04d}" for i in range(42)]
+expected = [f"picture-{i:04d}" for i in range(59)]
 assert pictures == expected, "Nextion picture order changed"
 found = sorted(p.stem for p in (SRC / "pictures").glob("picture-*.png"))
 assert found == expected[:24], "original 24 source pictures changed"
