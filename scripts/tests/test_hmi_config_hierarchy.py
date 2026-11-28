@@ -93,7 +93,7 @@ def immediate(parent):
 
 assert "modbustcp502" not in immediate(""), immediate("")
 assert "network" in immediate(""), immediate("")
-assert "modbus-tcp" in immediate("network"), immediate("network")
+assert "network/modbus-tcp" in immediate("network"), immediate("network")
 assert immediate("network/modbus-tcp") == [
     "network/modbus-tcp/502",
     "network/modbus-tcp/503",
