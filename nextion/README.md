@@ -2,6 +2,8 @@
 
 **Procédure obligatoire pour toute modification d'écran :** [processus de conception, simulation, contrôle des PNG et validation pré-commit](PROCESSUS_CONCEPTION_VALIDATION.md). Compiler **avant commit** avec `pio run -e nextion`, ouvrir les véritables PNG compilés et les comparer côte à côte à la référence validée. Un simple `PASS` CI ne prouve ni la conformité du dessin ni la compilation locale.
 
+**Prévention des incompatibilités en 2027 :** à chaque modification Nextion, exécuter `python nextion/scripts/test_nextion_pillow_compat.py` (également lancé par la compilation locale et CI), vérifier l'absence d'appels Pillow dépréciés, et lire les `DeprecationWarning` des journaux. Ne pas supprimer ces avertissements : corriger l'API source (ex. `Image.getdata()` → `getpixel()` ou `get_flattened_data()` selon le besoin). Voir la checklist obligatoire dans le [processus de validation](PROCESSUS_CONCEPTION_VALIDATION.md).
+
 
 Voir [Modes PoolLogic et adaptation des écrans Nextion](../docs/integration/poollogic-operating-modes.md).
 

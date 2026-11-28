@@ -52,16 +52,19 @@ Les tests automatiques de pixels et de structure sont nécessaires, mais **ne re
 ## 5. Vérifier les comportements et les régressions
 - Tester le fonctionnement des boutons, les couches d'objets, les handlers tactiles, Home, les commandes série, les états, les timers, les animations, les changements de page et la veille/réveil.
 - Exécuter les tests `nextion/scripts/test_nextion_*.py` concernés et inspecter les échecs. Ne jamais affaiblir une assertion seulement pour obtenir un `PASS` ; vérifier le comportement attendu.
+- **Compatibilité Python/Pillow (2027 et versions ultérieures) — contrôle obligatoire à chaque modification :** exécuter `python nextion/scripts/test_nextion_pillow_compat.py` (également appelé automatiquement par `pio run -e nextion` et dans la CI). Vérifier que les scripts n'emploient pas d'API Pillow obsolète ou dépréciée : notamment `Image.getdata()` (remplacer par `getpixel()` pour des coordonnées connues ou `get_flattened_data()` si disponible et adapté), `Image.ANTIALIAS` (remplacer par `Image.Resampling.LANCZOS`), `ImageFont.getsize()` et `ImageDraw.textsize()` (utiliser les méthodes `*bbox` / `*length` adaptées).
+- **Lire les avertissements** `DeprecationWarning`/`FutureWarning` des scripts de rendu, tests et compilation : les traiter comme un point à résoudre avant publication, **ne jamais masquer** un avertissement avec un filtre, une suppression de logs ou un test affaibli. Le contrôle statique couvre les appels connus dans nos scripts ; il ne remplace pas l'inspection des avertissements provenant de nouvelles API ou dépendances. Vérifier les versions Python/Pillow effectivement utilisées sur le PC et en CI.
 - Contrôler `git diff` et les artefacts : aucune modification non demandée d'autres modèles, aucun PNG dans `binary/`, pas de source HMI dirty par la compilation.
 
-## 6. Autorisation de commit (les cinq conditions sont requises)
+## 6. Autorisation de commit (les six conditions sont requises)
 - [ ] Sources/identifiants/commandes préservés ou changements explicitement documentés.
 - [ ] **Compilation réellement exécutée sur les modifications non committées, et réussie.**
 - [ ] **PNG compilé de chaque page modifiée ouvert et comparé côte à côte au PNG approuvé.**
 - [ ] Rendu jugé conforme : vrais objets graphiques, bonnes polices, textes centrés et lisibles, deux états contrastés, aucun chevauchement.
 - [ ] Tests de comportement et de non-régression effectués dans la mesure possible ; limitations signalées.
+- [ ] **Compatibilité Python/Pillow vérifiée :** test `test_nextion_pillow_compat.py` réussi, aucun avertissement de dépréciation non traité dans les logs, et aucune API vouée à disparaître dans les versions futures (notamment Pillow 14).
 
-**Si une condition n'est pas remplie ou vérifiable : aucun commit.** Corriger avant publication ou expliquer le blocage ; ne pas prétendre avoir simulé un environnement inaccessible. Après les cinq feux verts : commit → CI GitHub → contrôle des logs → promotion des sorties prévues. La validation sur le **Nextion physique** reste distincte et ne doit pas être revendiquée sans test matériel.
+**Si une condition n'est pas remplie ou vérifiable : aucun commit.** Corriger avant publication ou expliquer le blocage ; ne pas prétendre avoir simulé un environnement inaccessible. Après les six feux verts : commit → CI GitHub → contrôle des logs → promotion des sorties prévues. La validation sur le **Nextion physique** reste distincte et ne doit pas être revendiquée sans test matériel.
 
 ## 7. Si la compilation de l'utilisateur échoue malgré un CI vert
 

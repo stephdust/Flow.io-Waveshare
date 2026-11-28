@@ -134,6 +134,7 @@ def compile_nextion() -> None:
     # Fast host-side checks protect legacy IDs, Home wake redraw,
     # packed turbine atlas and live outdoor-temperature layout.
     for test_name in (
+        "test_nextion_pillow_compat.py",
         "test_nextion_wake.py",
         "test_nextion_animation.py",
         "test_nextion_gauges.py",
