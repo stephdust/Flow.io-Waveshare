@@ -46,22 +46,24 @@ def shrink(im,w,h):
 
 def background():
     im,d=new(W,H)
-    panel(d,(63,3,458,28),7,(7,35,56),(18,80,113),(17,63,90))
-    line(d,[(60,31),(466,31)],(22,108,148))
+    panel(d,(5,3,475,29),7,(7,35,56),(18,80,113),(17,63,90))
+    line(d,[(4,31),(476,31)],(22,108,148))
     for i in range(6):
         y=37+38*i
-        panel(d,(61,y,469,y+34),9)
-        rr(d,(64,y+8,67,y+25),2,(24,199,244))
+        panel(d,(5,y,475,y+34),9)
+        rr(d,(8,y+8,11,y+25),2,(24,199,244))
     line(d,[(2,267),(478,267)],(25,112,151))
-    panel(d,(202,277,286,309),7,(6,40,67),(31,108,153),(18,72,108))
+    # Compact pagination frame: 62 px instead of 84.
+    panel(d,(184,279,246,308),7,(6,40,67),(31,108,153),(18,72,108))
     return shrink(im,W,H)
 
 def field(on=False):
-    im,d=new(146,30)
-    panel(d,(0,0,145,29),7,(11,83,104) if on else (12,54,78),
+    # Use the same dimensions as the native HMI value components.
+    im,d=new(185,30)
+    panel(d,(0,0,184,29),7,(11,83,104) if on else (12,54,78),
           (47,222,227) if on else (31,134,170),
           (18,115,137) if on else (22,86,121))
-    return shrink(im,146,30)
+    return shrink(im,185,30)
 
 def chevron(on=False):
     im,d=new(41,34)
@@ -95,8 +97,10 @@ def nav(kind,on=False,w=50,h=50):
         P([(-15,0),(0,-15),(15,0),(12,3),(0,-9),(-12,3)],(12,172,251))
         rr(d,(cx-3,cy+6,cx+3,cy+13),1,(5,74,112))
     elif kind=="back":
-        L([(10,-11),(-2,-11),(-10,-1),(-2,11),(10,11)],(217,246,255))
-        L([(-10,-1),(10,-1)],(91,220,254),4)
+        # Curved return-arrow glyph, distinct from page navigation arrows.
+        P([(-15,-2),(-2,-14),(-2,-7),(8,-7),(13,-3),(13,8),
+           (7,8),(7,0),(-2,0),(-2,8)],(228,250,255))
+        L([(-15,-2),(-2,-14)],(36,188,245),2)
     elif kind in ("prev","next"):
         sign=-1 if kind=="prev" else 1
         P([(sign*-8,-13),(sign*6,0),(sign*-8,13),
@@ -162,10 +166,10 @@ def main():
             sample_text(image,c[f"tL{i}"],labels[i])
             sample_text(image,c[f"tV{i}"],values[i],color=(205,250,255))
         sample_text(image,c["tPath"],c["tPath"].get("txt","flow>config"))
-        sample_text(image,c["tHomeCaption"],"HOME")
-        sample_text(image,c["nPage"],"1",17)
-        sample_text(image,c["t0"],"/",17,(119,172,198))
-        sample_text(image,c["nPages"],"3",17)
+        # The former HOME caption overlapped Back; the house icon is retained.
+        sample_text(image,c["nPage"],"1",16)
+        sample_text(image,c["t0"],"/",16,(119,172,198))
+        sample_text(image,c["nPages"],"3",16)
         args.preview.parent.mkdir(parents=True,exist_ok=True)
         image.save(args.preview,optimize=True)
         print("[NEXTION] Config preview from actual HMI sprites:",args.preview)
